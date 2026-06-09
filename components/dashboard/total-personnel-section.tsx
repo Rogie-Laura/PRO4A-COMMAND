@@ -37,12 +37,8 @@ export function TotalPersonnelSection({
           </CardContent>
         </Card>
 
-        <Card className="gap-0">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Offices</CardTitle>
-            <CardDescription>Personnel count per office</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <Card className="gap-0 py-0">
+          <CardContent className="p-4">
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {offices.map((office) => (
                 <div
