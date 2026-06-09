@@ -99,9 +99,12 @@ export type RankTenurePersonDetail = {
   id: string
   name: string
   rank: string
+  badgeNumber: string
   lastPromotionDate: string
   yearsInRank: number
+  /** Sheet Unit column — displayed as Office */
   office: string
+  /** Sheet Sub Unit column — displayed as Unit */
   unit: string
 }
 

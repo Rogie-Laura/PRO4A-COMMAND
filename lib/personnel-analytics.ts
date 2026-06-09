@@ -201,17 +201,15 @@ function buildRankTenurePersonDetail(record: PersonnelRecord): RankTenurePersonD
   const parsed = parsePromotionDate(record.lastPromotionDate)
   if (!parsed) return null
 
-  const unit =
-    formatStationLabel(record.station.trim()) || record.unit.trim() || "Unassigned"
-
   return {
     id: record.badgeNumber || `${record.lastName}-${record.firstName}`,
     name: formatPersonnelName(record),
     rank: record.rank.trim(),
+    badgeNumber: record.badgeNumber.trim() || "—",
     lastPromotionDate: record.lastPromotionDate,
     yearsInRank: calculateYearsInRank(parsed),
-    office: getOfficeLabel(record.subUnit),
-    unit,
+    office: record.unit.trim() || "Unassigned",
+    unit: getOfficeLabel(record.subUnit),
   }
 }
 
