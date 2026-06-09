@@ -23,9 +23,9 @@ export function TotalPersonnelSection({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
-        <Card className="gap-0 overflow-hidden border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-background">
+        <Card className="gap-0 overflow-hidden border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-card">
           <CardHeader className="pb-2">
-            <CardDescription className="text-primary-foreground/80">
+            <CardDescription className="font-medium text-primary/80">
               {total.label}
             </CardDescription>
             <CardTitle className="text-4xl font-bold tabular-nums text-primary sm:text-5xl">

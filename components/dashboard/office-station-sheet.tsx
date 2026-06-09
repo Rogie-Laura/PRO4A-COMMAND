@@ -234,7 +234,10 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
                         interval={0}
                         tick={(props) => <StationAxisTick {...props} compact={isMobile} />}
                       />
-                      <ChartTooltip content={<StationTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
+                      <ChartTooltip
+                      content={<StationTooltip />}
+                      cursor={{ fill: "color-mix(in oklch, var(--muted) 45%, transparent)" }}
+                    />
                       <Bar
                         dataKey="uniformed"
                         fill="var(--color-uniformed)"
