@@ -74,12 +74,17 @@ export type WorkforceSummary = {
   gender: CountItem[]
 }
 
+export type RankDistribution = {
+  pco: RankChartPoint[]
+  pnco: RankChartPoint[]
+}
+
 export type PersonnelAnalytics = {
   lastUpdated: string
   kpis: KpiMetric[]
   workforce: WorkforceSummary
   officeBreakdown: OfficeBreakdownItem[]
-  rankChart: RankChartPoint[]
+  rankDistribution: RankDistribution
   genderStats: CountItem[]
   statusStats: CountItem[]
   unitRows: UnitRow[]

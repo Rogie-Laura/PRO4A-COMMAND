@@ -1,7 +1,7 @@
 import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
 import { KEY_LEADERSHIP_SLOTS } from "@/lib/leadership-config"
 import { OFFICES } from "@/lib/office-config"
-import { isNup, isPco, isPnco } from "@/lib/rank-config"
+import { isNup, isPco, isPnco, PCO_RANK_ORDER, PNCO_RANK_ORDER } from "@/lib/rank-config"
 import { formatStationLabel } from "@/lib/station-labels"
 import { sortStationBreakdown } from "@/lib/station-sort"
 import type {
@@ -12,6 +12,7 @@ import type {
   PersonnelAnalytics,
   PersonnelRecord,
   RankChartPoint,
+  RankDistribution,
   StationBreakdownItem,
   UnitRow,
   WorkforceSummary,
@@ -129,29 +130,26 @@ function buildWorkforceSummary(records: PersonnelRecord[]): WorkforceSummary {
   }
 }
 
-function buildRankChart(records: PersonnelRecord[]): RankChartPoint[] {
-  const rankOrder = [
-    "Pat",
-    "PCpl",
-    "PSSg",
-    "PMSg",
-    "PSMS",
-    "PCMS",
-    "PEMS",
-    "PLT",
-    "PCPT",
-    "PMAJ",
-    "PLTCOL",
-    "PCOL",
-    "PBGEN",
-    "NUP",
-  ]
-
-  const counts = countBy(records, (r) => r.rank)
+function buildRankSlice(
+  records: PersonnelRecord[],
+  rankOrder: readonly string[],
+  matcher: (rank: string) => boolean,
+): RankChartPoint[] {
+  const counts = countBy(
+    records.filter((record) => matcher(record.rank)),
+    (record) => record.rank,
+  )
 
   return rankOrder
     .filter((rank) => counts.has(rank))
     .map((rank) => ({ rank, count: counts.get(rank) ?? 0 }))
+}
+
+function buildRankDistribution(records: PersonnelRecord[]): RankDistribution {
+  return {
+    pco: buildRankSlice(records, PCO_RANK_ORDER, isPco),
+    pnco: buildRankSlice(records, PNCO_RANK_ORDER, isPnco),
+  }
 }
 
 function buildUnitRows(records: PersonnelRecord[]): UnitRow[] {
@@ -231,14 +229,14 @@ export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
 
   const statusStats = toCountItems(countBy(records, (r) => r.pStatus), total).slice(0, 6)
   const genderStats = toCountItems(countBy(records, (r) => r.gender), total)
-  const rankChart = buildRankChart(records)
+  const rankDistribution = buildRankDistribution(records)
 
   return {
     lastUpdated: new Date().toISOString(),
     kpis: buildKpis(records),
     workforce: buildWorkforceSummary(records),
     officeBreakdown: buildOfficeBreakdown(records),
-    rankChart,
+    rankDistribution,
     genderStats,
     statusStats,
     unitRows: buildUnitRows(records),

@@ -1,4 +1,4 @@
-export const PCO_RANKS = new Set([
+export const PCO_RANK_ORDER = [
   "PBGEN",
   "PCOL",
   "PLTCOL",
@@ -6,9 +6,9 @@ export const PCO_RANKS = new Set([
   "PCPT",
   "PLT",
   "PSINSP",
-])
+] as const
 
-export const PNCO_RANKS = new Set([
+export const PNCO_RANK_ORDER = [
   "Pat",
   "PCpl",
   "PSSg",
@@ -16,7 +16,10 @@ export const PNCO_RANKS = new Set([
   "PSMS",
   "PCMS",
   "PEMS",
-])
+] as const
+
+export const PCO_RANKS = new Set<string>(PCO_RANK_ORDER)
+export const PNCO_RANKS = new Set<string>(PNCO_RANK_ORDER)
 
 export const NUP_RANK = "NUP"
 

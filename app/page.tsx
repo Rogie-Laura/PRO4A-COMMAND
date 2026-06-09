@@ -1,6 +1,6 @@
 import { BreakdownCard } from "@/components/dashboard/breakdown-card"
 import { LeadershipList } from "@/components/dashboard/leadership-list"
-import { RankChart } from "@/components/dashboard/rank-chart"
+import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
 import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
 import { UnitTable } from "@/components/dashboard/unit-table"
 import { DashboardLayout } from "@/components/dashboard-layout"
@@ -22,10 +22,9 @@ export default async function DashboardPage() {
           />
         )}
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <RankChart data={data.rankChart} />
-          <LeadershipList rows={data.leadership} />
-        </div>
+        <RankDistributionSection distribution={data.rankDistribution} />
+
+        <LeadershipList rows={data.leadership} />
 
         <UnitTable rows={data.unitRows} />
 
