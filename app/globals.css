@@ -128,23 +128,11 @@
     }
 }
 
-/* Light mode: tint grayscale rank insignia */
+/* Light mode: tint grayscale rank insignia to gold */
 .rank-insignia-image {
-  filter: sepia(0.55) saturate(2) hue-rotate(8deg) brightness(1.02) contrast(1.08);
+  filter: sepia(1) saturate(3.2) hue-rotate(8deg) brightness(1.02) contrast(1.08);
 }
 
-/* Colonel suns: silver-bronze — heavy gold looks muddy on multi-sun insignia */
-.rank-insignia-image--colonel {
-  filter: brightness(0.72) contrast(1.2) saturate(0.7) sepia(0.12);
-}
-
-/* One-star general: modest warm gold */
-.rank-insignia-image--general {
-  filter: sepia(0.65) saturate(2.2) hue-rotate(6deg) brightness(1.04) contrast(1.1);
-}
-
-.dark .rank-insignia-image,
-.dark .rank-insignia-image--colonel,
-.dark .rank-insignia-image--general {
+.dark .rank-insignia-image {
   filter: none;
 }
