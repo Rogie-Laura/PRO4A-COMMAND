@@ -10,7 +10,6 @@ import {
   Settings,
   Shield,
   Siren,
-  Users,
 } from "lucide-react"
 
 import {
@@ -28,7 +27,6 @@ import {
 
 const navItems = [
   { title: "Personnel Stats", href: "/", icon: BarChart3 },
-  { title: "Personnel", href: "/personnel", icon: Users },
   { title: "Mobility", href: "/mobility", icon: Car },
   { title: "Firearms", href: "/firearms", icon: Crosshair },
   { title: "Camps and Offices", href: "/camps-offices", icon: Building2 },
