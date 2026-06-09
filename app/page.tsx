@@ -1,3 +1,4 @@
+import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { AgeDistributionTable } from "@/components/dashboard/age-distribution-table"
 import { RankTenureTable } from "@/components/dashboard/rank-tenure-table"
 import { BreakdownCard } from "@/components/dashboard/breakdown-card"
@@ -16,6 +17,8 @@ export default async function DashboardPage() {
   return (
     <DashboardLayout title="Personnel Stats">
       <div className="space-y-6">
+        <DataSyncBanner lastUpdated={data.lastUpdated} />
+
         {totalKpi && (
           <TotalPersonnelSection
             total={totalKpi}
