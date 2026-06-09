@@ -2,6 +2,7 @@ import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
 import { KEY_LEADERSHIP_SLOTS } from "@/lib/leadership-config"
 import { OFFICES } from "@/lib/office-config"
 import { isNup, isPco, isPnco } from "@/lib/rank-config"
+import { formatStationLabel } from "@/lib/station-labels"
 import { sortStationBreakdown } from "@/lib/station-sort"
 import type {
   CountItem,
@@ -78,8 +79,8 @@ function buildStationBreakdown(
 
   return sortStationBreakdown(
     [...grouped.entries()]
-      .map(([station, counts]) => ({
-        station,
+      .map(([rawStation, counts]) => ({
+        station: formatStationLabel(rawStation),
         pco: counts.pco,
         pnco: counts.pnco,
         nup: counts.nup,
