@@ -1,4 +1,5 @@
 import { InstallAppCard } from "@/components/pwa/install-app-card"
+import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import {
   Card,
@@ -12,6 +13,8 @@ export default function SettingsPage() {
   return (
     <DashboardLayout title="Settings">
       <div className="mx-auto max-w-2xl space-y-4">
+        <ThemeSettingsCard />
+
         <InstallAppCard />
 
         <Card>

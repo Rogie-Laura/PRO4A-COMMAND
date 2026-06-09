@@ -25,9 +25,9 @@ export default async function DashboardPage() {
 
         <RankDistributionSection distribution={data.rankDistribution} />
 
-        <AgeDistributionTable rows={data.ageDistributionByOffice} />
-
         <LeadershipSection leadership={data.leadership} />
+
+        <AgeDistributionTable rows={data.ageDistributionByOffice} />
 
         <UnitTable rows={data.unitRows} />
 
