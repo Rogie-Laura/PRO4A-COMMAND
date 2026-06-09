@@ -3,11 +3,26 @@ import type {
   CountItem,
   KpiMetric,
   LeadershipRow,
+  OfficeBreakdownItem,
   PersonnelAnalytics,
   PersonnelRecord,
   RankChartPoint,
   UnitRow,
 } from "@/lib/personnel-types"
+
+const OFFICE_CONFIG: {
+  subUnit: string
+  label: string
+  colorClass: string
+}[] = [
+  { subUnit: "REGIONAL HEADQUARTERS", label: "RHQ", colorClass: "bg-blue-500" },
+  { subUnit: "CAVITE POLICE PROVINCIAL OFFICE", label: "Cavite PPO", colorClass: "bg-emerald-500" },
+  { subUnit: "LAGUNA POLICE PROVINCIAL OFFICE", label: "Laguna PPO", colorClass: "bg-violet-500" },
+  { subUnit: "BATANGAS POLICE PROVINCIAL OFFICE", label: "Batangas PPO", colorClass: "bg-amber-500" },
+  { subUnit: "RIZAL POLICE PROVINCIAL OFFICE", label: "Rizal PPO", colorClass: "bg-rose-500" },
+  { subUnit: "QUEZON POLICE PROVINCIAL OFFICE", label: "Quezon PPO", colorClass: "bg-cyan-500" },
+  { subUnit: "REGIONAL MOBILE FORCE BATTALION", label: "RMFB4A", colorClass: "bg-orange-500" },
+]
 
 const LEADERSHIP_RANKS = new Set(["PBGEN", "PCOL", "PLTCOL"])
 
@@ -49,13 +64,23 @@ function toCountItems(counts: Map<string, number>, total: number): CountItem[] {
     .sort((a, b) => b.count - a.count)
 }
 
+function buildOfficeBreakdown(records: PersonnelRecord[]): OfficeBreakdownItem[] {
+  const counts = countBy(records, (r) => r.subUnit)
+
+  return OFFICE_CONFIG.map((office) => ({
+    subUnit: office.subUnit,
+    label: office.label,
+    count: counts.get(office.subUnit) ?? 0,
+    colorClass: office.colorClass,
+  }))
+}
+
 function buildKpis(records: PersonnelRecord[]): KpiMetric[] {
   const total = records.length
   const active = records.filter((r) =>
     r.pStatus.toUpperCase().includes("ON DUTY") || r.pStatus.toUpperCase() === "ACTIVE",
   ).length
   const female = records.filter((r) => r.gender.toLowerCase() === "female").length
-  const units = new Set(records.map((r) => r.subUnit).filter(Boolean)).size
 
   return [
     {
@@ -75,12 +100,6 @@ function buildKpis(records: PersonnelRecord[]): KpiMetric[] {
       label: "Female Personnel",
       value: female.toLocaleString(),
       detail: `${total > 0 ? ((female / total) * 100).toFixed(1) : 0}% representation`,
-    },
-    {
-      id: "units",
-      label: "Sub-Units",
-      value: units.toLocaleString(),
-      detail: "Provincial & regional offices",
     },
   ]
 }
@@ -178,6 +197,7 @@ export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
   return {
     lastUpdated: new Date().toISOString(),
     kpis: buildKpis(records),
+    officeBreakdown: buildOfficeBreakdown(records),
     rankChart,
     genderStats,
     statusStats,

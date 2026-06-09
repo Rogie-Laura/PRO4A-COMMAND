@@ -1,7 +1,7 @@
 import { BreakdownCard } from "@/components/dashboard/breakdown-card"
-import { KpiCards } from "@/components/dashboard/kpi-cards"
 import { LeadershipList } from "@/components/dashboard/leadership-list"
 import { RankChart } from "@/components/dashboard/rank-chart"
+import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
 import { UnitTable } from "@/components/dashboard/unit-table"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
@@ -13,13 +13,22 @@ export default async function DashboardPage() {
     timeStyle: "short",
   })
 
+  const totalKpi = data.kpis.find((k) => k.id === "total")
+  const otherKpis = data.kpis.filter((k) => k.id !== "total")
+
   return (
     <DashboardLayout
       title="Personnel Dashboard"
       description={`PRO CALABARZON — synced from Google Sheets · ${updated}`}
     >
       <div className="space-y-6">
-        <KpiCards metrics={data.kpis} />
+        {totalKpi && (
+          <TotalPersonnelSection
+            total={totalKpi}
+            offices={data.officeBreakdown}
+            otherMetrics={otherKpis}
+          />
+        )}
 
         <div className="grid gap-6 lg:grid-cols-3">
           <RankChart data={data.rankChart} />

@@ -47,9 +47,17 @@ export type LeadershipRow = {
   status: string
 }
 
+export type OfficeBreakdownItem = {
+  subUnit: string
+  label: string
+  count: number
+  colorClass: string
+}
+
 export type PersonnelAnalytics = {
   lastUpdated: string
   kpis: KpiMetric[]
+  officeBreakdown: OfficeBreakdownItem[]
   rankChart: RankChartPoint[]
   genderStats: CountItem[]
   statusStats: CountItem[]
