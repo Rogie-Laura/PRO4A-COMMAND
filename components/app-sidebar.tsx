@@ -7,6 +7,8 @@ import {
   Building2,
   Car,
   Crosshair,
+  HeartPulse,
+  MapPinned,
   Settings,
   Shield,
   Siren,
@@ -32,6 +34,8 @@ const navItems = [
   { title: "Camps and Offices", href: "/camps-offices", icon: Building2 },
   { title: "Crime Statistics", href: "/crime-statistics", icon: Shield },
   { title: "Police Intervention", href: "/police-intervention", icon: Siren },
+  { title: "Health and BMI", href: "/health-and-bmi", icon: HeartPulse },
+  { title: "Station Profiles", href: "/station-profiles", icon: MapPinned },
   { title: "Settings", href: "/settings", icon: Settings },
 ]
 
