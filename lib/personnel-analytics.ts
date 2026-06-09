@@ -7,6 +7,11 @@ import {
   REGIONAL_COMMAND_GROUP_SLOTS,
 } from "@/lib/leadership-config"
 import { OFFICES } from "@/lib/office-config"
+import {
+  RANK_TENURE_ABOVE_10_ID,
+  RANK_TENURE_BRACKETS,
+  getRankTenureBracketFromPromotionDate,
+} from "@/lib/rank-tenure-config"
 import { isNup, isPco, isPnco, PCO_RANK_ORDER, PNCO_RANK_ORDER } from "@/lib/rank-config"
 import { formatStationLabel } from "@/lib/station-labels"
 import { sortStationBreakdown } from "@/lib/station-sort"
@@ -16,6 +21,7 @@ import type {
   LeadershipGroups,
   LeadershipRow,
   OfficeAgeDistributionRow,
+  RankTenureDistributionRow,
   OfficeBreakdownItem,
   PersonnelAnalytics,
   PersonnelRecord,
@@ -34,6 +40,7 @@ function mapRow(row: Record<string, string>): PersonnelRecord {
     middleName: row["Middle Name"] ?? "",
     badgeNumber: row["Badge Number"] ?? "",
     birthDate: row.BirthDate ?? "",
+    lastPromotionDate: row["Last Promotion Date"] ?? "",
     designation: row.Designation ?? "",
     pStatus: row.PStatus ?? "",
     gender: row.Gender ?? "",
@@ -168,6 +175,43 @@ function createEmptyAgeBrackets(): Record<string, number> {
   }
 }
 
+const UNIFORMED_RANK_ORDER = [...PCO_RANK_ORDER, ...PNCO_RANK_ORDER]
+
+function createEmptyRankTenureBrackets(): Record<string, number> {
+  return {
+    ...Object.fromEntries(RANK_TENURE_BRACKETS.map((bracket) => [bracket.id, 0])),
+    [RANK_TENURE_ABOVE_10_ID]: 0,
+  }
+}
+
+function buildRankTenureDistribution(records: PersonnelRecord[]): RankTenureDistributionRow[] {
+  const grouped = new Map<string, Record<string, number>>()
+
+  for (const rank of UNIFORMED_RANK_ORDER) {
+    grouped.set(rank, createEmptyRankTenureBrackets())
+  }
+
+  for (const record of records) {
+    if (isNup(record.rank)) continue
+
+    const rank = record.rank.trim()
+    if (!grouped.has(rank)) continue
+
+    const bracketId = getRankTenureBracketFromPromotionDate(record.lastPromotionDate)
+    if (!bracketId) continue
+
+    const brackets = grouped.get(rank)!
+    brackets[bracketId] += 1
+  }
+
+  return UNIFORMED_RANK_ORDER.map((rank) => {
+    const brackets = grouped.get(rank) ?? createEmptyRankTenureBrackets()
+    const total = Object.values(brackets).reduce((sum, count) => sum + count, 0)
+
+    return { rank, brackets, total }
+  })
+}
+
 function buildAgeDistributionByOffice(records: PersonnelRecord[]): OfficeAgeDistributionRow[] {
   return OFFICES.map((office) => {
     const brackets = createEmptyAgeBrackets()
@@ -288,6 +332,7 @@ export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
   const genderStats = toCountItems(countBy(records, (r) => r.gender), total)
   const rankDistribution = buildRankDistribution(records)
   const ageDistributionByOffice = buildAgeDistributionByOffice(records)
+  const rankTenureDistribution = buildRankTenureDistribution(records)
 
   return {
     lastUpdated: new Date().toISOString(),
@@ -296,6 +341,7 @@ export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
     officeBreakdown: buildOfficeBreakdown(records),
     rankDistribution,
     ageDistributionByOffice,
+    rankTenureDistribution,
     genderStats,
     statusStats,
     unitRows: buildUnitRows(records),

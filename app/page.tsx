@@ -1,4 +1,5 @@
 import { AgeDistributionTable } from "@/components/dashboard/age-distribution-table"
+import { RankTenureTable } from "@/components/dashboard/rank-tenure-table"
 import { BreakdownCard } from "@/components/dashboard/breakdown-card"
 import { LeadershipSection } from "@/components/dashboard/leadership-section"
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
@@ -28,6 +29,8 @@ export default async function DashboardPage() {
         <LeadershipSection leadership={data.leadership} />
 
         <AgeDistributionTable rows={data.ageDistributionByOffice} />
+
+        <RankTenureTable rows={data.rankTenureDistribution} />
 
         <UnitTable rows={data.unitRows} />
 
