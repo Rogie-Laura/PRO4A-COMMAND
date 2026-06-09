@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { AGE_BRACKETS, AGE_OTHERS_ID } from "@/lib/age-config"
+import { AGE_ABOVE_56_ID, AGE_ABOVE_56_LABEL, AGE_BRACKETS } from "@/lib/age-config"
 import type { OfficeAgeDistributionRow } from "@/lib/personnel-types"
 
 type AgeDistributionTableProps = {
@@ -14,7 +14,7 @@ type AgeDistributionTableProps = {
 
 const TABLE_COLUMNS = [
   ...AGE_BRACKETS.map((bracket) => ({ id: bracket.id, label: bracket.label })),
-  { id: AGE_OTHERS_ID, label: "Others" },
+  { id: AGE_ABOVE_56_ID, label: AGE_ABOVE_56_LABEL },
 ]
 
 export function AgeDistributionTable({ rows }: AgeDistributionTableProps) {
@@ -28,7 +28,7 @@ export function AgeDistributionTable({ rows }: AgeDistributionTableProps) {
       <CardHeader>
         <CardTitle>Distribution of Personnel by Age</CardTitle>
         <CardDescription>
-          Headcount per office across age brackets (20-30, 31-39, 40-50, 51-56)
+          Headcount per office across age brackets (20-30, 31-39, 40-50, 51-55, 56 Above)
         </CardDescription>
       </CardHeader>
       <CardContent>

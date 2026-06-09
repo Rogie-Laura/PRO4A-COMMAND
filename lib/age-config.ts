@@ -2,12 +2,14 @@ export const AGE_BRACKETS = [
   { id: "20-30", label: "20-30", min: 20, max: 30 },
   { id: "31-39", label: "31-39", min: 31, max: 39 },
   { id: "40-50", label: "40-50", min: 40, max: 50 },
-  { id: "51-56", label: "51-56", min: 51, max: 56 },
+  { id: "51-55", label: "51-55", min: 51, max: 55 },
 ] as const
 
-export const AGE_OTHERS_ID = "others"
+export const AGE_ABOVE_56_ID = "56-above"
+export const AGE_ABOVE_56_LABEL = "56 Above"
 
 export type AgeBracketId = (typeof AGE_BRACKETS)[number]["id"]
+export type AgeDistributionId = AgeBracketId | typeof AGE_ABOVE_56_ID
 
 export function parseBirthDate(value: string): Date | null {
   const trimmed = value.trim()
@@ -42,9 +44,12 @@ export function getAgeBracketId(age: number): AgeBracketId | null {
   return bracket?.id ?? null
 }
 
-export function getAgeBracketFromBirthDate(birthDate: string): AgeBracketId | null {
+export function getAgeBracketFromBirthDate(birthDate: string): AgeDistributionId | null {
   const parsed = parseBirthDate(birthDate)
   if (!parsed) return null
 
-  return getAgeBracketId(calculateAge(parsed))
+  const age = calculateAge(parsed)
+  if (age >= 56) return AGE_ABOVE_56_ID
+
+  return getAgeBracketId(age)
 }
