@@ -32,7 +32,7 @@ export function UnitTable({ rows }: UnitTableProps) {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.unit} className="border-b last:border-0">
-                  <td className="py-3 pr-4 text-xs sm:text-sm">{row.unit}</td>
+                  <td className="py-3 pr-4 text-xs font-medium sm:text-sm">{row.label}</td>
                   <td className="py-3 pr-4 tabular-nums">{row.count.toLocaleString()}</td>
                   <td className="py-3 pr-4 tabular-nums">{row.active.toLocaleString()}</td>
                   <td className="py-3 tabular-nums">{row.percentage}%</td>

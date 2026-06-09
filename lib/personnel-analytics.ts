@@ -126,7 +126,23 @@ function buildUnitRows(records: PersonnelRecord[]): UnitRow[] {
     grouped.set(unit, list)
   }
 
-  return [...grouped.entries()]
+  const knownUnits = OFFICES.map((office) => {
+    const members = grouped.get(office.subUnit) ?? []
+    const active = members.filter((r) =>
+      r.pStatus.toUpperCase().includes("ON DUTY") || r.pStatus.toUpperCase() === "ACTIVE",
+    ).length
+
+    return {
+      unit: office.subUnit,
+      label: office.label,
+      count: members.length,
+      percentage: total > 0 ? Math.round((members.length / total) * 1000) / 10 : 0,
+      active,
+    }
+  })
+
+  const otherUnits = [...grouped.entries()]
+    .filter(([unit]) => !OFFICES.some((office) => office.subUnit === unit))
     .map(([unit, members]) => {
       const active = members.filter((r) =>
         r.pStatus.toUpperCase().includes("ON DUTY") || r.pStatus.toUpperCase() === "ACTIVE",
@@ -134,12 +150,15 @@ function buildUnitRows(records: PersonnelRecord[]): UnitRow[] {
 
       return {
         unit,
+        label: unit,
         count: members.length,
         percentage: total > 0 ? Math.round((members.length / total) * 1000) / 10 : 0,
         active,
       }
     })
     .sort((a, b) => b.count - a.count)
+
+  return [...knownUnits, ...otherUnits]
 }
 
 function formatLeadershipName(record: PersonnelRecord) {

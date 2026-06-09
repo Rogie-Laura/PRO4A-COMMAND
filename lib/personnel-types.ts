@@ -33,6 +33,7 @@ export type RankChartPoint = {
 
 export type UnitRow = {
   unit: string
+  label: string
   count: number
   percentage: number
   active: number
