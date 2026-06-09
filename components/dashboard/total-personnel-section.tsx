@@ -1,4 +1,5 @@
 import { OfficeLogo } from "@/components/dashboard/office-logo"
+import { WorkforceCards } from "@/components/dashboard/workforce-cards"
 import {
   Card,
   CardContent,
@@ -6,18 +7,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { KpiMetric, OfficeBreakdownItem } from "@/lib/personnel-types"
+import type { KpiMetric, OfficeBreakdownItem, WorkforceSummary } from "@/lib/personnel-types"
 
 type TotalPersonnelSectionProps = {
   total: KpiMetric
   offices: OfficeBreakdownItem[]
-  otherMetrics: KpiMetric[]
+  workforce: WorkforceSummary
 }
 
 export function TotalPersonnelSection({
   total,
   offices,
-  otherMetrics,
+  workforce,
 }: TotalPersonnelSectionProps) {
   return (
     <div className="space-y-4">
@@ -67,21 +68,7 @@ export function TotalPersonnelSection({
         </Card>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {otherMetrics.map((metric) => (
-          <Card key={metric.id} className="gap-0">
-            <CardHeader className="pb-2">
-              <CardDescription>{metric.label}</CardDescription>
-              <CardTitle className="text-2xl font-bold tabular-nums sm:text-3xl">
-                {metric.value}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">{metric.detail}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <WorkforceCards workforce={workforce} />
     </div>
   )
 }

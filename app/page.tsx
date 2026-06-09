@@ -14,7 +14,6 @@ export default async function DashboardPage() {
   })
 
   const totalKpi = data.kpis.find((k) => k.id === "total")
-  const otherKpis = data.kpis.filter((k) => k.id !== "total")
 
   return (
     <DashboardLayout
@@ -26,7 +25,7 @@ export default async function DashboardPage() {
           <TotalPersonnelSection
             total={totalKpi}
             offices={data.officeBreakdown}
-            otherMetrics={otherKpis}
+            workforce={data.workforce}
           />
         )}
 
@@ -35,14 +34,7 @@ export default async function DashboardPage() {
           <LeadershipList rows={data.leadership} />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <BreakdownCard
-            title="Gender Breakdown"
-            description="Male vs female personnel distribution"
-            items={data.genderStats}
-          />
-          <UnitTable rows={data.unitRows} />
-        </div>
+        <UnitTable rows={data.unitRows} />
 
         <BreakdownCard
           title="Personnel Status"

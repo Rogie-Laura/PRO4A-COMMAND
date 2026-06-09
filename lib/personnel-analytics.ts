@@ -1,6 +1,7 @@
 import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
 import { KEY_LEADERSHIP_SLOTS } from "@/lib/leadership-config"
 import { OFFICES } from "@/lib/office-config"
+import { isNup, isPco, isPnco } from "@/lib/rank-config"
 import type {
   CountItem,
   KpiMetric,
@@ -10,6 +11,7 @@ import type {
   PersonnelRecord,
   RankChartPoint,
   UnitRow,
+  WorkforceSummary,
 } from "@/lib/personnel-types"
 
 function mapRow(row: Record<string, string>): PersonnelRecord {
@@ -64,32 +66,28 @@ function buildOfficeBreakdown(records: PersonnelRecord[]): OfficeBreakdownItem[]
 }
 
 function buildKpis(records: PersonnelRecord[]): KpiMetric[] {
-  const total = records.length
-  const active = records.filter((r) =>
-    r.pStatus.toUpperCase().includes("ON DUTY") || r.pStatus.toUpperCase() === "ACTIVE",
-  ).length
-  const female = records.filter((r) => r.gender.toLowerCase() === "female").length
-
   return [
     {
       id: "total",
       label: "Total Personnel",
-      value: total.toLocaleString(),
+      value: records.length.toLocaleString(),
       detail: "PRO CALABARZON roster",
     },
-    {
-      id: "active",
-      label: "On Duty / Active",
-      value: active.toLocaleString(),
-      detail: `${total > 0 ? ((active / total) * 100).toFixed(1) : 0}% of total force`,
-    },
-    {
-      id: "female",
-      label: "Female Personnel",
-      value: female.toLocaleString(),
-      detail: `${total > 0 ? ((female / total) * 100).toFixed(1) : 0}% representation`,
-    },
   ]
+}
+
+function buildWorkforceSummary(records: PersonnelRecord[]): WorkforceSummary {
+  const total = records.length
+  const pco = records.filter((r) => isPco(r.rank)).length
+  const pnco = records.filter((r) => isPnco(r.rank)).length
+  const nup = records.filter((r) => isNup(r.rank)).length
+  const uniformed = records.filter((r) => !isNup(r.rank)).length
+
+  return {
+    uniformed: { total: uniformed, pco, pnco },
+    nup,
+    gender: toCountItems(countBy(records, (r) => r.gender), total),
+  }
 }
 
 function buildRankChart(records: PersonnelRecord[]): RankChartPoint[] {
@@ -180,6 +178,7 @@ export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
   return {
     lastUpdated: new Date().toISOString(),
     kpis: buildKpis(records),
+    workforce: buildWorkforceSummary(records),
     officeBreakdown: buildOfficeBreakdown(records),
     rankChart,
     genderStats,

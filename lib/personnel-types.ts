@@ -54,9 +54,20 @@ export type OfficeBreakdownItem = {
   colorClass: string
 }
 
+export type WorkforceSummary = {
+  uniformed: {
+    total: number
+    pco: number
+    pnco: number
+  }
+  nup: number
+  gender: CountItem[]
+}
+
 export type PersonnelAnalytics = {
   lastUpdated: string
   kpis: KpiMetric[]
+  workforce: WorkforceSummary
   officeBreakdown: OfficeBreakdownItem[]
   rankChart: RankChartPoint[]
   genderStats: CountItem[]
