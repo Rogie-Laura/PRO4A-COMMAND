@@ -1,4 +1,4 @@
-import { AGE_BRACKETS, getAgeBracketFromBirthDate } from "@/lib/age-config"
+import { AGE_BRACKETS, AGE_OTHERS_ID, getAgeBracketFromBirthDate } from "@/lib/age-config"
 import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
 import {
   type LeadershipSlot,
@@ -161,8 +161,11 @@ function buildRankDistribution(records: PersonnelRecord[]): RankDistribution {
   }
 }
 
-function createEmptyAgeBrackets() {
-  return Object.fromEntries(AGE_BRACKETS.map((bracket) => [bracket.id, 0]))
+function createEmptyAgeBrackets(): Record<string, number> {
+  return {
+    ...Object.fromEntries(AGE_BRACKETS.map((bracket) => [bracket.id, 0])),
+    [AGE_OTHERS_ID]: 0,
+  }
 }
 
 function buildAgeDistributionByOffice(records: PersonnelRecord[]): OfficeAgeDistributionRow[] {
@@ -172,17 +175,18 @@ function buildAgeDistributionByOffice(records: PersonnelRecord[]): OfficeAgeDist
 
     for (const record of officeRecords) {
       const bracketId = getAgeBracketFromBirthDate(record.birthDate)
-      if (!bracketId) continue
-      brackets[bracketId] += 1
+      if (bracketId) {
+        brackets[bracketId] += 1
+      } else {
+        brackets[AGE_OTHERS_ID] += 1
+      }
     }
-
-    const total = AGE_BRACKETS.reduce((sum, bracket) => sum + brackets[bracket.id], 0)
 
     return {
       subUnit: office.subUnit,
       label: office.label,
       brackets,
-      total,
+      total: officeRecords.length,
     }
   })
 }

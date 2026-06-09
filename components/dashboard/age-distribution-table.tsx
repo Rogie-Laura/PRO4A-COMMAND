@@ -5,25 +5,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { AGE_BRACKETS } from "@/lib/age-config"
+import { AGE_BRACKETS, AGE_OTHERS_ID } from "@/lib/age-config"
 import type { OfficeAgeDistributionRow } from "@/lib/personnel-types"
 
 type AgeDistributionTableProps = {
   rows: OfficeAgeDistributionRow[]
 }
 
+const TABLE_COLUMNS = [
+  ...AGE_BRACKETS.map((bracket) => ({ id: bracket.id, label: bracket.label })),
+  { id: AGE_OTHERS_ID, label: "Others" },
+]
+
 export function AgeDistributionTable({ rows }: AgeDistributionTableProps) {
-  const columnTotals = AGE_BRACKETS.map((bracket) =>
-    rows.reduce((sum, row) => sum + (row.brackets[bracket.id] ?? 0), 0),
+  const columnTotals = TABLE_COLUMNS.map((column) =>
+    rows.reduce((sum, row) => sum + (row.brackets[column.id] ?? 0), 0),
   )
-  const grandTotal = columnTotals.reduce((sum, count) => sum + count, 0)
+  const grandTotal = rows.reduce((sum, row) => sum + row.total, 0)
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Distribution of Personnel by Age</CardTitle>
         <CardDescription>
-          Headcount per office across age brackets (21-30, 31-39, 40-50, 51-55)
+          Headcount per office across age brackets (20-30, 31-39, 40-50, 51-56)
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -32,9 +37,9 @@ export function AgeDistributionTable({ rows }: AgeDistributionTableProps) {
             <thead>
               <tr className="border-b text-left text-muted-foreground">
                 <th className="pb-3 pr-4 font-medium">Office</th>
-                {AGE_BRACKETS.map((bracket) => (
-                  <th key={bracket.id} className="pb-3 px-3 text-center font-medium">
-                    {bracket.label}
+                {TABLE_COLUMNS.map((column) => (
+                  <th key={column.id} className="pb-3 px-3 text-center font-medium">
+                    {column.label}
                   </th>
                 ))}
                 <th className="pb-3 pl-3 text-center font-medium">Total</th>
@@ -44,12 +49,12 @@ export function AgeDistributionTable({ rows }: AgeDistributionTableProps) {
               {rows.map((row) => (
                 <tr key={row.subUnit} className="border-b last:border-0">
                   <td className="py-3 pr-4 text-xs font-medium sm:text-sm">{row.label}</td>
-                  {AGE_BRACKETS.map((bracket) => (
+                  {TABLE_COLUMNS.map((column) => (
                     <td
-                      key={bracket.id}
+                      key={column.id}
                       className="px-3 py-3 text-center tabular-nums text-muted-foreground"
                     >
-                      {(row.brackets[bracket.id] ?? 0).toLocaleString()}
+                      {(row.brackets[column.id] ?? 0).toLocaleString()}
                     </td>
                   ))}
                   <td className="py-3 pl-3 text-center font-semibold tabular-nums text-primary">
@@ -61,8 +66,8 @@ export function AgeDistributionTable({ rows }: AgeDistributionTableProps) {
             <tfoot>
               <tr className="border-t bg-muted/30 font-semibold">
                 <td className="py-3 pr-4 text-sm">Total</td>
-                {AGE_BRACKETS.map((bracket, index) => (
-                  <td key={bracket.id} className="px-3 py-3 text-center tabular-nums">
+                {TABLE_COLUMNS.map((column, index) => (
+                  <td key={column.id} className="px-3 py-3 text-center tabular-nums">
                     {columnTotals[index].toLocaleString()}
                   </td>
                 ))}

@@ -1,9 +1,11 @@
 export const AGE_BRACKETS = [
-  { id: "21-30", label: "21-30", min: 21, max: 30 },
+  { id: "20-30", label: "20-30", min: 20, max: 30 },
   { id: "31-39", label: "31-39", min: 31, max: 39 },
   { id: "40-50", label: "40-50", min: 40, max: 50 },
-  { id: "51-55", label: "51-55", min: 51, max: 55 },
+  { id: "51-56", label: "51-56", min: 51, max: 56 },
 ] as const
+
+export const AGE_OTHERS_ID = "others"
 
 export type AgeBracketId = (typeof AGE_BRACKETS)[number]["id"]
 
