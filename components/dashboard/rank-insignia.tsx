@@ -4,6 +4,7 @@ import Image from "next/image"
 import { useState } from "react"
 
 import { getRankInsigniaPath } from "@/lib/leadership-config"
+import { getRankInsigniaScale } from "@/lib/rank-config"
 import { cn } from "@/lib/utils"
 
 type RankInsigniaProps = {
@@ -11,9 +12,12 @@ type RankInsigniaProps = {
   className?: string
 }
 
+const INSIGNIA_SIZE = 48
+
 export function RankInsignia({ rank, className }: RankInsigniaProps) {
   const [hasError, setHasError] = useState(false)
   const src = getRankInsigniaPath(rank)
+  const scale = getRankInsigniaScale(rank)
 
   if (hasError) {
     return (
@@ -29,13 +33,25 @@ export function RankInsignia({ rank, className }: RankInsigniaProps) {
   }
 
   return (
-    <Image
-      src={src}
-      alt={`${rank} insignia`}
-      width={48}
-      height={48}
-      className={cn("size-12 shrink-0 object-contain", className)}
-      onError={() => setHasError(true)}
-    />
+    <span
+      className={cn(
+        "flex size-12 shrink-0 items-center justify-center",
+        className,
+      )}
+    >
+      <Image
+        src={src}
+        alt={`${rank} insignia`}
+        width={INSIGNIA_SIZE}
+        height={INSIGNIA_SIZE}
+        className="object-contain"
+        style={{
+          width: INSIGNIA_SIZE,
+          height: INSIGNIA_SIZE,
+          transform: `scale(${scale})`,
+        }}
+        onError={() => setHasError(true)}
+      />
+    </span>
   )
 }

@@ -34,3 +34,12 @@ export function isPco(rank: string) {
 export function isPnco(rank: string) {
   return PNCO_RANKS.has(rank.trim())
 }
+
+/** Display scale per rank insignia — lower ranks with fewer suns are scaled down. */
+const RANK_INSIGNIA_SCALE: Record<string, number> = {
+  PLTCOL: 0.68,
+}
+
+export function getRankInsigniaScale(rank: string) {
+  return RANK_INSIGNIA_SCALE[rank.trim().toUpperCase()] ?? 1
+}
