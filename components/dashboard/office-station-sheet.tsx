@@ -33,8 +33,8 @@ const chartConfig = {
 
 export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStationSheetProps) {
   const chartHeight = useMemo(() => {
-    if (!office) return 280
-    return Math.max(280, office.stations.length * 36 + 48)
+    if (!office) return 360
+    return Math.max(360, office.stations.length * 40 + 64)
   }, [office])
 
   const totals = useMemo(() => {
@@ -53,7 +53,7 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full overflow-y-auto sm:max-w-xl md:max-w-2xl lg:max-w-3xl"
+        className="h-full w-full overflow-y-auto sm:max-w-none sm:w-[min(96vw,72rem)]"
       >
         {office && (
           <>
@@ -89,23 +89,23 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
                   <BarChart
                     data={office.stations}
                     layout="vertical"
-                    margin={{ top: 4, right: 12, left: 4, bottom: 4 }}
+                    margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
                   >
                     <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/50" />
-                    <XAxis type="number" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+                    <XAxis type="number" tickLine={false} axisLine={false} tickMargin={8} fontSize={13} />
                     <YAxis
                       type="category"
                       dataKey="station"
                       tickLine={false}
                       axisLine={false}
                       tickMargin={8}
-                      fontSize={11}
-                      width={130}
+                      fontSize={12}
+                      width={180}
                     />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <ChartLegend content={<ChartLegendContent />} />
-                    <Bar dataKey="pco" fill="var(--color-pco)" radius={[0, 4, 4, 0]} barSize={14} />
-                    <Bar dataKey="pnco" fill="var(--color-pnco)" radius={[0, 4, 4, 0]} barSize={14} />
+                    <Bar dataKey="pco" fill="var(--color-pco)" radius={[0, 4, 4, 0]} barSize={18} />
+                    <Bar dataKey="pnco" fill="var(--color-pnco)" radius={[0, 4, 4, 0]} barSize={18} />
                   </BarChart>
                 </ChartContainer>
               )}

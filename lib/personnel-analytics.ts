@@ -2,6 +2,7 @@ import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
 import { KEY_LEADERSHIP_SLOTS } from "@/lib/leadership-config"
 import { OFFICES } from "@/lib/office-config"
 import { isNup, isPco, isPnco } from "@/lib/rank-config"
+import { sortStationBreakdown } from "@/lib/station-sort"
 import type {
   CountItem,
   KpiMetric,
@@ -73,15 +74,16 @@ function buildStationBreakdown(
     grouped.set(station, entry)
   }
 
-  return [...grouped.entries()]
-    .map(([station, counts]) => ({
-      station,
-      pco: counts.pco,
-      pnco: counts.pnco,
-      total: counts.pco + counts.pnco,
-    }))
-    .filter((item) => item.total > 0)
-    .sort((a, b) => b.total - a.total)
+  return sortStationBreakdown(
+    [...grouped.entries()]
+      .map(([station, counts]) => ({
+        station,
+        pco: counts.pco,
+        pnco: counts.pnco,
+        total: counts.pco + counts.pnco,
+      }))
+      .filter((item) => item.total > 0),
+  )
 }
 
 function buildOfficeBreakdown(records: PersonnelRecord[]): OfficeBreakdownItem[] {
