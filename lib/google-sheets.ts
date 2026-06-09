@@ -1,4 +1,5 @@
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
+const DEFAULT_MOBILITY_TAB = "Mobility"
 
 export function getSheetCsvUrl(sheetId?: string) {
   const id = sheetId ?? process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
@@ -7,8 +8,48 @@ export function getSheetCsvUrl(sheetId?: string) {
   return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&headers=1&tq=${query}`
 }
 
+export function getMobilitySheetCsvUrl(options?: {
+  sheetId?: string
+  sheetTab?: string
+  gid?: string
+}) {
+  const id =
+    options?.sheetId ??
+    process.env.GOOGLE_MOBILITY_SHEET_ID ??
+    process.env.GOOGLE_SHEET_ID ??
+    DEFAULT_SHEET_ID
+  const tab =
+    options?.sheetTab ??
+    process.env.GOOGLE_MOBILITY_SHEET_TAB ??
+    DEFAULT_MOBILITY_TAB
+
+  const params = new URLSearchParams({
+    tqx: "out:csv",
+    headers: "1",
+  })
+
+  if (options?.gid) {
+    params.set("gid", options.gid)
+  } else {
+    params.set("sheet", tab)
+  }
+
+  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?${params.toString()}`
+}
+
 export async function fetchSheetCsv(sheetId?: string): Promise<string> {
-  const url = getSheetCsvUrl(sheetId)
+  return fetchCsv(getSheetCsvUrl(sheetId))
+}
+
+export async function fetchMobilitySheetCsv(options?: {
+  sheetId?: string
+  sheetTab?: string
+  gid?: string
+}): Promise<string> {
+  return fetchCsv(getMobilitySheetCsvUrl(options))
+}
+
+async function fetchCsv(url: string): Promise<string> {
   const response = await fetch(url, {
     next: { revalidate: 300 },
   })

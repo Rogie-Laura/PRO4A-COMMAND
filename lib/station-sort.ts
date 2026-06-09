@@ -1,5 +1,3 @@
-import type { StationBreakdownItem } from "@/lib/personnel-types"
-
 type StationSortTier = 0 | 1 | 2 | 3
 
 function getStationSortTier(station: string): StationSortTier {
@@ -24,9 +22,9 @@ function getStationSortTier(station: string): StationSortTier {
   return 1
 }
 
-export function sortStationBreakdown(
-  stations: StationBreakdownItem[],
-): StationBreakdownItem[] {
+export function sortStationBreakdown<T extends { station: string }>(
+  stations: T[],
+): T[] {
   return [...stations].sort((a, b) => {
     const tierA = getStationSortTier(a.station)
     const tierB = getStationSortTier(b.station)
