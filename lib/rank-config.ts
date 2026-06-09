@@ -43,3 +43,13 @@ const RANK_INSIGNIA_SCALE: Record<string, number> = {
 export function getRankInsigniaScale(rank: string) {
   return RANK_INSIGNIA_SCALE[rank.trim().toUpperCase()] ?? 1
 }
+
+const COLONEL_RANKS = new Set(["PCOL", "PLTCOL"])
+
+/** Light-mode insignia tint — colonel suns read muddy when over-gold. */
+export function getRankInsigniaTint(rank: string): "colonel" | "general" | "default" {
+  const normalized = rank.trim().toUpperCase()
+  if (COLONEL_RANKS.has(normalized)) return "colonel"
+  if (normalized === "PBGEN") return "general"
+  return "default"
+}
