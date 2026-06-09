@@ -8,18 +8,11 @@ import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
 
 export default async function DashboardPage() {
   const data = await getPersonnelAnalytics()
-  const updated = new Date(data.lastUpdated).toLocaleString("en-PH", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  })
 
   const totalKpi = data.kpis.find((k) => k.id === "total")
 
   return (
-    <DashboardLayout
-      title="Personnel Dashboard"
-      description={`PRO CALABARZON — synced from Google Sheets · ${updated}`}
-    >
+    <DashboardLayout title="Personnel Stats">
       <div className="space-y-6">
         {totalKpi && (
           <TotalPersonnelSection

@@ -3,10 +3,13 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  Activity,
   BarChart3,
-  LayoutDashboard,
+  Building2,
+  Car,
+  Crosshair,
   Settings,
+  Shield,
+  Siren,
   Users,
 } from "lucide-react"
 
@@ -24,10 +27,13 @@ import {
 } from "@/components/ui/sidebar"
 
 const navItems = [
-  { title: "Dashboard", href: "/", icon: LayoutDashboard },
-  { title: "Reports", href: "/reports", icon: BarChart3 },
-  { title: "Users", href: "/users", icon: Users },
-  { title: "Activity", href: "/activity", icon: Activity },
+  { title: "Personnel Stats", href: "/", icon: BarChart3 },
+  { title: "Personnel", href: "/personnel", icon: Users },
+  { title: "Mobility", href: "/mobility", icon: Car },
+  { title: "Firearms", href: "/firearms", icon: Crosshair },
+  { title: "Camps and Offices", href: "/camps-offices", icon: Building2 },
+  { title: "Crime Statistics", href: "/crime-statistics", icon: Shield },
+  { title: "Police Intervention", href: "/police-intervention", icon: Siren },
   { title: "Settings", href: "/settings", icon: Settings },
 ]
 
@@ -46,7 +52,7 @@ export function AppSidebar() {
               PRO4A COMMAND
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              Personnel Analytics
+              Analytics Center
             </p>
           </div>
         </Link>

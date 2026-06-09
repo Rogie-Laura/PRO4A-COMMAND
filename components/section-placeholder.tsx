@@ -7,19 +7,21 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-export default function SettingsPage() {
+type SectionPlaceholderProps = {
+  title: string
+}
+
+export function SectionPlaceholder({ title }: SectionPlaceholderProps) {
   return (
-    <DashboardLayout title="Settings">
+    <DashboardLayout title={title}>
       <Card>
         <CardHeader>
-          <CardTitle>Settings</CardTitle>
-          <CardDescription>
-            Analytics tracking, notifications, and integrations.
-          </CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>This section is coming soon.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Coming soon — API keys, webhooks, and notification preferences.
+            Data and analytics for {title.toLowerCase()} will be available here.
           </p>
         </CardContent>
       </Card>
