@@ -110,12 +110,7 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
               </div>
             </SheetHeader>
 
-            <div className="px-4 pb-8">
-              <p className="mt-4 text-sm text-muted-foreground">
-                Uniformed personnel per sub-unit. Hover or focus a bar to see PCO, PNCO, and NUP
-                breakdown.
-              </p>
-
+            <div className="pb-8 pl-0 pr-4">
               {office.stations.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
                   Walang station data para sa office na ito.
@@ -123,13 +118,13 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
               ) : (
                 <ChartContainer
                   config={chartConfig}
-                  className="mt-4 aspect-auto w-full"
+                  className="mt-2 aspect-auto w-full [&_.recharts-cartesian-axis-tick_text]:text-left"
                   style={{ height: chartHeight }}
                 >
                   <BarChart
                     data={office.stations}
                     layout="vertical"
-                    margin={{ top: 8, right: 56, left: 8, bottom: 8 }}
+                    margin={{ top: 8, right: 56, left: 0, bottom: 8 }}
                   >
                     <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/50" />
                     <XAxis type="number" tickLine={false} axisLine={false} tickMargin={8} fontSize={13} />
@@ -138,9 +133,9 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
                       dataKey="station"
                       tickLine={false}
                       axisLine={false}
-                      tickMargin={8}
-                      fontSize={12}
-                      width={200}
+                      tickMargin={0}
+                      width={220}
+                      tick={{ textAnchor: "start", fontSize: 12, dx: 0 }}
                     />
                     <ChartTooltip content={<StationTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
                     <Bar
