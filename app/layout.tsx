@@ -14,8 +14,8 @@ const fontMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "PRO4A COMMAND — Analytics",
-  description: "Mobile-responsive analytics command center",
+  title: "PRO4A COMMAND — Personnel Analytics",
+  description: "PRO CALABARZON personnel analytics powered by Google Sheets",
 }
 
 export const viewport: Viewport = {

@@ -1,6 +1,3 @@
-import { ArrowDown, ArrowUp, Minus } from "lucide-react"
-
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -8,12 +5,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { kpiMetrics } from "@/lib/analytics-data"
+import type { KpiMetric } from "@/lib/personnel-types"
 
-export function KpiCards() {
+type KpiCardsProps = {
+  metrics: KpiMetric[]
+}
+
+export function KpiCards({ metrics }: KpiCardsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {kpiMetrics.map((metric) => (
+      {metrics.map((metric) => (
         <Card key={metric.id} className="gap-0">
           <CardHeader className="pb-2">
             <CardDescription>{metric.label}</CardDescription>
@@ -22,27 +23,7 @@ export function KpiCards() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={
-                  metric.trend === "up"
-                    ? "default"
-                    : metric.trend === "down"
-                      ? "destructive"
-                      : "secondary"
-                }
-                className="gap-1 tabular-nums"
-              >
-                {metric.trend === "up" && <ArrowUp className="size-3" />}
-                {metric.trend === "down" && <ArrowDown className="size-3" />}
-                {metric.trend === "neutral" && <Minus className="size-3" />}
-                {metric.change > 0 ? "+" : ""}
-                {metric.change}%
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {metric.description}
-              </span>
-            </div>
+            <p className="text-xs text-muted-foreground">{metric.detail}</p>
           </CardContent>
         </Card>
       ))}

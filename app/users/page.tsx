@@ -1,28 +1,20 @@
+import { LeadershipList } from "@/components/dashboard/leadership-list"
+import { UnitTable } from "@/components/dashboard/unit-table"
 import { DashboardLayout } from "@/components/dashboard-layout"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
 
-export default function UsersPage() {
+export default async function UsersPage() {
+  const data = await getPersonnelAnalytics()
+
   return (
-    <DashboardLayout title="Users" description="User analytics and audience insights">
-      <Card>
-        <CardHeader>
-          <CardTitle>User Analytics</CardTitle>
-          <CardDescription>
-            Track user behavior, segments, and retention metrics.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Coming soon — user segments, cohort analysis, and retention charts.
-          </p>
-        </CardContent>
-      </Card>
+    <DashboardLayout
+      title="Personnel"
+      description="Leadership roster and unit headcount from Google Sheets"
+    >
+      <div className="space-y-6">
+        <LeadershipList rows={data.leadership} />
+        <UnitTable rows={data.unitRows} />
+      </div>
     </DashboardLayout>
   )
 }

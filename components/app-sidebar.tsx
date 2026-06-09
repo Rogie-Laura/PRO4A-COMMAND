@@ -46,7 +46,7 @@ export function AppSidebar() {
               PRO4A COMMAND
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              Analytics Center
+              Personnel Analytics
             </p>
           </div>
         </Link>
