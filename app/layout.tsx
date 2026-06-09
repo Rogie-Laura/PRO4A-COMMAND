@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
-import { PwaShell } from "@/components/pwa/pwa-shell"
+import { PwaRegister } from "@/components/pwa/pwa-register"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -57,7 +57,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <TooltipProvider>
             {children}
-            <PwaShell />
+            <PwaRegister />
           </TooltipProvider>
         </ThemeProvider>
       </body>
