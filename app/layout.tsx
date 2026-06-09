@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
+import { PwaShell } from "@/components/pwa/pwa-shell"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
@@ -16,6 +17,19 @@ const fontMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "PRO4A COMMAND — Personnel Analytics",
   description: "PRO CALABARZON personnel analytics powered by Google Sheets",
+  applicationName: "PRO4A COMMAND",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "PRO4A COMMAND",
+  },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 
 export const viewport: Viewport = {
@@ -41,7 +55,10 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <TooltipProvider>{children}</TooltipProvider>
+          <TooltipProvider>
+            {children}
+            <PwaShell />
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>
