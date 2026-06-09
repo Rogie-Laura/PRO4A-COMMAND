@@ -10,7 +10,11 @@ import { OFFICES } from "@/lib/office-config"
 import {
   RANK_TENURE_ABOVE_10_ID,
   RANK_TENURE_BRACKETS,
+  RANK_TENURE_LESS_THAN_1_ID,
+  calculateYearsInRank,
   getRankTenureBracketFromPromotionDate,
+  isRankTenureDrilldownBracket,
+  parsePromotionDate,
 } from "@/lib/rank-tenure-config"
 import { isNup, isPco, isPnco, PCO_RANK_ORDER, PNCO_RANK_ORDER } from "@/lib/rank-config"
 import { formatStationLabel } from "@/lib/station-labels"
@@ -22,6 +26,7 @@ import type {
   LeadershipRow,
   OfficeAgeDistributionRow,
   RankTenureDistributionRow,
+  RankTenurePersonDetail,
   OfficeBreakdownItem,
   PersonnelAnalytics,
   PersonnelRecord,
@@ -175,40 +180,94 @@ function createEmptyAgeBrackets(): Record<string, number> {
   }
 }
 
-const UNIFORMED_RANK_ORDER = [...PCO_RANK_ORDER, ...PNCO_RANK_ORDER]
-
 function createEmptyRankTenureBrackets(): Record<string, number> {
   return {
+    [RANK_TENURE_LESS_THAN_1_ID]: 0,
     ...Object.fromEntries(RANK_TENURE_BRACKETS.map((bracket) => [bracket.id, 0])),
     [RANK_TENURE_ABOVE_10_ID]: 0,
   }
 }
 
-function buildRankTenureDistribution(records: PersonnelRecord[]): RankTenureDistributionRow[] {
-  const grouped = new Map<string, Record<string, number>>()
+function getOfficeLabel(subUnit: string) {
+  return OFFICES.find((office) => office.subUnit === subUnit)?.label ?? (subUnit || "Unknown")
+}
 
-  for (const rank of UNIFORMED_RANK_ORDER) {
-    grouped.set(rank, createEmptyRankTenureBrackets())
+function formatPersonnelName(record: PersonnelRecord) {
+  const middle = record.middleName ? ` ${record.middleName.charAt(0)}.` : ""
+  return `${record.lastName}, ${record.firstName}${middle}`
+}
+
+function buildRankTenurePersonDetail(record: PersonnelRecord): RankTenurePersonDetail | null {
+  const parsed = parsePromotionDate(record.lastPromotionDate)
+  if (!parsed) return null
+
+  const unit =
+    formatStationLabel(record.station.trim()) || record.unit.trim() || "Unassigned"
+
+  return {
+    id: record.badgeNumber || `${record.lastName}-${record.firstName}`,
+    name: formatPersonnelName(record),
+    rank: record.rank.trim(),
+    lastPromotionDate: record.lastPromotionDate,
+    yearsInRank: calculateYearsInRank(parsed),
+    office: getOfficeLabel(record.subUnit),
+    unit,
+  }
+}
+
+function buildRankTenureDistribution(records: PersonnelRecord[]): RankTenureDistributionRow[] {
+  const pncoByRank = new Map<string, PersonnelRecord[]>()
+
+  for (const rank of PNCO_RANK_ORDER) {
+    pncoByRank.set(rank, [])
   }
 
   for (const record of records) {
-    if (isNup(record.rank)) continue
+    if (!isPnco(record.rank)) continue
 
     const rank = record.rank.trim()
-    if (!grouped.has(rank)) continue
+    const list = pncoByRank.get(rank)
+    if (!list) continue
 
-    const bracketId = getRankTenureBracketFromPromotionDate(record.lastPromotionDate)
-    if (!bracketId) continue
-
-    const brackets = grouped.get(rank)!
-    brackets[bracketId] += 1
+    list.push(record)
   }
 
-  return UNIFORMED_RANK_ORDER.map((rank) => {
-    const brackets = grouped.get(rank) ?? createEmptyRankTenureBrackets()
-    const total = Object.values(brackets).reduce((sum, count) => sum + count, 0)
+  return PNCO_RANK_ORDER.map((rank) => {
+    const rankRecords = pncoByRank.get(rank) ?? []
+    const brackets = createEmptyRankTenureBrackets()
+    const bracketDetails: Partial<Record<string, RankTenurePersonDetail[]>> = {}
 
-    return { rank, brackets, total }
+    for (const record of rankRecords) {
+      const bracketId =
+        getRankTenureBracketFromPromotionDate(record.lastPromotionDate) ??
+        (!record.lastPromotionDate.trim() ? RANK_TENURE_LESS_THAN_1_ID : null)
+      if (!bracketId) continue
+
+      brackets[bracketId] += 1
+
+      if (isRankTenureDrilldownBracket(bracketId)) {
+        const person = buildRankTenurePersonDetail(record)
+        if (!person) continue
+
+        const list = bracketDetails[bracketId] ?? []
+        list.push(person)
+        bracketDetails[bracketId] = list
+      }
+    }
+
+    for (const bracketId of Object.keys(bracketDetails)) {
+      bracketDetails[bracketId]?.sort((a, b) => {
+        if (b.yearsInRank !== a.yearsInRank) return b.yearsInRank - a.yearsInRank
+        return a.name.localeCompare(b.name, "en", { sensitivity: "base" })
+      })
+    }
+
+    return {
+      rank,
+      brackets,
+      bracketDetails,
+      total: rankRecords.length,
+    }
   })
 }
 

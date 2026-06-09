@@ -95,9 +95,20 @@ export type OfficeAgeDistributionRow = {
   total: number
 }
 
+export type RankTenurePersonDetail = {
+  id: string
+  name: string
+  rank: string
+  lastPromotionDate: string
+  yearsInRank: number
+  office: string
+  unit: string
+}
+
 export type RankTenureDistributionRow = {
   rank: string
   brackets: Record<string, number>
+  bracketDetails: Partial<Record<string, RankTenurePersonDetail[]>>
   total: number
 }
 
