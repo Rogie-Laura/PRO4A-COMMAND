@@ -59,16 +59,18 @@ function buildStationBreakdown(
   subUnit: string,
 ): StationBreakdownItem[] {
   const officeRecords = records.filter((r) => r.subUnit === subUnit)
-  const grouped = new Map<string, { pco: number; pnco: number }>()
+  const grouped = new Map<string, { pco: number; pnco: number; nup: number }>()
 
   for (const record of officeRecords) {
     const station = record.station.trim() || "Unassigned"
-    const entry = grouped.get(station) ?? { pco: 0, pnco: 0 }
+    const entry = grouped.get(station) ?? { pco: 0, pnco: 0, nup: 0 }
 
     if (isPco(record.rank)) {
       entry.pco += 1
     } else if (isPnco(record.rank)) {
       entry.pnco += 1
+    } else if (isNup(record.rank)) {
+      entry.nup += 1
     }
 
     grouped.set(station, entry)
@@ -80,9 +82,10 @@ function buildStationBreakdown(
         station,
         pco: counts.pco,
         pnco: counts.pnco,
-        total: counts.pco + counts.pnco,
+        nup: counts.nup,
+        uniformed: counts.pco + counts.pnco,
       }))
-      .filter((item) => item.total > 0),
+      .filter((item) => item.uniformed + item.nup > 0),
   )
 }
 

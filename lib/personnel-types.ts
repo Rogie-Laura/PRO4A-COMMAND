@@ -48,9 +48,10 @@ export type LeadershipRow = {
 
 export type StationBreakdownItem = {
   station: string
-  total: number
+  uniformed: number
   pco: number
   pnco: number
+  nup: number
 }
 
 export type OfficeBreakdownItem = {

@@ -1,15 +1,12 @@
 "use client"
 
 import { useMemo } from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts"
 
 import { OfficeLogo } from "@/components/dashboard/office-logo"
 import {
   ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
   ChartTooltip,
-  ChartTooltipContent,
 } from "@/components/ui/chart"
 import {
   Sheet,
@@ -18,7 +15,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import type { OfficeBreakdownItem } from "@/lib/personnel-types"
+import type { OfficeBreakdownItem, StationBreakdownItem } from "@/lib/personnel-types"
 
 type OfficeStationSheetProps = {
   office: OfficeBreakdownItem | null
@@ -27,25 +24,63 @@ type OfficeStationSheetProps = {
 }
 
 const chartConfig = {
-  pco: { label: "PCO", color: "var(--chart-1)" },
-  pnco: { label: "PNCO", color: "var(--chart-2)" },
+  uniformed: { label: "Uniformed Personnel", color: "var(--chart-1)" },
+}
+
+function StationTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: Array<{ payload: StationBreakdownItem }>
+}) {
+  if (!active || !payload?.length) return null
+
+  const item = payload[0].payload
+
+  return (
+    <div className="grid min-w-40 gap-1.5 rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
+      <p className="font-medium text-foreground">{item.station}</p>
+      <div className="grid gap-1 text-muted-foreground">
+        <div className="flex justify-between gap-4">
+          <span>PCO</span>
+          <span className="font-mono font-medium text-foreground tabular-nums">
+            {item.pco.toLocaleString()}
+          </span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span>PNCO</span>
+          <span className="font-mono font-medium text-foreground tabular-nums">
+            {item.pnco.toLocaleString()}
+          </span>
+        </div>
+        <div className="flex justify-between gap-4">
+          <span>NUP</span>
+          <span className="font-mono font-medium text-foreground tabular-nums">
+            {item.nup.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStationSheetProps) {
   const chartHeight = useMemo(() => {
-    if (!office) return 360
-    return Math.max(360, office.stations.length * 40 + 64)
+    if (!office) return 400
+    return Math.max(400, office.stations.length * 44 + 72)
   }, [office])
 
   const totals = useMemo(() => {
-    if (!office) return { pco: 0, pnco: 0, total: 0 }
+    if (!office) return { pco: 0, pnco: 0, nup: 0, uniformed: 0 }
     return office.stations.reduce(
       (acc, item) => ({
         pco: acc.pco + item.pco,
         pnco: acc.pnco + item.pnco,
-        total: acc.total + item.total,
+        nup: acc.nup + item.nup,
+        uniformed: acc.uniformed + item.uniformed,
       }),
-      { pco: 0, pnco: 0, total: 0 },
+      { pco: 0, pnco: 0, nup: 0, uniformed: 0 },
     )
   }, [office])
 
@@ -53,7 +88,7 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="h-full w-full overflow-y-auto sm:max-w-none sm:w-[min(96vw,72rem)]"
+        className="h-full w-screen max-w-none overflow-y-auto sm:w-[98vw]"
       >
         {office && (
           <>
@@ -66,16 +101,21 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
                   colorClass={office.colorClass}
                 />
                 <div className="min-w-0">
-                  <SheetTitle>{office.label}</SheetTitle>
+                  <SheetTitle className="text-lg">{office.label}</SheetTitle>
                   <SheetDescription>
-                    {office.stations.length} sub-units · {totals.total.toLocaleString()} uniformed
-                    (PCO {totals.pco.toLocaleString()} · PNCO {totals.pnco.toLocaleString()})
+                    {office.stations.length} sub-units · {totals.uniformed.toLocaleString()} uniformed
+                    · {totals.nup.toLocaleString()} NUP
                   </SheetDescription>
                 </div>
               </div>
             </SheetHeader>
 
-            <div className="px-4 pb-6">
+            <div className="px-4 pb-8">
+              <p className="mt-4 text-sm text-muted-foreground">
+                Uniformed personnel per sub-unit. Hover or focus a bar to see PCO, PNCO, and NUP
+                breakdown.
+              </p>
+
               {office.stations.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
                   Walang station data para sa office na ito.
@@ -89,7 +129,7 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
                   <BarChart
                     data={office.stations}
                     layout="vertical"
-                    margin={{ top: 8, right: 24, left: 8, bottom: 8 }}
+                    margin={{ top: 8, right: 56, left: 8, bottom: 8 }}
                   >
                     <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/50" />
                     <XAxis type="number" tickLine={false} axisLine={false} tickMargin={8} fontSize={13} />
@@ -100,12 +140,24 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
                       axisLine={false}
                       tickMargin={8}
                       fontSize={12}
-                      width={180}
+                      width={200}
                     />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Bar dataKey="pco" fill="var(--color-pco)" radius={[0, 4, 4, 0]} barSize={18} />
-                    <Bar dataKey="pnco" fill="var(--color-pnco)" radius={[0, 4, 4, 0]} barSize={18} />
+                    <ChartTooltip content={<StationTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
+                    <Bar
+                      dataKey="uniformed"
+                      fill="var(--color-uniformed)"
+                      radius={[0, 4, 4, 0]}
+                      barSize={22}
+                    >
+                      <LabelList
+                        dataKey="uniformed"
+                        position="right"
+                        className="fill-foreground text-xs font-semibold tabular-nums"
+                        formatter={(value) =>
+                          typeof value === "number" ? value.toLocaleString() : String(value)
+                        }
+                      />
+                    </Bar>
                   </BarChart>
                 </ChartContainer>
               )}
