@@ -2,7 +2,7 @@ const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
 
 export function getSheetCsvUrl(sheetId?: string) {
   const id = sheetId ?? process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
-  const columns = "A,B,C,D,F,I,N,R,T,V,Y"
+  const columns = "A,B,C,D,F,G,I,N,R,T,V,Y"
   const query = encodeURIComponent(`SELECT ${columns.replace(/,/g, ", ")}`)
   return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&headers=1&tq=${query}`
 }

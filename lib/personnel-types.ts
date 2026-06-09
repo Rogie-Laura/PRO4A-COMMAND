@@ -4,6 +4,7 @@ export type PersonnelRecord = {
   firstName: string
   middleName: string
   badgeNumber: string
+  birthDate: string
   designation: string
   pStatus: string
   gender: string
@@ -86,12 +87,20 @@ export type RankDistribution = {
   pnco: RankChartPoint[]
 }
 
+export type OfficeAgeDistributionRow = {
+  label: string
+  subUnit: string
+  brackets: Record<string, number>
+  total: number
+}
+
 export type PersonnelAnalytics = {
   lastUpdated: string
   kpis: KpiMetric[]
   workforce: WorkforceSummary
   officeBreakdown: OfficeBreakdownItem[]
   rankDistribution: RankDistribution
+  ageDistributionByOffice: OfficeAgeDistributionRow[]
   genderStats: CountItem[]
   statusStats: CountItem[]
   unitRows: UnitRow[]

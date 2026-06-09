@@ -1,3 +1,4 @@
+import { AgeDistributionTable } from "@/components/dashboard/age-distribution-table"
 import { BreakdownCard } from "@/components/dashboard/breakdown-card"
 import { LeadershipSection } from "@/components/dashboard/leadership-section"
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
@@ -23,6 +24,8 @@ export default async function DashboardPage() {
         )}
 
         <RankDistributionSection distribution={data.rankDistribution} />
+
+        <AgeDistributionTable rows={data.ageDistributionByOffice} />
 
         <LeadershipSection leadership={data.leadership} />
 

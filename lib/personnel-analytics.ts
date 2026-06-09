@@ -1,3 +1,4 @@
+import { AGE_BRACKETS, getAgeBracketFromBirthDate } from "@/lib/age-config"
 import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
 import {
   type LeadershipSlot,
@@ -14,6 +15,7 @@ import type {
   KpiMetric,
   LeadershipGroups,
   LeadershipRow,
+  OfficeAgeDistributionRow,
   OfficeBreakdownItem,
   PersonnelAnalytics,
   PersonnelRecord,
@@ -31,6 +33,7 @@ function mapRow(row: Record<string, string>): PersonnelRecord {
     firstName: row["First Name"] ?? "",
     middleName: row["Middle Name"] ?? "",
     badgeNumber: row["Badge Number"] ?? "",
+    birthDate: row.BirthDate ?? "",
     designation: row.Designation ?? "",
     pStatus: row.PStatus ?? "",
     gender: row.Gender ?? "",
@@ -158,6 +161,32 @@ function buildRankDistribution(records: PersonnelRecord[]): RankDistribution {
   }
 }
 
+function createEmptyAgeBrackets() {
+  return Object.fromEntries(AGE_BRACKETS.map((bracket) => [bracket.id, 0]))
+}
+
+function buildAgeDistributionByOffice(records: PersonnelRecord[]): OfficeAgeDistributionRow[] {
+  return OFFICES.map((office) => {
+    const brackets = createEmptyAgeBrackets()
+    const officeRecords = records.filter((record) => record.subUnit === office.subUnit)
+
+    for (const record of officeRecords) {
+      const bracketId = getAgeBracketFromBirthDate(record.birthDate)
+      if (!bracketId) continue
+      brackets[bracketId] += 1
+    }
+
+    const total = AGE_BRACKETS.reduce((sum, bracket) => sum + brackets[bracket.id], 0)
+
+    return {
+      subUnit: office.subUnit,
+      label: office.label,
+      brackets,
+      total,
+    }
+  })
+}
+
 function buildUnitRows(records: PersonnelRecord[]): UnitRow[] {
   const total = records.length
   const grouped = new Map<string, PersonnelRecord[]>()
@@ -257,6 +286,7 @@ export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
   const statusStats = toCountItems(countBy(records, (r) => r.pStatus), total).slice(0, 6)
   const genderStats = toCountItems(countBy(records, (r) => r.gender), total)
   const rankDistribution = buildRankDistribution(records)
+  const ageDistributionByOffice = buildAgeDistributionByOffice(records)
 
   return {
     lastUpdated: new Date().toISOString(),
@@ -264,6 +294,7 @@ export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
     workforce: buildWorkforceSummary(records),
     officeBreakdown: buildOfficeBreakdown(records),
     rankDistribution,
+    ageDistributionByOffice,
     genderStats,
     statusStats,
     unitRows: buildUnitRows(records),
