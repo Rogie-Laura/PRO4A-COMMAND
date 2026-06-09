@@ -1,3 +1,6 @@
+import Image from "next/image"
+
+import { OfficeLogo } from "@/components/dashboard/office-logo"
 import {
   Card,
   CardContent,
@@ -6,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { KpiMetric, OfficeBreakdownItem } from "@/lib/personnel-types"
-import { cn } from "@/lib/utils"
 
 type TotalPersonnelSectionProps = {
   total: KpiMetric
@@ -24,9 +26,18 @@ export function TotalPersonnelSection({
       <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
         <Card className="gap-0 overflow-hidden border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-background">
           <CardHeader className="pb-2">
-            <CardDescription className="text-primary-foreground/80">
-              {total.label}
-            </CardDescription>
+            <div className="mb-3 flex items-center gap-3">
+              <Image
+                src="/logos/PRO4A.png"
+                alt="PRO4A"
+                width={48}
+                height={48}
+                className="size-12 rounded-lg bg-white object-contain p-1"
+              />
+              <CardDescription className="text-primary-foreground/80">
+                {total.label}
+              </CardDescription>
+            </div>
             <CardTitle className="text-4xl font-bold tabular-nums text-primary sm:text-5xl">
               {total.value}
             </CardTitle>
@@ -49,9 +60,11 @@ export function TotalPersonnelSection({
                   className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2.5"
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <span
-                      className={cn("size-2.5 shrink-0 rounded-full", office.colorClass)}
-                      aria-hidden
+                    <OfficeLogo
+                      src={office.logo}
+                      alt={office.label}
+                      fallback={office.shortLabel}
+                      colorClass={office.colorClass}
                     />
                     <span className="truncate text-sm font-medium">{office.label}</span>
                   </div>

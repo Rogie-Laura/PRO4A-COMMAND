@@ -50,6 +50,8 @@ export type LeadershipRow = {
 export type OfficeBreakdownItem = {
   subUnit: string
   label: string
+  shortLabel: string
+  logo: string
   count: number
   colorClass: string
 }

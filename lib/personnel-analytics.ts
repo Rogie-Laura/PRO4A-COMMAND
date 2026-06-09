@@ -1,4 +1,5 @@
 import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
+import { OFFICES } from "@/lib/office-config"
 import type {
   CountItem,
   KpiMetric,
@@ -9,20 +10,6 @@ import type {
   RankChartPoint,
   UnitRow,
 } from "@/lib/personnel-types"
-
-const OFFICE_CONFIG: {
-  subUnit: string
-  label: string
-  colorClass: string
-}[] = [
-  { subUnit: "REGIONAL HEADQUARTERS", label: "RHQ", colorClass: "bg-blue-500" },
-  { subUnit: "CAVITE POLICE PROVINCIAL OFFICE", label: "Cavite PPO", colorClass: "bg-emerald-500" },
-  { subUnit: "LAGUNA POLICE PROVINCIAL OFFICE", label: "Laguna PPO", colorClass: "bg-violet-500" },
-  { subUnit: "BATANGAS POLICE PROVINCIAL OFFICE", label: "Batangas PPO", colorClass: "bg-amber-500" },
-  { subUnit: "RIZAL POLICE PROVINCIAL OFFICE", label: "Rizal PPO", colorClass: "bg-rose-500" },
-  { subUnit: "QUEZON POLICE PROVINCIAL OFFICE", label: "Quezon PPO", colorClass: "bg-cyan-500" },
-  { subUnit: "REGIONAL MOBILE FORCE BATTALION", label: "RMFB4A", colorClass: "bg-orange-500" },
-]
 
 const LEADERSHIP_RANKS = new Set(["PBGEN", "PCOL", "PLTCOL"])
 
@@ -67,9 +54,11 @@ function toCountItems(counts: Map<string, number>, total: number): CountItem[] {
 function buildOfficeBreakdown(records: PersonnelRecord[]): OfficeBreakdownItem[] {
   const counts = countBy(records, (r) => r.subUnit)
 
-  return OFFICE_CONFIG.map((office) => ({
+  return OFFICES.map((office) => ({
     subUnit: office.subUnit,
     label: office.label,
+    shortLabel: office.shortLabel,
+    logo: office.logo,
     count: counts.get(office.subUnit) ?? 0,
     colorClass: office.colorClass,
   }))
