@@ -127,3 +127,12 @@
     @apply font-sans;
     }
 }
+
+/* Light mode: tint grayscale rank insignia to gold */
+.rank-insignia-image {
+  filter: sepia(1) saturate(3.2) hue-rotate(8deg) brightness(1.02) contrast(1.08);
+}
+
+.dark .rank-insignia-image {
+  filter: none;
+}

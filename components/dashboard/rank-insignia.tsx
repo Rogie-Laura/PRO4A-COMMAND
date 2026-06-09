@@ -44,7 +44,7 @@ export function RankInsignia({ rank, className }: RankInsigniaProps) {
         alt={`${rank} insignia`}
         width={INSIGNIA_SIZE}
         height={INSIGNIA_SIZE}
-        className="object-contain"
+        className="rank-insignia-image object-contain"
         style={{
           width: INSIGNIA_SIZE,
           height: INSIGNIA_SIZE,
