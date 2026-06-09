@@ -13,6 +13,8 @@ export default async function MobilityPage() {
       <TotalVehiclesSection
         total={data.totalVehicles}
         offices={data.officeBreakdown}
+        ownership={data.ownershipDistribution}
+        condition={data.conditionDistribution}
         fleet={data.fleet}
         dataReady={data.dataReady}
       />

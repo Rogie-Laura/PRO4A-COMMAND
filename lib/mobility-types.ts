@@ -2,8 +2,15 @@ export type VehicleRecord = {
   subUnit: string
   station: string
   vehicleType: string
+  ownership: string
+  condition: string
   status: string
   plateNumber: string
+}
+
+export type VehicleChartPoint = {
+  name: string
+  count: number
 }
 
 export type VehicleStationBreakdownItem = {
@@ -45,5 +52,7 @@ export type MobilityAnalytics = {
     detail: string
   }
   officeBreakdown: VehicleOfficeBreakdownItem[]
+  ownershipDistribution: VehicleChartPoint[]
+  conditionDistribution: VehicleChartPoint[]
   fleet: VehicleFleetSummary
 }

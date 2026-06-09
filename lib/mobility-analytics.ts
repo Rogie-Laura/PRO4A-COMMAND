@@ -1,8 +1,15 @@
 import { fetchMobilitySheetCsv, parseCsv } from "@/lib/google-sheets"
+import {
+  VEHICLE_CONDITION_CATEGORIES,
+  VEHICLE_OWNERSHIP_CATEGORIES,
+  classifyVehicleCondition,
+  classifyVehicleOwnership,
+} from "@/lib/mobility-config"
 import { OFFICES } from "@/lib/office-config"
 import type {
   MobilityAnalytics,
   VehicleCountItem,
+  VehicleChartPoint,
   VehicleFleetSummary,
   VehicleOfficeBreakdownItem,
   VehicleRecord,
@@ -51,6 +58,20 @@ function mapVehicleRow(row: Record<string, string>): VehicleRecord | null {
   const plateNumber = pickField(row, ["Plate Number", "Plate No", "Plate", "MV File No", "MV File Number"])
   const station = pickField(row, ["Station"])
   const vehicleType = pickField(row, ["Vehicle Type", "Type", "Category", "Vehicle Category", "Unit Type"])
+  const ownership = pickField(row, [
+    "Ownership",
+    "Vehicle Ownership",
+    "Source",
+    "Acquisition",
+    "Fund Source",
+    "Funding Source",
+  ])
+  const condition = pickField(row, [
+    "Condition",
+    "Serviceability",
+    "Operational Status",
+    "Vehicle Condition",
+  ])
   const status = pickField(row, ["Status", "Vehicle Status", "Condition", "Serviceability"])
 
   if (!subUnit && !plateNumber) return null
@@ -59,6 +80,8 @@ function mapVehicleRow(row: Record<string, string>): VehicleRecord | null {
     subUnit,
     station,
     vehicleType: vehicleType || "Unspecified",
+    ownership,
+    condition: condition || status,
     status: status || "Unknown",
     plateNumber,
   }
@@ -147,6 +170,54 @@ function buildOfficeBreakdown(records: VehicleRecord[]): VehicleOfficeBreakdownI
   }))
 }
 
+function buildCategoryDistribution<T extends string>(
+  records: VehicleRecord[],
+  categories: readonly { id: T; label: string }[],
+  classify: (value: string) => T | null,
+  getValue: (record: VehicleRecord) => string,
+): VehicleChartPoint[] {
+  const counts = Object.fromEntries(categories.map((category) => [category.id, 0])) as Record<
+    T,
+    number
+  >
+
+  for (const record of records) {
+    const categoryId = classify(getValue(record))
+    if (categoryId) {
+      counts[categoryId] += 1
+    }
+  }
+
+  return categories.map((category) => ({
+    name: category.label,
+    count: counts[category.id],
+  }))
+}
+
+function buildOwnershipDistribution(records: VehicleRecord[]): VehicleChartPoint[] {
+  return buildCategoryDistribution(
+    records,
+    VEHICLE_OWNERSHIP_CATEGORIES,
+    classifyVehicleOwnership,
+    (record) => record.ownership,
+  )
+}
+
+function buildConditionDistribution(records: VehicleRecord[]): VehicleChartPoint[] {
+  return buildCategoryDistribution(
+    records,
+    VEHICLE_CONDITION_CATEGORIES,
+    classifyVehicleCondition,
+    (record) => record.condition || record.status,
+  )
+}
+
+function emptyCategoryDistribution(
+  categories: readonly { label: string }[],
+): VehicleChartPoint[] {
+  return categories.map((category) => ({ name: category.label, count: 0 }))
+}
+
 function buildFleetSummary(records: VehicleRecord[]): VehicleFleetSummary {
   const total = records.length
   const operational = records.filter((record) => isOperationalStatus(record.status)).length
@@ -177,6 +248,8 @@ function emptyAnalytics(): MobilityAnalytics {
       colorClass: office.colorClass,
       stations: [],
     })),
+    ownershipDistribution: emptyCategoryDistribution(VEHICLE_OWNERSHIP_CATEGORIES),
+    conditionDistribution: emptyCategoryDistribution(VEHICLE_CONDITION_CATEGORIES),
     fleet: {
       operational: 0,
       nonOperational: 0,
@@ -214,6 +287,8 @@ export async function getMobilityAnalytics(): Promise<MobilityAnalytics> {
         detail: "PRO CALABARZON fleet registry",
       },
       officeBreakdown: buildOfficeBreakdown(records),
+      ownershipDistribution: buildOwnershipDistribution(records),
+      conditionDistribution: buildConditionDistribution(records),
       fleet,
     }
   } catch {

@@ -1,4 +1,5 @@
 import { MobilityOfficeCards } from "@/components/dashboard/mobility-office-cards"
+import { VehicleDistributionSection } from "@/components/dashboard/vehicle-distribution-section"
 import { VehicleFleetCards } from "@/components/dashboard/vehicle-fleet-cards"
 import {
   Card,
@@ -12,6 +13,8 @@ import type { MobilityAnalytics } from "@/lib/mobility-types"
 type TotalVehiclesSectionProps = {
   total: MobilityAnalytics["totalVehicles"]
   offices: MobilityAnalytics["officeBreakdown"]
+  ownership: MobilityAnalytics["ownershipDistribution"]
+  condition: MobilityAnalytics["conditionDistribution"]
   fleet: MobilityAnalytics["fleet"]
   dataReady: boolean
 }
@@ -19,6 +22,8 @@ type TotalVehiclesSectionProps = {
 export function TotalVehiclesSection({
   total,
   offices,
+  ownership,
+  condition,
   fleet,
   dataReady,
 }: TotalVehiclesSectionProps) {
@@ -28,7 +33,8 @@ export function TotalVehiclesSection({
         <Card className="border-dashed bg-muted/20">
           <CardContent className="py-4 text-sm text-muted-foreground">
             Walang vehicle data sa Mobility sheet pa. Kapag ready na ang Google Sheet tab
-            (Mobility), auto-count na ang RHQ, Cavite PPO, at iba pang offices.
+            (Mobility), auto-count na ang offices, ownership (Organic/LGU/Donated), at
+            condition (Serviceable/Unserviceable/BER).
           </CardContent>
         </Card>
       )}
@@ -54,6 +60,8 @@ export function TotalVehiclesSection({
           </CardContent>
         </Card>
       </div>
+
+      <VehicleDistributionSection ownership={ownership} condition={condition} />
 
       <VehicleFleetCards fleet={fleet} />
     </div>
