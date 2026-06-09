@@ -19,7 +19,7 @@ export function OfficeLogo({ src, alt, fallback, colorClass }: OfficeLogoProps) 
     return (
       <span
         className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white",
+          "flex size-9 shrink-0 items-center justify-center text-[10px] font-bold text-white",
           colorClass,
         )}
       >
@@ -34,7 +34,7 @@ export function OfficeLogo({ src, alt, fallback, colorClass }: OfficeLogoProps) 
       alt={alt}
       width={36}
       height={36}
-      className="size-9 shrink-0 rounded-lg object-contain"
+      className="size-9 shrink-0 object-contain"
       onError={() => setHasError(true)}
     />
   )
