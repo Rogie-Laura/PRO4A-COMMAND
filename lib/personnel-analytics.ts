@@ -1,5 +1,10 @@
 import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
-import { KEY_LEADERSHIP_SLOTS } from "@/lib/leadership-config"
+import {
+  type LeadershipSlot,
+  PROVINCIAL_DIRECTOR_SLOTS,
+  R_STAFF_SLOTS,
+  REGIONAL_COMMAND_GROUP_SLOTS,
+} from "@/lib/leadership-config"
 import { OFFICES } from "@/lib/office-config"
 import { isNup, isPco, isPnco, PCO_RANK_ORDER, PNCO_RANK_ORDER } from "@/lib/rank-config"
 import { formatStationLabel } from "@/lib/station-labels"
@@ -7,6 +12,7 @@ import { sortStationBreakdown } from "@/lib/station-sort"
 import type {
   CountItem,
   KpiMetric,
+  LeadershipGroups,
   LeadershipRow,
   OfficeBreakdownItem,
   PersonnelAnalytics,
@@ -203,22 +209,43 @@ function formatLeadershipName(record: PersonnelRecord) {
   return `${record.lastName}, ${record.firstName}${middle}`
 }
 
-function buildLeadership(records: PersonnelRecord[]): LeadershipRow[] {
-  const rhqRecords = records.filter((r) => r.subUnit === "REGIONAL HEADQUARTERS")
+function buildLeadershipSlotRows(
+  records: PersonnelRecord[],
+  slots: LeadershipSlot[],
+): LeadershipRow[] {
+  return slots.map((slot) => {
+    const pool = slot.subUnit
+      ? records.filter((record) => record.subUnit === slot.subUnit)
+      : records.filter((record) => record.subUnit === "REGIONAL HEADQUARTERS")
 
-  return KEY_LEADERSHIP_SLOTS.flatMap((slot) => {
-    const person = rhqRecords.find((r) => slot.match(r.designation))
-    if (!person) return []
+    const person = pool.find((record) => slot.match(record.designation))
 
-    return [
-      {
-        id: person.badgeNumber || slot.id,
-        rank: person.rank,
-        name: formatLeadershipName(person),
-        designation: person.designation,
-      },
-    ]
+    if (!person) {
+      return {
+        id: slot.id,
+        rank: "",
+        name: "Vacant",
+        designation: slot.label,
+        vacant: true,
+      }
+    }
+
+    return {
+      id: person.badgeNumber || slot.id,
+      rank: person.rank,
+      name: formatLeadershipName(person),
+      designation: slot.label,
+      vacant: false,
+    }
   })
+}
+
+function buildLeadership(records: PersonnelRecord[]): LeadershipGroups {
+  return {
+    regionalCommandGroup: buildLeadershipSlotRows(records, REGIONAL_COMMAND_GROUP_SLOTS),
+    rStaff: buildLeadershipSlotRows(records, R_STAFF_SLOTS),
+    provincialDirectors: buildLeadershipSlotRows(records, PROVINCIAL_DIRECTOR_SLOTS),
+  }
 }
 
 export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {

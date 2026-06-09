@@ -1,5 +1,5 @@
 import { BreakdownCard } from "@/components/dashboard/breakdown-card"
-import { LeadershipList } from "@/components/dashboard/leadership-list"
+import { LeadershipSection } from "@/components/dashboard/leadership-section"
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
 import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
 import { UnitTable } from "@/components/dashboard/unit-table"
@@ -24,7 +24,7 @@ export default async function DashboardPage() {
 
         <RankDistributionSection distribution={data.rankDistribution} />
 
-        <LeadershipList rows={data.leadership} />
+        <LeadershipSection leadership={data.leadership} />
 
         <UnitTable rows={data.unitRows} />
 

@@ -44,6 +44,13 @@ export type LeadershipRow = {
   rank: string
   name: string
   designation: string
+  vacant?: boolean
+}
+
+export type LeadershipGroups = {
+  regionalCommandGroup: LeadershipRow[]
+  rStaff: LeadershipRow[]
+  provincialDirectors: LeadershipRow[]
 }
 
 export type StationBreakdownItem = {
@@ -88,5 +95,5 @@ export type PersonnelAnalytics = {
   genderStats: CountItem[]
   statusStats: CountItem[]
   unitRows: UnitRow[]
-  leadership: LeadershipRow[]
+  leadership: LeadershipGroups
 }

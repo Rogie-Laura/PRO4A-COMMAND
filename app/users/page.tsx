@@ -1,4 +1,4 @@
-import { LeadershipList } from "@/components/dashboard/leadership-list"
+import { LeadershipSection } from "@/components/dashboard/leadership-section"
 import { UnitTable } from "@/components/dashboard/unit-table"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
@@ -12,7 +12,7 @@ export default async function UsersPage() {
       description="Leadership roster and unit headcount from Google Sheets"
     >
       <div className="space-y-6">
-        <LeadershipList rows={data.leadership} />
+        <LeadershipSection leadership={data.leadership} />
         <UnitTable rows={data.unitRows} />
       </div>
     </DashboardLayout>
