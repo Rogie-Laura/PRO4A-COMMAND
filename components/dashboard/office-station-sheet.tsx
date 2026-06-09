@@ -27,6 +27,36 @@ const chartConfig = {
   uniformed: { label: "Uniformed Personnel", color: "var(--chart-1)" },
 }
 
+function estimateLabelWidth(stations: StationBreakdownItem[]) {
+  const longest = stations.reduce(
+    (max, station) => Math.max(max, station.station.length),
+    0,
+  )
+
+  return Math.min(400, Math.max(220, longest * 7.5 + 32))
+}
+
+function StationAxisTick(props: {
+  x?: string | number
+  y?: string | number
+  payload?: { value: string }
+}) {
+  const y = typeof props.y === "number" ? props.y : Number(props.y)
+  if (!Number.isFinite(y) || !props.payload) return null
+
+  return (
+    <text
+      x={12}
+      y={y}
+      dy={4}
+      textAnchor="start"
+      className="fill-muted-foreground text-[12px]"
+    >
+      {props.payload.value}
+    </text>
+  )
+}
+
 function StationTooltip({
   active,
   payload,
@@ -69,6 +99,11 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
   const chartHeight = useMemo(() => {
     if (!office) return 400
     return Math.max(400, office.stations.length * 44 + 72)
+  }, [office])
+
+  const labelWidth = useMemo(() => {
+    if (!office) return 220
+    return estimateLabelWidth(office.stations)
   }, [office])
 
   const totals = useMemo(() => {
@@ -118,13 +153,13 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
               ) : (
                 <ChartContainer
                   config={chartConfig}
-                  className="mt-2 aspect-auto w-full [&_.recharts-cartesian-axis-tick_text]:text-left"
+                  className="mt-2 aspect-auto w-full"
                   style={{ height: chartHeight }}
                 >
                   <BarChart
                     data={office.stations}
                     layout="vertical"
-                    margin={{ top: 8, right: 56, left: 0, bottom: 8 }}
+                    margin={{ top: 8, right: 56, left: 8, bottom: 8 }}
                   >
                     <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/50" />
                     <XAxis type="number" tickLine={false} axisLine={false} tickMargin={8} fontSize={13} />
@@ -133,9 +168,9 @@ export function OfficeStationSheet({ office, open, onOpenChange }: OfficeStation
                       dataKey="station"
                       tickLine={false}
                       axisLine={false}
-                      tickMargin={0}
-                      width={220}
-                      tick={{ textAnchor: "start", fontSize: 12, dx: 0 }}
+                      width={labelWidth}
+                      interval={0}
+                      tick={StationAxisTick}
                     />
                     <ChartTooltip content={<StationTooltip />} cursor={{ fill: "hsl(var(--muted) / 0.4)" }} />
                     <Bar
