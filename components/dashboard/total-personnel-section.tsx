@@ -1,5 +1,3 @@
-import Image from "next/image"
-
 import { OfficeLogo } from "@/components/dashboard/office-logo"
 import {
   Card,
@@ -26,18 +24,9 @@ export function TotalPersonnelSection({
       <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
         <Card className="gap-0 overflow-hidden border-primary/30 bg-gradient-to-br from-primary/20 via-primary/10 to-background">
           <CardHeader className="pb-2">
-            <div className="mb-3 flex items-center gap-3">
-              <Image
-                src="/logos/PRO4A.png"
-                alt="PRO4A"
-                width={48}
-                height={48}
-                className="size-12 rounded-lg bg-white object-contain p-1"
-              />
-              <CardDescription className="text-primary-foreground/80">
-                {total.label}
-              </CardDescription>
-            </div>
+            <CardDescription className="text-primary-foreground/80">
+              {total.label}
+            </CardDescription>
             <CardTitle className="text-4xl font-bold tabular-nums text-primary sm:text-5xl">
               {total.value}
             </CardTitle>

@@ -34,7 +34,7 @@ export function OfficeLogo({ src, alt, fallback, colorClass }: OfficeLogoProps) 
       alt={alt}
       width={36}
       height={36}
-      className="size-9 shrink-0 rounded-lg bg-white object-contain p-0.5"
+      className="size-9 shrink-0 rounded-lg object-contain"
       onError={() => setHasError(true)}
     />
   )

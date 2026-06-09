@@ -43,8 +43,6 @@ export type LeadershipRow = {
   rank: string
   name: string
   designation: string
-  subUnit: string
-  status: string
 }
 
 export type OfficeBreakdownItem = {

@@ -1,4 +1,5 @@
 import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
+import { KEY_LEADERSHIP_SLOTS } from "@/lib/leadership-config"
 import { OFFICES } from "@/lib/office-config"
 import type {
   CountItem,
@@ -10,8 +11,6 @@ import type {
   RankChartPoint,
   UnitRow,
 } from "@/lib/personnel-types"
-
-const LEADERSHIP_RANKS = new Set(["PBGEN", "PCOL", "PLTCOL"])
 
 function mapRow(row: Record<string, string>): PersonnelRecord {
   return {
@@ -145,32 +144,27 @@ function buildUnitRows(records: PersonnelRecord[]): UnitRow[] {
     .sort((a, b) => b.count - a.count)
 }
 
-function buildLeadership(records: PersonnelRecord[]): LeadershipRow[] {
-  const rankWeight: Record<string, number> = {
-    PBGEN: 1,
-    PCOL: 2,
-    PLTCOL: 3,
-    PMAJ: 4,
-    PCPT: 5,
-    PLT: 6,
-  }
+function formatLeadershipName(record: PersonnelRecord) {
+  const middle = record.middleName ? ` ${record.middleName.charAt(0)}.` : ""
+  return `${record.lastName}, ${record.firstName}${middle}`
+}
 
-  return records
-    .filter((r) => LEADERSHIP_RANKS.has(r.rank))
-    .sort((a, b) => {
-      const rankDiff = (rankWeight[a.rank] ?? 99) - (rankWeight[b.rank] ?? 99)
-      if (rankDiff !== 0) return rankDiff
-      return a.lastName.localeCompare(b.lastName)
-    })
-    .slice(0, 25)
-    .map((r, index) => ({
-      id: `${r.badgeNumber || index}`,
-      rank: r.rank,
-      name: [r.firstName, r.middleName, r.lastName].filter(Boolean).join(" ").replace(/\s+/g, " "),
-      designation: r.designation,
-      subUnit: r.subUnit || r.unit,
-      status: r.pStatus,
-    }))
+function buildLeadership(records: PersonnelRecord[]): LeadershipRow[] {
+  const rhqRecords = records.filter((r) => r.subUnit === "REGIONAL HEADQUARTERS")
+
+  return KEY_LEADERSHIP_SLOTS.flatMap((slot) => {
+    const person = rhqRecords.find((r) => slot.match(r.designation))
+    if (!person) return []
+
+    return [
+      {
+        id: person.badgeNumber || slot.id,
+        rank: person.rank,
+        name: formatLeadershipName(person),
+        designation: person.designation,
+      },
+    ]
+  })
 }
 
 export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {

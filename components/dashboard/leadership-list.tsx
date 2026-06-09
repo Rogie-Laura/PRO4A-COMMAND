@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge"
+import { RankInsignia } from "@/components/dashboard/rank-insignia"
 import {
   Card,
   CardContent,
@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import type { LeadershipRow } from "@/lib/personnel-types"
 
 type LeadershipListProps = {
@@ -18,32 +17,24 @@ export function LeadershipList({ rows }: LeadershipListProps) {
     <Card>
       <CardHeader>
         <CardTitle>Key Leadership</CardTitle>
-        <CardDescription>Senior officers — PCOL rank and above</CardDescription>
+        <CardDescription>Regional command staff</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[280px] sm:h-[320px]">
-          <div className="divide-y">
-            {rows.map((row) => (
-              <div
-                key={row.id}
-                className="flex items-start gap-3 px-6 py-3 transition-colors hover:bg-muted/50"
-              >
-                <Badge variant="outline" className="mt-0.5 shrink-0 font-mono text-xs">
-                  {row.rank}
-                </Badge>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{row.name}</p>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {row.designation}
-                  </p>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">
-                    {row.subUnit} · {row.status}
-                  </p>
-                </div>
+        <div className="divide-y">
+          {rows.map((row) => (
+            <div
+              key={row.id}
+              className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-muted/50"
+            >
+              <RankInsignia rank={row.rank} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{row.name}</p>
+                <p className="mt-0.5 text-xs font-medium text-primary">{row.rank}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{row.designation}</p>
               </div>
-            ))}
-          </div>
-        </ScrollArea>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   )
