@@ -46,6 +46,13 @@ export type LeadershipRow = {
   designation: string
 }
 
+export type StationBreakdownItem = {
+  station: string
+  total: number
+  pco: number
+  pnco: number
+}
+
 export type OfficeBreakdownItem = {
   subUnit: string
   label: string
@@ -53,6 +60,7 @@ export type OfficeBreakdownItem = {
   logo: string
   count: number
   colorClass: string
+  stations: StationBreakdownItem[]
 }
 
 export type WorkforceSummary = {

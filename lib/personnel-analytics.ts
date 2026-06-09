@@ -10,6 +10,7 @@ import type {
   PersonnelAnalytics,
   PersonnelRecord,
   RankChartPoint,
+  StationBreakdownItem,
   UnitRow,
   WorkforceSummary,
 } from "@/lib/personnel-types"
@@ -52,6 +53,37 @@ function toCountItems(counts: Map<string, number>, total: number): CountItem[] {
     .sort((a, b) => b.count - a.count)
 }
 
+function buildStationBreakdown(
+  records: PersonnelRecord[],
+  subUnit: string,
+): StationBreakdownItem[] {
+  const officeRecords = records.filter((r) => r.subUnit === subUnit)
+  const grouped = new Map<string, { pco: number; pnco: number }>()
+
+  for (const record of officeRecords) {
+    const station = record.station.trim() || "Unassigned"
+    const entry = grouped.get(station) ?? { pco: 0, pnco: 0 }
+
+    if (isPco(record.rank)) {
+      entry.pco += 1
+    } else if (isPnco(record.rank)) {
+      entry.pnco += 1
+    }
+
+    grouped.set(station, entry)
+  }
+
+  return [...grouped.entries()]
+    .map(([station, counts]) => ({
+      station,
+      pco: counts.pco,
+      pnco: counts.pnco,
+      total: counts.pco + counts.pnco,
+    }))
+    .filter((item) => item.total > 0)
+    .sort((a, b) => b.total - a.total)
+}
+
 function buildOfficeBreakdown(records: PersonnelRecord[]): OfficeBreakdownItem[] {
   const counts = countBy(records, (r) => r.subUnit)
 
@@ -62,6 +94,7 @@ function buildOfficeBreakdown(records: PersonnelRecord[]): OfficeBreakdownItem[]
     logo: office.logo,
     count: counts.get(office.subUnit) ?? 0,
     colorClass: office.colorClass,
+    stations: buildStationBreakdown(records, office.subUnit),
   }))
 }
 

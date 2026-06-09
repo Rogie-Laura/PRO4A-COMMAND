@@ -1,4 +1,4 @@
-import { OfficeLogo } from "@/components/dashboard/office-logo"
+import { OfficeCards } from "@/components/dashboard/office-cards"
 import { WorkforceCards } from "@/components/dashboard/workforce-cards"
 import {
   Card,
@@ -39,27 +39,7 @@ export function TotalPersonnelSection({
 
         <Card className="gap-0 py-0">
           <CardContent className="p-4">
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {offices.map((office) => (
-                <div
-                  key={office.subUnit}
-                  className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 px-3 py-2.5"
-                >
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <OfficeLogo
-                      src={office.logo}
-                      alt={office.label}
-                      fallback={office.shortLabel}
-                      colorClass={office.colorClass}
-                    />
-                    <span className="truncate text-sm font-medium">{office.label}</span>
-                  </div>
-                  <span className="shrink-0 text-sm font-bold tabular-nums text-primary">
-                    {office.count.toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <OfficeCards offices={offices} />
           </CardContent>
         </Card>
       </div>
