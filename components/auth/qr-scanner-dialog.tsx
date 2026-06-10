@@ -22,6 +22,22 @@ type QrScannerDialogProps = {
 }
 
 type ScannerPhase = "permission" | "starting" | "scanning" | "error"
+type ScanMode = "html5" | "native"
+
+type BarcodeDetectorLike = {
+  detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>>
+}
+
+type BarcodeDetectorConstructor = new (options: {
+  formats: string[]
+}) => BarcodeDetectorLike
+
+function isAndroidChrome() {
+  if (typeof navigator === "undefined") return false
+
+  const userAgent = navigator.userAgent
+  return /Android/i.test(userAgent) && /Chrome/i.test(userAgent)
+}
 
 function getCameraErrorMessage(error: unknown) {
   if (error instanceof DOMException) {
@@ -48,20 +64,139 @@ function getCameraErrorMessage(error: unknown) {
     if (message.includes("not found") || message.includes("no camera")) {
       return "No camera was found on this device."
     }
+
+    if (message.includes("notreadable") || message.includes("could not start video")) {
+      return "Camera is busy or blocked. Close other camera apps, then try again."
+    }
   }
 
   return "Unable to open the camera. Please try again."
 }
 
+async function buildCameraStartConfigs() {
+  const configs: Array<string | MediaTrackConstraints> = []
+
+  try {
+    const cameras = await Html5Qrcode.getCameras()
+    const backPattern = /back|rear|environment|wide/i
+    const frontPattern = /front|user|selfie|face/i
+
+    const backCameras = cameras.filter((camera) => backPattern.test(camera.label))
+    const frontCameras = cameras.filter((camera) => frontPattern.test(camera.label))
+    const otherCameras = cameras.filter(
+      (camera) => !backPattern.test(camera.label) && !frontPattern.test(camera.label),
+    )
+
+    for (const camera of [...backCameras, ...otherCameras, ...frontCameras]) {
+      configs.push(camera.id)
+    }
+  } catch {
+    // Fall back to facingMode constraints below.
+  }
+
+  configs.push(
+    { facingMode: { ideal: "environment" } },
+    { facingMode: "environment" },
+    { facingMode: { ideal: "user" } },
+    { facingMode: "user" },
+  )
+
+  return configs
+}
+
+async function startNativeQrScan(
+  videoEl: HTMLVideoElement,
+  onDetected: (value: string) => void,
+) {
+  const BarcodeDetectorCtor = (
+    window as Window & { BarcodeDetector?: BarcodeDetectorConstructor }
+  ).BarcodeDetector
+
+  if (!BarcodeDetectorCtor) {
+    throw new Error("QR scanning is not supported on this browser.")
+  }
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: { ideal: "environment" },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
+    audio: false,
+  })
+
+  videoEl.srcObject = stream
+  videoEl.setAttribute("playsinline", "true")
+  videoEl.muted = true
+  await videoEl.play()
+
+  const detector = new BarcodeDetectorCtor({ formats: ["qr_code"] })
+  const canvas = document.createElement("canvas")
+  const context = canvas.getContext("2d")
+
+  if (!context) {
+    stream.getTracks().forEach((track) => track.stop())
+    throw new Error("Unable to start the camera preview.")
+  }
+
+  let stopped = false
+  let frameId = 0
+
+  const scanFrame = async () => {
+    if (stopped) return
+
+    if (videoEl.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA) {
+      canvas.width = videoEl.videoWidth
+      canvas.height = videoEl.videoHeight
+      context.drawImage(videoEl, 0, 0, canvas.width, canvas.height)
+
+      try {
+        const codes = await detector.detect(canvas)
+        const match = codes.find((code) => code.rawValue)
+
+        if (match?.rawValue) {
+          stopped = true
+          onDetected(match.rawValue)
+          return
+        }
+      } catch {
+        // Keep scanning until a QR code is found.
+      }
+    }
+
+    if (!stopped) {
+      frameId = window.requestAnimationFrame(() => {
+        void scanFrame()
+      })
+    }
+  }
+
+  frameId = window.requestAnimationFrame(() => {
+    void scanFrame()
+  })
+
+  return () => {
+    stopped = true
+    window.cancelAnimationFrame(frameId)
+    stream.getTracks().forEach((track) => track.stop())
+    videoEl.srcObject = null
+  }
+}
+
 export function QrScannerDialog({ open, onOpenChange, onDetected }: QrScannerDialogProps) {
   const scannerId = useId().replace(/:/g, "")
   const scannerRef = useRef<Html5Qrcode | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const nativeCleanupRef = useRef<(() => void) | null>(null)
+  const isStartingRef = useRef(false)
   const [phase, setPhase] = useState<ScannerPhase>("permission")
   const [error, setError] = useState<string | null>(null)
-  const [cameraRequested, setCameraRequested] = useState(false)
-  const [retryKey, setRetryKey] = useState(0)
+  const [scanMode, setScanMode] = useState<ScanMode | null>(null)
 
   const stopScanner = useCallback(async () => {
+    nativeCleanupRef.current?.()
+    nativeCleanupRef.current = null
+
     const scanner = scannerRef.current
 
     if (!scanner) return
@@ -83,102 +218,128 @@ export function QrScannerDialog({ open, onOpenChange, onDetected }: QrScannerDia
     if (!open) {
       setPhase("permission")
       setError(null)
-      setCameraRequested(false)
-      setRetryKey(0)
+      setScanMode(null)
+      isStartingRef.current = false
       void stopScanner()
     }
   }, [open, stopScanner])
 
-  useEffect(() => {
-    if (!open || !cameraRequested) {
-      return
-    }
+  const startScanner = useCallback(async () => {
+    if (isStartingRef.current) return
 
-    let cancelled = false
+    isStartingRef.current = true
+    setPhase("starting")
+    setError(null)
+    setScanMode(null)
 
-    async function startScanner() {
-      setPhase("starting")
-      setError(null)
+    try {
+      await stopScanner()
 
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      })
+      if (isAndroidChrome() && videoRef.current) {
+        setScanMode("native")
 
-      if (cancelled || !document.getElementById(scannerId)) {
+        nativeCleanupRef.current = await startNativeQrScan(videoRef.current, (decodedText) => {
+          onDetected(decodedText)
+          onOpenChange(false)
+        })
+
+        setPhase("scanning")
         return
       }
 
-      try {
-        await stopScanner()
+      const mountElement = document.getElementById(scannerId)
 
-        const scanner = new Html5Qrcode(scannerId)
-        scannerRef.current = scanner
+      if (!mountElement) {
+        throw new Error("Scanner is not ready yet. Close the dialog and try again.")
+      }
 
-        const cameraConfigs: Array<string | MediaTrackConstraints> = [
-          { facingMode: { ideal: "environment" } },
-          { facingMode: "environment" },
-          { facingMode: "user" },
-        ]
+      setScanMode("html5")
 
-        let started = false
-        let lastError: unknown = null
+      const scanner = new Html5Qrcode(scannerId, {
+        useBarCodeDetectorIfSupported: false,
+        verbose: false,
+      })
+      scannerRef.current = scanner
 
-        for (const cameraConfig of cameraConfigs) {
-          try {
-            await scanner.start(
-              cameraConfig,
-              { fps: 10, qrbox: { width: 220, height: 220 } },
-              (decodedText) => {
-                onDetected(decodedText)
-                onOpenChange(false)
+      const cameraConfigs = await buildCameraStartConfigs()
+      let started = false
+      let lastError: unknown = null
+
+      for (const cameraConfig of cameraConfigs) {
+        try {
+          await scanner.start(
+            cameraConfig,
+            {
+              fps: 10,
+              qrbox: (viewfinderWidth, viewfinderHeight) => {
+                const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.7)
+                return { width: Math.max(size, 180), height: Math.max(size, 180) }
               },
-              () => undefined,
-            )
-            started = true
-            break
-          } catch (attemptError) {
-            lastError = attemptError
+            },
+            (decodedText) => {
+              onDetected(decodedText)
+              onOpenChange(false)
+            },
+            () => undefined,
+          )
+          started = true
+          break
+        } catch (attemptError) {
+          lastError = attemptError
+
+          try {
+            if (scanner.isScanning) {
+              await scanner.stop()
+            }
+
+            scanner.clear()
+          } catch {
+            // Try the next camera configuration.
           }
         }
+      }
 
-        if (!started) {
-          throw lastError ?? new Error("Unable to open the camera.")
-        }
+      if (!started) {
+        throw lastError ?? new Error("Unable to open the camera.")
+      }
 
-        if (!cancelled) {
-          setPhase("scanning")
-        }
-      } catch (startError) {
-        if (!cancelled) {
-          setError(getCameraErrorMessage(startError))
-          setPhase("error")
-          setCameraRequested(false)
+      setPhase("scanning")
+    } catch (startError) {
+      if (isAndroidChrome() && videoRef.current && "BarcodeDetector" in window) {
+        try {
           await stopScanner()
+          setScanMode("native")
+
+          nativeCleanupRef.current = await startNativeQrScan(videoRef.current, (decodedText) => {
+            onDetected(decodedText)
+            onOpenChange(false)
+          })
+
+          setPhase("scanning")
+          return
+        } catch {
+          // Fall through to the user-facing error below.
         }
       }
-    }
 
-    void startScanner()
-
-    return () => {
-      cancelled = true
-      void stopScanner()
+      setError(getCameraErrorMessage(startError))
+      setPhase("error")
+      setScanMode(null)
+      await stopScanner()
+    } finally {
+      isStartingRef.current = false
     }
-  }, [cameraRequested, onDetected, onOpenChange, open, retryKey, scannerId, stopScanner])
+  }, [onDetected, onOpenChange, scannerId, stopScanner])
 
   function handleAllowCamera() {
-    setError(null)
-    setPhase("starting")
-    setCameraRequested(true)
-    setRetryKey((current) => current + 1)
+    void startScanner()
   }
 
   function handleTryAgain() {
-    setError(null)
-    setPhase("starting")
-    setCameraRequested(true)
-    setRetryKey((current) => current + 1)
+    void startScanner()
   }
+
+  const showScannerPreview = open && phase !== "permission" && phase !== "error"
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -190,6 +351,36 @@ export function QrScannerDialog({ open, onOpenChange, onDetected }: QrScannerDia
           </DialogDescription>
         </DialogHeader>
         <DialogBody className="space-y-4">
+          {open ? (
+            <div className={showScannerPreview ? "relative overflow-hidden rounded-xl border bg-black/90 p-3" : "sr-only"}>
+              <div
+                id={scannerId}
+                className={scanMode === "html5" ? "min-h-[260px] w-full" : "hidden"}
+              />
+              <video
+                ref={videoRef}
+                className={
+                  scanMode === "native"
+                    ? "min-h-[260px] w-full rounded-lg object-cover"
+                    : "hidden"
+                }
+                autoPlay
+                muted
+                playsInline
+              />
+              {phase === "starting" ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                  <p className="text-sm text-slate-200">Opening camera...</p>
+                </div>
+              ) : null}
+              {phase === "scanning" ? (
+                <p className="mt-3 text-center text-xs text-slate-300">
+                  Align the QR code inside the frame.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
           {phase === "permission" ? (
             <div className="rounded-xl border border-slate-700 bg-slate-900/80 p-5 text-center">
               <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
@@ -203,22 +394,6 @@ export function QrScannerDialog({ open, onOpenChange, onDetected }: QrScannerDia
                 <CameraIcon />
                 Allow Camera
               </Button>
-            </div>
-          ) : null}
-
-          {cameraRequested && phase !== "permission" && phase !== "error" ? (
-            <div className="relative overflow-hidden rounded-xl border bg-black/90 p-3">
-              <div id={scannerId} className="min-h-[260px] w-full" />
-              {phase === "starting" ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-                  <p className="text-sm text-slate-200">Opening camera...</p>
-                </div>
-              ) : null}
-              {phase === "scanning" ? (
-                <p className="mt-3 text-center text-xs text-slate-300">
-                  Align the QR code inside the frame.
-                </p>
-              ) : null}
             </div>
           ) : null}
 
