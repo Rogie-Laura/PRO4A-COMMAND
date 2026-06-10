@@ -41,7 +41,15 @@ export function getBmiCategoryFromValue(bmi: number): BmiCategoryId | null {
 
 export function getBmiCategoryFromLabel(value: string): BmiCategoryId | null {
   const normalized = value.trim().toUpperCase()
-  if (!normalized) return null
+  if (!normalized || normalized.startsWith("#")) return null
+
+  if (/^UW$/.test(normalized)) return "underweight"
+  if (/^N$/.test(normalized)) return "normal"
+  if (/^AC$/.test(normalized)) return "acceptable"
+  if (/^OW$/.test(normalized)) return "overweight"
+  if (/^OB\s*3$/.test(normalized)) return "obese-3"
+  if (/^OB\s*2$/.test(normalized)) return "obese-2"
+  if (/^OB\s*1$/.test(normalized)) return "obese-1"
 
   if (/UNDER/.test(normalized)) return "underweight"
   if (/NORMAL/.test(normalized)) return "normal"

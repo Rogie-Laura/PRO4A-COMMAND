@@ -1,6 +1,8 @@
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
 const DEFAULT_MOBILITY_TAB = "Mobility"
-const DEFAULT_HEALTH_TAB = "Health and BMI"
+const DEFAULT_HEALTH_SHEET_ID = "1YKb4nj2IHXl2DdmN7Yvya4lru5j3agdQ"
+const DEFAULT_HEALTH_TAB = "RICTMD"
+const DEFAULT_HEALTH_GID = "1414294567"
 
 export function getSheetCsvUrl(sheetId?: string) {
   const id = sheetId ?? process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
@@ -58,18 +60,18 @@ export function getHealthSheetCsvUrl(options?: {
   const id =
     options?.sheetId ??
     process.env.GOOGLE_HEALTH_SHEET_ID ??
-    process.env.GOOGLE_SHEET_ID ??
-    DEFAULT_SHEET_ID
-  const tab =
-    options?.sheetTab ?? process.env.GOOGLE_HEALTH_SHEET_TAB ?? DEFAULT_HEALTH_TAB
+    DEFAULT_HEALTH_SHEET_ID
+  const gid =
+    options?.gid ?? process.env.GOOGLE_HEALTH_SHEET_GID ?? DEFAULT_HEALTH_GID
+  const tab = options?.sheetTab ?? process.env.GOOGLE_HEALTH_SHEET_TAB ?? DEFAULT_HEALTH_TAB
 
   const params = new URLSearchParams({
     tqx: "out:csv",
     headers: "1",
   })
 
-  if (options?.gid) {
-    params.set("gid", options.gid)
+  if (gid) {
+    params.set("gid", gid)
   } else {
     params.set("sheet", tab)
   }

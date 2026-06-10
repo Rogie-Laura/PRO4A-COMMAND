@@ -29,8 +29,8 @@ export default async function HealthAndBmiPage() {
         {!data.dataReady && (
           <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">
             <CardContent className="py-4 text-sm text-muted-foreground">
-              Walang BMI data sa Health and BMI sheet pa. Magdagdag ng tab na
-              &quot;Health and BMI&quot; with columns: BMI Category (or BMI / Weight / Height).
+              Walang BMI data mula sa RICTMD sheet pa. Siguraduhing naka-public ang
+              Google Sheet at may columns na BMI / BMI Category.
             </CardContent>
           </Card>
         )}

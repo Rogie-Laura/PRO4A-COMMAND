@@ -19,7 +19,10 @@ function pickField(row: Record<string, string>, keys: string[]) {
 }
 
 function parseNumber(value: string) {
-  const parsed = Number(value.replace(/,/g, "").trim())
+  const trimmed = value.replace(/,/g, "").trim()
+  if (!trimmed || trimmed.startsWith("#")) return null
+
+  const parsed = Number(trimmed)
   return Number.isFinite(parsed) ? parsed : null
 }
 
@@ -45,8 +48,12 @@ function resolveBmiCategory(row: Record<string, string>): BmiCategoryId | null {
   const bmiValue = parseNumber(pickField(row, ["BMI", "BMI Value", "Body Mass Index", "BMI Score"]))
   if (bmiValue !== null) return getBmiCategoryFromValue(bmiValue)
 
-  const weight = parseNumber(pickField(row, ["Weight", "Weight (kg)", "Wt", "Weight kg"]))
-  const height = parseNumber(pickField(row, ["Height", "Height (cm)", "Ht", "Height cm", "Height (m)"]))
+  const weight = parseNumber(
+    pickField(row, ["Weight (kg)", "Weight", "Wt", "Weight kg"]),
+  )
+  const height = parseNumber(
+    pickField(row, ["Height (m)", "Height", "Height (cm)", "Ht", "Height cm"]),
+  )
   const calculated = weight !== null && height !== null ? calculateBmi(weight, height) : null
 
   return calculated !== null ? getBmiCategoryFromValue(calculated) : null
@@ -54,7 +61,20 @@ function resolveBmiCategory(row: Record<string, string>): BmiCategoryId | null {
 
 function hasHealthIdentity(row: Record<string, string>) {
   return Boolean(
-    pickField(row, ["Last Name", "Badge Number", "BMI", "BMI Category", "Weight", "Height"]),
+    pickField(row, [
+      "Surname",
+      "First Name",
+      "Rank",
+      "No",
+      "Last Name",
+      "Badge Number",
+      "BMI",
+      "BMI Category",
+      "Weight (kg)",
+      "Weight",
+      "Height (m)",
+      "Height",
+    ]),
   )
 }
 
