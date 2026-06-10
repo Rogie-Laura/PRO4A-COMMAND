@@ -1,5 +1,6 @@
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
 const DEFAULT_MOBILITY_TAB = "Mobility"
+const DEFAULT_HEALTH_TAB = "Health and BMI"
 
 export function getSheetCsvUrl(sheetId?: string) {
   const id = sheetId ?? process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
@@ -47,6 +48,41 @@ export async function fetchMobilitySheetCsv(options?: {
   gid?: string
 }): Promise<string> {
   return fetchCsv(getMobilitySheetCsvUrl(options))
+}
+
+export function getHealthSheetCsvUrl(options?: {
+  sheetId?: string
+  sheetTab?: string
+  gid?: string
+}) {
+  const id =
+    options?.sheetId ??
+    process.env.GOOGLE_HEALTH_SHEET_ID ??
+    process.env.GOOGLE_SHEET_ID ??
+    DEFAULT_SHEET_ID
+  const tab =
+    options?.sheetTab ?? process.env.GOOGLE_HEALTH_SHEET_TAB ?? DEFAULT_HEALTH_TAB
+
+  const params = new URLSearchParams({
+    tqx: "out:csv",
+    headers: "1",
+  })
+
+  if (options?.gid) {
+    params.set("gid", options.gid)
+  } else {
+    params.set("sheet", tab)
+  }
+
+  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?${params.toString()}`
+}
+
+export async function fetchHealthSheetCsv(options?: {
+  sheetId?: string
+  sheetTab?: string
+  gid?: string
+}): Promise<string> {
+  return fetchCsv(getHealthSheetCsvUrl(options))
 }
 
 async function fetchCsv(url: string): Promise<string> {
