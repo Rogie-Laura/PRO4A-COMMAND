@@ -6,7 +6,7 @@ export const RICTMD_BMI_SHEET = {
   label: "RICTMD personnel",
 } as const
 
-const RICTMD_BMI_COLUMNS = "G, P, Q"
+const RICTMD_BMI_COLUMNS = "B, C, D, E, G, I, P, Q"
 const RICTMD_OFFICE_FIELD = "Station/Office"
 const RICTMD_OFFICE_VALUE = "RICTMD"
 
@@ -31,7 +31,9 @@ export function isRictmdBmiSheet(rows: Record<string, string>[]) {
 
   const headers = new Set(Object.keys(rows[0]).map((header) => header.trim()))
   return (
+    headers.has("Rank") &&
     headers.has(RICTMD_OFFICE_FIELD) &&
+    headers.has("Age") &&
     headers.has("BMI") &&
     headers.has("BMI Category")
   )

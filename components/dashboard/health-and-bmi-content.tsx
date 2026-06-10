@@ -41,7 +41,11 @@ export async function HealthAndBmiContent() {
         </Card>
       )}
 
-      <BmiCategoryCards categories={data.categories} totalAssessed={data.totalAssessed} />
+      <BmiCategoryCards
+        categories={data.categories}
+        totalAssessed={data.totalAssessed}
+        personnelByCategory={data.personnelByCategory}
+      />
     </div>
   )
 }

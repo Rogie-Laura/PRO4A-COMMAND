@@ -10,6 +10,17 @@ export const BMI_CATEGORIES = [
 
 export type BmiCategoryId = (typeof BMI_CATEGORIES)[number]["id"]
 
+export const BMI_DRILLDOWN_CATEGORY_IDS = [
+  "overweight",
+  "obese-1",
+  "obese-2",
+  "obese-3",
+] as const satisfies readonly BmiCategoryId[]
+
+export function isBmiDrilldownCategory(categoryId: BmiCategoryId) {
+  return (BMI_DRILLDOWN_CATEGORY_IDS as readonly string[]).includes(categoryId)
+}
+
 export const BMI_CATEGORY_GLASS: Record<BmiCategoryId, string> = {
   underweight:
     "border-sky-400/35 bg-sky-500/15 backdrop-blur-md shadow-sm dark:border-sky-400/25 dark:bg-sky-500/10",

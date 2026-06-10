@@ -4,6 +4,7 @@ import {
   BMI_CATEGORIES,
   getBmiCategoryFromLabel,
   getBmiCategoryFromValue,
+  isBmiDrilldownCategory,
   type BmiCategoryId,
 } from "@/lib/bmi-config"
 import { fetchRictmdBmiSheetCsv, parseCsv } from "@/lib/google-sheets"
@@ -12,7 +13,7 @@ import {
   isRictmdPersonnelRow,
   RICTMD_BMI_SHEET,
 } from "@/lib/rictmd-bmi-sheet"
-import type { BmiCategoryCount, HealthAnalytics } from "@/lib/health-types"
+import type { BmiCategoryCount, BmiPersonnelDetail, HealthAnalytics } from "@/lib/health-types"
 
 function pickField(row: Record<string, string>, keys: string[]) {
   for (const key of keys) {
@@ -50,6 +51,66 @@ function resolveBmiCategory(row: Record<string, string>): BmiCategoryId | null {
 
 function hasBmiData(row: Record<string, string>) {
   return Boolean(pickField(row, ["BMI Category", "BMI"]))
+}
+
+function formatPersonName(row: Record<string, string>) {
+  const firstName = pickField(row, ["First Name"])
+  const middleName = pickField(row, ["Middle Name"])
+  const surname = pickField(row, ["Surname"])
+  const middle = middleName ? ` ${middleName.charAt(0)}.` : ""
+
+  if (surname && firstName) return `${surname}, ${firstName}${middle}`
+  return firstName || surname || "Unknown"
+}
+
+function mapPersonnelDetail(row: Record<string, string>): BmiPersonnelDetail {
+  const rank = pickField(row, ["Rank"])
+  const name = formatPersonName(row)
+  const unit = pickField(row, ["Station/Office", "Unit", "Office"])
+  const age = pickField(row, ["Age"])
+
+  return {
+    id: `${rank}-${name}`.toLowerCase().replace(/\s+/g, "-"),
+    rank,
+    name,
+    unit: unit || "—",
+    age: age || "—",
+  }
+}
+
+function buildPersonnelByCategory(
+  rows: Record<string, string>[],
+): Partial<Record<BmiCategoryId, BmiPersonnelDetail[]>> {
+  const grouped = Object.fromEntries(
+    BMI_CATEGORIES.map((category) => [category.id, [] as BmiPersonnelDetail[]]),
+  ) as Record<BmiCategoryId, BmiPersonnelDetail[]>
+
+  for (const row of rows) {
+    if (!hasBmiData(row)) continue
+
+    const categoryId = resolveBmiCategory(row)
+    if (!categoryId || !isBmiDrilldownCategory(categoryId)) continue
+
+    grouped[categoryId].push(mapPersonnelDetail(row))
+  }
+
+  for (const categoryId of Object.keys(grouped) as BmiCategoryId[]) {
+    grouped[categoryId].sort((a, b) => {
+      const byName = a.name.localeCompare(b.name, "en", { sensitivity: "base" })
+      if (byName !== 0) return byName
+      return a.rank.localeCompare(b.rank, "en", { sensitivity: "base" })
+    })
+  }
+
+  const personnelByCategory: Partial<Record<BmiCategoryId, BmiPersonnelDetail[]>> = {}
+
+  for (const categoryId of Object.keys(grouped) as BmiCategoryId[]) {
+    if (grouped[categoryId].length > 0) {
+      personnelByCategory[categoryId] = grouped[categoryId]
+    }
+  }
+
+  return personnelByCategory
 }
 
 function buildCategoryCounts(rows: Record<string, string>[]): BmiCategoryCount[] {
@@ -90,6 +151,7 @@ function emptyAnalytics(): HealthAnalytics {
       count: 0,
       percentage: 0,
     })),
+    personnelByCategory: {},
   }
 }
 
@@ -104,6 +166,7 @@ async function loadHealthAnalytics(): Promise<HealthAnalytics> {
 
     const rictmdRows = rows.filter(isRictmdPersonnelRow)
     const categories = buildCategoryCounts(rictmdRows)
+    const personnelByCategory = buildPersonnelByCategory(rictmdRows)
     const totalAssessed = categories.reduce((sum, category) => sum + category.count, 0)
 
     if (totalAssessed === 0) {
@@ -116,6 +179,7 @@ async function loadHealthAnalytics(): Promise<HealthAnalytics> {
       dataSource: RICTMD_BMI_SHEET.label,
       totalAssessed,
       categories,
+      personnelByCategory,
     }
   } catch {
     return emptyAnalytics()
@@ -124,7 +188,7 @@ async function loadHealthAnalytics(): Promise<HealthAnalytics> {
 
 const getCachedHealthAnalytics = unstable_cache(
   loadHealthAnalytics,
-  ["health-analytics-rictmd-personnel"],
+  ["health-analytics-rictmd-personnel-v2"],
   { revalidate: 600 },
 )
 
