@@ -30,13 +30,13 @@ export async function HealthAndBmiContent() {
         <div className="absolute right-0 top-1/3 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-amber-500/15 blur-3xl" />
       </div>
-      <DataSyncBanner lastUpdated={data.lastUpdated} />
+      <DataSyncBanner lastUpdated={data.lastUpdated} sourceLabel={data.dataSource} />
 
       {!data.dataReady && (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">
           <CardContent className="py-4 text-sm text-muted-foreground">
-            Walang BMI data mula sa RICTMD sheet pa. Siguraduhing naka-public ang Google Sheet
-            at may columns na BMI / BMI Category.
+            Walang BMI records mula sa RICTMD sheet pa. Siguraduhing naka-public ang Google
+            Sheet at may columns na BMI / BMI Category sa RICTMD tab.
           </CardContent>
         </Card>
       )}

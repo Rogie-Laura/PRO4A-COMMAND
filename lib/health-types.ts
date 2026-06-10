@@ -10,6 +10,7 @@ export type BmiCategoryCount = {
 export type HealthAnalytics = {
   lastUpdated: string
   dataReady: boolean
+  dataSource: string
   totalAssessed: number
   categories: BmiCategoryCount[]
 }

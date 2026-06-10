@@ -6,10 +6,9 @@ import {
   getBmiCategoryFromValue,
   type BmiCategoryId,
 } from "@/lib/bmi-config"
-import { fetchHealthSheetCsv, parseCsv } from "@/lib/google-sheets"
+import { fetchRictmdBmiSheetCsv, parseCsv } from "@/lib/google-sheets"
+import { isRictmdBmiSheet, RICTMD_BMI_SHEET } from "@/lib/rictmd-bmi-sheet"
 import type { BmiCategoryCount, HealthAnalytics } from "@/lib/health-types"
-
-const HEALTH_HEADER_PATTERNS = [/bmi/i]
 
 function pickField(row: Record<string, string>, keys: string[]) {
   for (const key of keys) {
@@ -25,13 +24,6 @@ function parseNumber(value: string) {
 
   const parsed = Number(trimmed)
   return Number.isFinite(parsed) ? parsed : null
-}
-
-function looksLikeHealthSheet(rows: Record<string, string>[]) {
-  if (rows.length === 0) return false
-
-  const headers = Object.keys(rows[0])
-  return headers.some((header) => HEALTH_HEADER_PATTERNS.some((pattern) => pattern.test(header)))
 }
 
 function resolveBmiCategory(row: Record<string, string>): BmiCategoryId | null {
@@ -86,6 +78,7 @@ function emptyAnalytics(): HealthAnalytics {
   return {
     lastUpdated: new Date().toISOString(),
     dataReady: false,
+    dataSource: RICTMD_BMI_SHEET.label,
     totalAssessed: 0,
     categories: BMI_CATEGORIES.map((category) => ({
       id: category.id,
@@ -98,10 +91,10 @@ function emptyAnalytics(): HealthAnalytics {
 
 async function loadHealthAnalytics(): Promise<HealthAnalytics> {
   try {
-    const csv = await fetchHealthSheetCsv()
+    const csv = await fetchRictmdBmiSheetCsv()
     const rows = parseCsv(csv)
 
-    if (!looksLikeHealthSheet(rows)) {
+    if (!isRictmdBmiSheet(rows)) {
       return emptyAnalytics()
     }
 
@@ -115,6 +108,7 @@ async function loadHealthAnalytics(): Promise<HealthAnalytics> {
     return {
       lastUpdated: new Date().toISOString(),
       dataReady: true,
+      dataSource: RICTMD_BMI_SHEET.label,
       totalAssessed,
       categories,
     }

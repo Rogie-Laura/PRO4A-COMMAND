@@ -1,3 +1,7 @@
+import { getRictmdBmiCsvUrl, RICTMD_BMI_SHEET } from "@/lib/rictmd-bmi-sheet"
+
+export { RICTMD_BMI_SHEET }
+
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
 const DEFAULT_MOBILITY_TAB = "Mobility"
 const PERSONNEL_COLUMNS = "A, B, C, D, F, G, I, K, N, R, T, V, Y"
@@ -5,10 +9,6 @@ const MOBILITY_VEHICLE_COLUMNS =
   "Sub Unit, Station, Plate Number, Vehicle Type, Ownership, Condition, Status"
 const SHEET_CACHE_SECONDS = 600
 const MOBILITY_PROBE_LIMIT = 10
-/** PRO4A BMI source: RICTMD tab only. */
-export const DEFAULT_HEALTH_SHEET_ID = "1YKb4nj2IHXl2DdmN7Yvya4lru5j3agdQ"
-export const DEFAULT_HEALTH_GID = "1414294567"
-const HEALTH_RICTMD_BMI_COLUMNS = "P, Q"
 
 function buildSheetCsvUrl(
   sheetId: string,
@@ -120,31 +120,17 @@ export async function fetchMobilitySheetCsv(options?: {
   return fetchCsv(getMobilitySheetCsvUrl(options), SHEET_CACHE_SECONDS)
 }
 
-export function getHealthSheetCsvUrl(options?: {
-  sheetId?: string
-  gid?: string
-}) {
-  const id =
-    options?.sheetId ??
-    process.env.GOOGLE_HEALTH_SHEET_ID ??
-    DEFAULT_HEALTH_SHEET_ID
-  const gid = options?.gid ?? process.env.GOOGLE_HEALTH_SHEET_GID ?? DEFAULT_HEALTH_GID
-
-  const params = new URLSearchParams({
-    tqx: "out:csv",
-    headers: "1",
-    gid,
-    tq: `SELECT ${HEALTH_RICTMD_BMI_COLUMNS.replace(/,/g, ", ")}`,
-  })
-
-  return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?${params.toString()}`
+export function getHealthSheetCsvUrl() {
+  return getRictmdBmiCsvUrl()
 }
 
-export async function fetchHealthSheetCsv(options?: {
-  sheetId?: string
-  gid?: string
-}): Promise<string> {
-  return fetchCsv(getHealthSheetCsvUrl(options), SHEET_CACHE_SECONDS)
+export async function fetchRictmdBmiSheetCsv(): Promise<string> {
+  return fetchCsv(getRictmdBmiCsvUrl(), SHEET_CACHE_SECONDS)
+}
+
+/** @deprecated Use fetchRictmdBmiSheetCsv instead. */
+export async function fetchHealthSheetCsv(): Promise<string> {
+  return fetchRictmdBmiSheetCsv()
 }
 
 async function fetchCsv(url: string, revalidateSeconds = SHEET_CACHE_SECONDS): Promise<string> {
