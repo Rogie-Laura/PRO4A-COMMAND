@@ -14,6 +14,7 @@ import {
   Siren,
 } from "lucide-react"
 
+import { LogoutButton } from "@/components/auth/logout-button"
 import {
   Sidebar,
   SidebarContent,
@@ -82,7 +83,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4">
+      <SidebarFooter className="space-y-3 border-t border-sidebar-border p-4">
         <div className="rounded-lg bg-sidebar-accent p-3">
           <p className="text-xs font-medium">System Status</p>
           <div className="mt-1 flex items-center gap-2">
@@ -93,6 +94,7 @@ export function AppSidebar() {
             <span className="text-xs text-muted-foreground">All systems operational</span>
           </div>
         </div>
+        <LogoutButton />
       </SidebarFooter>
     </Sidebar>
   )

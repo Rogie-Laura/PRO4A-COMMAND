@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useTransition } from "react"
-import { CheckIcon, CopyIcon, KeyRoundIcon, ShieldOffIcon } from "lucide-react"
+import { useMemo, useState, useTransition } from "react"
+import { CheckIcon, CopyIcon, KeyRoundIcon, QrCodeIcon, ShieldOffIcon } from "lucide-react"
+import QRCode from "react-qr-code"
 
 import {
   createAccessTokenAction,
@@ -26,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { buildLoginUrl } from "@/lib/auth/login-url"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
 import type { AccessTokenListItem } from "@/lib/access-tokens"
 
@@ -40,6 +42,10 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
   const [newToken, setNewToken] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const loginQrUrl = useMemo(() => {
+    if (!newToken) return null
+    return buildLoginUrl(newToken, window.location.origin)
+  }, [newToken])
 
   function handleCreate() {
     setError(null)
@@ -91,8 +97,8 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
             Access Tokens
           </CardTitle>
           <CardDescription>
-            API keys stored in Supabase PRO4A_COMMAND. Use for external integrations and
-            authenticated API access.
+            Gumawa ng access key para sa boss. Pwede i-scan ang QR sa login — isang beses lang,
+            tapos click na lang ang app icon araw-araw.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -172,15 +178,29 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
       >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Save your access token</DialogTitle>
+            <DialogTitle>Para sa boss — i-save o i-print ang QR</DialogTitle>
             <DialogDescription>
-              Makikita mo lang ito ng isang beses. I-copy at i-save sa secure na lugar.
+              Makikita mo lang ang buong key ng isang beses. Pinakamadali para sa boss: i-scan ang
+              QR sa login page, o i-print at ilagay sa desk.
             </DialogDescription>
           </DialogHeader>
-          <DialogBody>
+          <DialogBody className="space-y-4">
+            {loginQrUrl ? (
+              <div className="mx-auto flex w-fit flex-col items-center gap-3 rounded-xl border bg-white p-4">
+                <QRCode value={loginQrUrl} size={180} />
+                <div className="flex items-center gap-2 text-xs font-medium text-black">
+                  <QrCodeIcon className="size-4" />
+                  Boss Login QR
+                </div>
+              </div>
+            ) : null}
             <div className="rounded-lg border bg-muted/30 p-3 font-mono text-sm break-all">
               {newToken}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Tip: I-install ang PRO4A app sa home screen pagkatapos mag-login. Sunod, click icon na
+              lang — hindi na kailangan mag-scan ulit.
+            </p>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewToken(null)}>
