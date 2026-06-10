@@ -1,18 +1,18 @@
 function AcronymLetter({ letter }: { letter: string }) {
   return (
-    <span className="inline-block text-2xl font-extrabold tracking-tight text-sky-400 sm:text-3xl">
+    <span className="inline-block text-base font-bold tracking-tight text-sky-400 sm:text-lg">
       {letter}
     </span>
   )
 }
 
 function WordRest({ children }: { children: string }) {
-  return <span className="text-base font-medium text-slate-300 sm:text-lg">{children}</span>
+  return <span className="text-sm font-medium text-slate-300 sm:text-base">{children}</span>
 }
 
 export function CommandTagline() {
   return (
-    <p className="mx-auto mt-4 max-w-xl text-center leading-8 sm:leading-9">
+    <p className="mx-auto mt-3 max-w-xl text-center leading-relaxed">
       <AcronymLetter letter="C" />
       <WordRest>entralized </WordRest>
       <AcronymLetter letter="O" />
