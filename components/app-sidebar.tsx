@@ -63,7 +63,7 @@ export function AppSidebar({ role }: AppSidebarProps) {
               PRO4A COMMAND
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              Analytics Center
+              Operations Dashboard
             </p>
           </div>
         </Link>

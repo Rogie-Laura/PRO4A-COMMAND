@@ -15,8 +15,8 @@ const fontMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "PRO4A COMMAND — Personnel Analytics",
-  description: "PRO CALABARZON personnel analytics powered by Google Sheets",
+  title: "PRO4A COMMAND",
+  description: "Centralized Operations Monitoring and MANagement Dashboard",
   applicationName: "PRO4A COMMAND",
   appleWebApp: {
     capable: true,

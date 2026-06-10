@@ -132,9 +132,14 @@ export function QrScanButton({
 
   return (
     <>
-      <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-11 w-full border-slate-600 bg-slate-900 text-white hover:bg-slate-800"
+        onClick={() => setOpen(true)}
+      >
         <CameraIcon />
-        I-scan ang QR Code
+        Scan QR Code
       </Button>
       <QrScannerDialog open={open} onOpenChange={setOpen} onDetected={onDetected} />
     </>
