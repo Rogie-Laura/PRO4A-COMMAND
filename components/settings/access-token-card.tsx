@@ -97,8 +97,8 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
             Access Tokens
           </CardTitle>
           <CardDescription>
-            Gumawa ng access key para sa boss. Pwede i-scan ang QR sa login — isang beses lang,
-            tapos click na lang ang app icon araw-araw.
+            Create access keys for users. Save your own admin key and QR when created — you will
+            need them again if your session expires.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
