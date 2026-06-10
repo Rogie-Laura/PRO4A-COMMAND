@@ -5,6 +5,7 @@ import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 
 import { loginWithAccessKeyAction } from "@/app/login/actions"
+import { CommandTagline } from "@/components/auth/command-tagline"
 import { QrScanButton } from "@/components/auth/qr-scanner-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -74,10 +75,8 @@ export function LoginScreen() {
           <div className="mx-auto mb-5 flex size-20 items-center justify-center rounded-2xl border border-white/15 bg-white/10 shadow-lg">
             <Image src="/logos/PRO4A.png" alt="PRO4A" width={56} height={56} className="size-14" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">PRO4A COMMAND</h1>
-          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-slate-200">
-            Centralized Operations Monitoring and MANagement Dashboard
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">PRO4A COMMAND</h1>
+          <CommandTagline />
         </div>
 
         <div className="rounded-2xl border border-slate-700 bg-slate-950/95 p-6 shadow-2xl">
