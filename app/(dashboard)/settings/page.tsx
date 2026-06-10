@@ -3,7 +3,6 @@ import { redirect } from "next/navigation"
 import { InstallAppCard } from "@/components/pwa/install-app-card"
 import { AccessTokenCard } from "@/components/settings/access-token-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import {
   Card,
   CardContent,
@@ -39,7 +38,6 @@ export default async function SettingsPage() {
   }
 
   return (
-    <DashboardLayout title="Settings">
       <div className="mx-auto max-w-2xl space-y-4">
         <ThemeSettingsCard />
 
@@ -61,6 +59,5 @@ export default async function SettingsPage() {
           )
         ) : null}
       </div>
-    </DashboardLayout>
   )
 }

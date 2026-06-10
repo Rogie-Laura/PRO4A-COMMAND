@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -27,6 +28,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 const allNavItems = [
@@ -47,12 +49,26 @@ type AppSidebarProps = {
 
 export function AppSidebar({ role: _role }: AppSidebarProps) {
   const pathname = usePathname()
+  const { isMobile, setOpenMobile, state } = useSidebar()
   const navItems = allNavItems
+  const showNavTooltip = !isMobile && state === "collapsed"
+
+  useEffect(() => {
+    setOpenMobile(false)
+  }, [pathname, setOpenMobile])
 
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border px-4 py-4">
-        <Link href="/" className="flex items-center gap-3">
+        <Link
+          href="/"
+          className="flex items-center gap-3"
+          onClick={() => {
+            if (isMobile) {
+              setOpenMobile(false)
+            }
+          }}
+        >
           <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <BarChart3 className="size-5" />
           </div>
@@ -75,9 +91,20 @@ export function AppSidebar({ role: _role }: AppSidebarProps) {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
-                    render={<Link href={item.href} />}
                     isActive={pathname === item.href}
-                    tooltip={item.title}
+                    tooltip={showNavTooltip ? item.title : undefined}
+                    render={(props) => (
+                      <Link
+                        {...props}
+                        href={item.href}
+                        onClick={(event) => {
+                          props.onClick?.(event)
+                          if (isMobile) {
+                            setOpenMobile(false)
+                          }
+                        }}
+                      />
+                    )}
                   >
                     <item.icon />
                     <span>{item.title}</span>

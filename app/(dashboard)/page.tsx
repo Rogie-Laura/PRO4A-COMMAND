@@ -6,7 +6,6 @@ import { LeadershipSection } from "@/components/dashboard/leadership-section"
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
 import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
 import { UnitTable } from "@/components/dashboard/unit-table"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
 
 export default async function DashboardPage() {
@@ -15,7 +14,6 @@ export default async function DashboardPage() {
   const totalKpi = data.kpis.find((k) => k.id === "total")
 
   return (
-    <DashboardLayout title="Personnel Stats">
       <div className="space-y-6">
         <DataSyncBanner lastUpdated={data.lastUpdated} />
 
@@ -43,6 +41,5 @@ export default async function DashboardPage() {
           items={data.statusStats}
         />
       </div>
-    </DashboardLayout>
   )
 }

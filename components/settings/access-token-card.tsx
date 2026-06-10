@@ -8,7 +8,7 @@ import {
   createAccessTokenAction,
   getAccessTokenQrUrlAction,
   revokeAccessTokenAction,
-} from "@/app/settings/actions"
+} from "@/app/(dashboard)/settings/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {

@@ -1,6 +1,5 @@
 import { BmiCategoryCards } from "@/components/dashboard/bmi-category-cards"
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
-import { DashboardLayout } from "@/components/dashboard-layout"
 import {
   Card,
   CardContent,
@@ -11,10 +10,6 @@ export default async function HealthAndBmiPage() {
   const data = await getHealthAnalytics()
 
   return (
-    <DashboardLayout
-      title="Health and BMI"
-      description="Personnel body mass index classification"
-    >
       <div className="relative space-y-6">
         <div
           aria-hidden
@@ -37,6 +32,5 @@ export default async function HealthAndBmiPage() {
 
         <BmiCategoryCards categories={data.categories} totalAssessed={data.totalAssessed} />
       </div>
-    </DashboardLayout>
   )
 }
