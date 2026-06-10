@@ -5,7 +5,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { BMI_CATEGORY_GLASS } from "@/lib/bmi-config"
 import type { BmiCategoryCount } from "@/lib/health-types"
+import { cn } from "@/lib/utils"
 
 type BmiCategoryCardsProps = {
   categories: BmiCategoryCount[]
@@ -15,9 +17,9 @@ type BmiCategoryCardsProps = {
 export function BmiCategoryCards({ categories, totalAssessed }: BmiCategoryCardsProps) {
   return (
     <div className="space-y-4">
-      <Card className="gap-0 overflow-hidden border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-card sm:max-w-xs">
+      <Card className="gap-0 overflow-hidden border-primary/30 bg-primary/15 shadow-sm backdrop-blur-md sm:max-w-xs dark:border-primary/25 dark:bg-primary/10">
         <CardHeader className="pb-2">
-          <CardDescription className="font-medium text-primary/80">
+          <CardDescription className="font-medium text-primary/90">
             Personnel Assessed
           </CardDescription>
           <CardTitle className="text-3xl font-bold tabular-nums text-primary sm:text-4xl">
@@ -31,9 +33,15 @@ export function BmiCategoryCards({ categories, totalAssessed }: BmiCategoryCards
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {categories.map((category) => (
-          <Card key={category.id} className="gap-0">
+          <Card
+            key={category.id}
+            className={cn(
+              "gap-0 overflow-hidden",
+              BMI_CATEGORY_GLASS[category.id],
+            )}
+          >
             <CardHeader className="pb-2">
-              <CardDescription>{category.label}</CardDescription>
+              <CardDescription className="font-medium">{category.label}</CardDescription>
               <CardTitle className="text-2xl font-bold tabular-nums sm:text-3xl">
                 {category.count.toLocaleString()}
               </CardTitle>

@@ -1,5 +1,7 @@
+import type { BmiCategoryId } from "@/lib/bmi-config"
+
 export type BmiCategoryCount = {
-  id: string
+  id: BmiCategoryId
   label: string
   count: number
   percentage: number

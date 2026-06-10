@@ -10,6 +10,23 @@ export const BMI_CATEGORIES = [
 
 export type BmiCategoryId = (typeof BMI_CATEGORIES)[number]["id"]
 
+export const BMI_CATEGORY_GLASS: Record<BmiCategoryId, string> = {
+  underweight:
+    "border-sky-400/35 bg-sky-500/15 backdrop-blur-md shadow-sm dark:border-sky-400/25 dark:bg-sky-500/10",
+  normal:
+    "border-emerald-400/35 bg-emerald-500/15 backdrop-blur-md shadow-sm dark:border-emerald-400/25 dark:bg-emerald-500/10",
+  acceptable:
+    "border-teal-400/35 bg-teal-500/15 backdrop-blur-md shadow-sm dark:border-teal-400/25 dark:bg-teal-500/10",
+  overweight:
+    "border-amber-400/35 bg-amber-500/15 backdrop-blur-md shadow-sm dark:border-amber-400/25 dark:bg-amber-500/10",
+  "obese-1":
+    "border-orange-400/35 bg-orange-500/15 backdrop-blur-md shadow-sm dark:border-orange-400/25 dark:bg-orange-500/10",
+  "obese-2":
+    "border-rose-400/35 bg-rose-500/15 backdrop-blur-md shadow-sm dark:border-rose-400/25 dark:bg-rose-500/10",
+  "obese-3":
+    "border-red-500/35 bg-red-500/15 backdrop-blur-md shadow-sm dark:border-red-500/25 dark:bg-red-500/10",
+}
+
 /** PNP-style BMI brackets when only numeric BMI is available. */
 export function getBmiCategoryFromValue(bmi: number): BmiCategoryId | null {
   if (!Number.isFinite(bmi) || bmi <= 0) return null
