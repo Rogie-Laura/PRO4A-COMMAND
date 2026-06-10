@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 
 import { LogoutButton } from "@/components/auth/logout-button"
+import { isSuperAdmin, type AccessKeyRole } from "@/lib/auth/roles"
 import {
   Sidebar,
   SidebarContent,
@@ -28,7 +29,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const navItems = [
+const allNavItems = [
   { title: "Personnel Stats", href: "/", icon: BarChart3 },
   { title: "Mobility", href: "/mobility", icon: Car },
   { title: "Firearms", href: "/firearms", icon: Crosshair },
@@ -40,8 +41,15 @@ const navItems = [
   { title: "Settings", href: "/settings", icon: Settings },
 ]
 
-export function AppSidebar() {
+type AppSidebarProps = {
+  role: AccessKeyRole
+}
+
+export function AppSidebar({ role }: AppSidebarProps) {
   const pathname = usePathname()
+  const navItems = isSuperAdmin(role)
+    ? allNavItems
+    : allNavItems.filter((item) => item.href !== "/settings")
 
   return (
     <Sidebar>

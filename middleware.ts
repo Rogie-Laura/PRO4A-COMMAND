@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+import { isSuperAdmin } from "@/lib/auth/roles"
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth/session"
 
 const PUBLIC_PATHS = ["/login"]
@@ -24,12 +25,11 @@ export async function middleware(request: NextRequest) {
   }
 
   const sessionToken = request.cookies.get(getSessionCookieName())?.value
-  let isAuthenticated = false
+  let session: Awaited<ReturnType<typeof verifySessionToken>> | null = null
 
   if (sessionToken) {
     try {
-      await verifySessionToken(sessionToken)
-      isAuthenticated = true
+      session = await verifySessionToken(sessionToken)
     } catch {
       const response = NextResponse.redirect(new URL("/login", request.url))
       response.cookies.delete(getSessionCookieName())
@@ -37,8 +37,12 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (isAuthenticated) {
+  if (session) {
     if (pathname === "/login") {
+      return NextResponse.redirect(new URL("/", request.url))
+    }
+
+    if (pathname.startsWith("/settings") && !isSuperAdmin(session.role)) {
       return NextResponse.redirect(new URL("/", request.url))
     }
 

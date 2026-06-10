@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation"
+
 import { InstallAppCard } from "@/components/pwa/install-app-card"
 import { AccessTokenCard } from "@/components/settings/access-token-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
@@ -10,8 +12,16 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { listAccessTokens, type AccessTokenListItem } from "@/lib/access-tokens"
+import { getSession } from "@/lib/auth/get-session"
+import { isSuperAdmin } from "@/lib/auth/roles"
 
 export default async function SettingsPage() {
+  const session = await getSession()
+
+  if (!session || !isSuperAdmin(session.role)) {
+    redirect("/")
+  }
+
   let tokens: AccessTokenListItem[] = []
   let tokenError: string | null = null
 
@@ -39,17 +49,6 @@ export default async function SettingsPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-destructive">{tokenError}</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Idagdag sa Vercel env:{" "}
-                <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                  NEXT_PUBLIC_SUPABASE_URL
-                </code>{" "}
-                at{" "}
-                <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                  SUPABASE_SERVICE_ROLE_KEY
-                </code>
-                .
-              </p>
             </CardContent>
           </Card>
         ) : (

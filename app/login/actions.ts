@@ -16,7 +16,13 @@ export async function loginWithAccessKeyAction(
   nextPath?: string,
 ) {
   const validated = await validateAccessKey(accessKey)
-  const session = await createSessionToken(validated.id, validated.label, rememberDevice)
+  const session = await createSessionToken(
+    validated.id,
+    validated.label,
+    validated.role,
+    rememberDevice,
+    validated.expires_at,
+  )
   const cookieStore = await cookies()
 
   cookieStore.set(getSessionCookieName(), session, {
@@ -24,11 +30,15 @@ export async function loginWithAccessKeyAction(
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: getSessionMaxAge(rememberDevice),
+    maxAge: getSessionMaxAge(validated.role, rememberDevice, validated.expires_at),
   })
 
   const safeNext =
-    nextPath && nextPath.startsWith("/") && !nextPath.startsWith("/login") ? nextPath : "/"
+    nextPath && nextPath.startsWith("/") && !nextPath.startsWith("/login")
+      ? validated.role === "super_admin" || nextPath !== "/settings"
+        ? nextPath
+        : "/"
+      : "/"
 
   redirect(safeNext)
 }

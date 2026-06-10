@@ -28,18 +28,45 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { buildLoginUrl } from "@/lib/auth/login-url"
+import {
+  ACCESS_KEY_ROLES,
+  OFFICER_EXPIRATION_OPTIONS,
+  type AccessKeyRole,
+} from "@/lib/auth/roles"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
 import type { AccessTokenListItem } from "@/lib/access-tokens"
+import { cn } from "@/lib/utils"
 
 type AccessTokenCardProps = {
   initialTokens: AccessTokenListItem[]
 }
 
+function roleLabel(role: AccessKeyRole) {
+  return role === "super_admin" ? "Super Admin" : "Officer"
+}
+
+function expiryLabel(token: AccessTokenListItem) {
+  if (token.role === "super_admin") {
+    return "Lifetime"
+  }
+
+  if (!token.expires_at) {
+    return "No expiry set"
+  }
+
+  return `Expires ${formatPhilippinesDateTime(token.expires_at)}`
+}
+
 export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
   const [tokens, setTokens] = useState(initialTokens)
   const [label, setLabel] = useState("")
+  const [role, setRole] = useState<AccessKeyRole>("officer")
+  const [officerExpirationDays, setOfficerExpirationDays] = useState<number>(
+    OFFICER_EXPIRATION_OPTIONS[1].days,
+  )
   const [error, setError] = useState<string | null>(null)
   const [newToken, setNewToken] = useState<string | null>(null)
+  const [newTokenRole, setNewTokenRole] = useState<AccessKeyRole>("officer")
   const [copied, setCopied] = useState(false)
   const [isPending, startTransition] = useTransition()
   const loginQrUrl = useMemo(() => {
@@ -52,10 +79,15 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
 
     startTransition(async () => {
       try {
-        const result = await createAccessTokenAction(label)
+        const result = await createAccessTokenAction(
+          label,
+          role,
+          role === "officer" ? officerExpirationDays : undefined,
+        )
         setTokens((current) => [result.record, ...current])
         setLabel("")
         setNewToken(result.token)
+        setNewTokenRole(result.record.role)
         setCopied(false)
       } catch (createError) {
         setError(createError instanceof Error ? createError.message : "Failed to create token.")
@@ -97,24 +129,62 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
             Access Tokens
           </CardTitle>
           <CardDescription>
-            Create access keys for users. Save your own admin key and QR when created — you will
-            need them again if your session expires.
+            Super Admin keys are lifetime with Settings access. Officer keys expire and cannot open
+            Settings.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="grid gap-3">
             <Input
               value={label}
               onChange={(event) => setLabel(event.target.value)}
-              placeholder="Token label (e.g. Command Analytics)"
+              placeholder="Label (e.g. Boss Office, Admin - Rogie)"
               disabled={isPending}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault()
-                  handleCreate()
-                }
-              }}
             />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-2 text-sm">
+                <span className="font-medium">Key Type</span>
+                <select
+                  value={role}
+                  onChange={(event) => setRole(event.target.value as AccessKeyRole)}
+                  disabled={isPending}
+                  className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                >
+                  {ACCESS_KEY_ROLES.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="block text-xs text-muted-foreground">
+                  {ACCESS_KEY_ROLES.find((option) => option.id === role)?.description}
+                </span>
+              </label>
+
+              {role === "officer" ? (
+                <label className="space-y-2 text-sm">
+                  <span className="font-medium">Expiration</span>
+                  <select
+                    value={officerExpirationDays}
+                    onChange={(event) => setOfficerExpirationDays(Number(event.target.value))}
+                    disabled={isPending}
+                    className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                  >
+                    {OFFICER_EXPIRATION_OPTIONS.map((option) => (
+                      <option key={option.days} value={option.days}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <div className="flex items-center rounded-lg border border-dashed bg-muted/15 px-3 text-sm text-muted-foreground">
+                  Lifetime · no expiration
+                </div>
+              )}
+            </div>
+
             <Button onClick={handleCreate} disabled={isPending || !label.trim()}>
               {isPending ? "Creating..." : "Create Token"}
             </Button>
@@ -125,7 +195,7 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
           <div className="space-y-3">
             {tokens.length === 0 ? (
               <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
-                Walang access token pa. Gumawa ng bago gamit ang label sa taas.
+                No access tokens yet.
               </p>
             ) : (
               tokens.map((token) => (
@@ -136,7 +206,12 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{token.label}</p>
-                      <Badge variant={token.is_active ? "default" : "secondary"}>
+                      <Badge
+                        variant={token.role === "super_admin" ? "default" : "secondary"}
+                      >
+                        {roleLabel(token.role)}
+                      </Badge>
+                      <Badge variant={token.is_active ? "outline" : "secondary"}>
                         {token.is_active ? "Active" : "Revoked"}
                       </Badge>
                     </div>
@@ -144,6 +219,8 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
                       {token.key_prefix}••••••••
                     </p>
                     <p className="text-xs text-muted-foreground">
+                      {expiryLabel(token)}
+                      {" · "}
                       Created {formatPhilippinesDateTime(token.created_at)}
                       {token.last_used_at
                         ? ` · Last used ${formatPhilippinesDateTime(token.last_used_at)}`
@@ -178,10 +255,11 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
       >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Para sa boss — i-save o i-print ang QR</DialogTitle>
+            <DialogTitle>
+              {newTokenRole === "super_admin" ? "Super Admin Key Created" : "Officer Key Created"}
+            </DialogTitle>
             <DialogDescription>
-              Makikita mo lang ang buong key ng isang beses. Pinakamadali para sa boss: i-scan ang
-              QR sa login page, o i-print at ilagay sa desk.
+              Save this key and QR now. You will not see the full key again.
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
@@ -190,16 +268,22 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
                 <QRCode value={loginQrUrl} size={180} />
                 <div className="flex items-center gap-2 text-xs font-medium text-black">
                   <QrCodeIcon className="size-4" />
-                  Boss Login QR
+                  Login QR
                 </div>
               </div>
             ) : null}
-            <div className="rounded-lg border bg-muted/30 p-3 font-mono text-sm break-all">
+            <div
+              className={cn(
+                "rounded-lg border bg-muted/30 p-3 font-mono text-sm break-all",
+                newTokenRole === "officer" && "select-all",
+              )}
+            >
               {newToken}
             </div>
             <p className="text-xs text-muted-foreground">
-              Tip: I-install ang PRO4A app sa home screen pagkatapos mag-login. Sunod, click icon na
-              lang — hindi na kailangan mag-scan ulit.
+              {newTokenRole === "super_admin"
+                ? "Lifetime key · Settings access · save in a secure note."
+                : "Officer key · dashboard only · Settings hidden · expires based on selected duration."}
             </p>
           </DialogBody>
           <DialogFooter>
