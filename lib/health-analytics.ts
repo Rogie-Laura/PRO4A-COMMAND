@@ -1,6 +1,7 @@
+import { unstable_cache } from "next/cache"
+
 import {
   BMI_CATEGORIES,
-  calculateBmi,
   getBmiCategoryFromLabel,
   getBmiCategoryFromValue,
   type BmiCategoryId,
@@ -8,7 +9,7 @@ import {
 import { fetchHealthSheetCsv, parseCsv } from "@/lib/google-sheets"
 import type { BmiCategoryCount, HealthAnalytics } from "@/lib/health-types"
 
-const HEALTH_HEADER_PATTERNS = [/bmi/i, /weight/i, /height/i, /body mass/i]
+const HEALTH_HEADER_PATTERNS = [/bmi/i]
 
 function pickField(row: Record<string, string>, keys: string[]) {
   for (const key of keys) {
@@ -48,34 +49,11 @@ function resolveBmiCategory(row: Record<string, string>): BmiCategoryId | null {
   const bmiValue = parseNumber(pickField(row, ["BMI", "BMI Value", "Body Mass Index", "BMI Score"]))
   if (bmiValue !== null) return getBmiCategoryFromValue(bmiValue)
 
-  const weight = parseNumber(
-    pickField(row, ["Weight (kg)", "Weight", "Wt", "Weight kg"]),
-  )
-  const height = parseNumber(
-    pickField(row, ["Height (m)", "Height", "Height (cm)", "Ht", "Height cm"]),
-  )
-  const calculated = weight !== null && height !== null ? calculateBmi(weight, height) : null
-
-  return calculated !== null ? getBmiCategoryFromValue(calculated) : null
+  return null
 }
 
-function hasHealthIdentity(row: Record<string, string>) {
-  return Boolean(
-    pickField(row, [
-      "Surname",
-      "First Name",
-      "Rank",
-      "No",
-      "Last Name",
-      "Badge Number",
-      "BMI",
-      "BMI Category",
-      "Weight (kg)",
-      "Weight",
-      "Height (m)",
-      "Height",
-    ]),
-  )
+function hasBmiData(row: Record<string, string>) {
+  return Boolean(pickField(row, ["BMI Category", "BMI"]))
 }
 
 function buildCategoryCounts(rows: Record<string, string>[]): BmiCategoryCount[] {
@@ -87,7 +65,7 @@ function buildCategoryCounts(rows: Record<string, string>[]): BmiCategoryCount[]
   let assessed = 0
 
   for (const row of rows) {
-    if (!hasHealthIdentity(row)) continue
+    if (!hasBmiData(row)) continue
 
     const categoryId = resolveBmiCategory(row)
     if (!categoryId) continue
@@ -118,7 +96,7 @@ function emptyAnalytics(): HealthAnalytics {
   }
 }
 
-export async function getHealthAnalytics(): Promise<HealthAnalytics> {
+async function loadHealthAnalytics(): Promise<HealthAnalytics> {
   try {
     const csv = await fetchHealthSheetCsv()
     const rows = parseCsv(csv)
@@ -143,4 +121,14 @@ export async function getHealthAnalytics(): Promise<HealthAnalytics> {
   } catch {
     return emptyAnalytics()
   }
+}
+
+const getCachedHealthAnalytics = unstable_cache(
+  loadHealthAnalytics,
+  ["health-analytics-rictmd"],
+  { revalidate: 600 },
+)
+
+export async function getHealthAnalytics(): Promise<HealthAnalytics> {
+  return getCachedHealthAnalytics()
 }

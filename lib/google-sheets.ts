@@ -1,8 +1,10 @@
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
 const DEFAULT_MOBILITY_TAB = "Mobility"
-const DEFAULT_HEALTH_SHEET_ID = "1YKb4nj2IHXl2DdmN7Yvya4lru5j3agdQ"
-const DEFAULT_HEALTH_TAB = "RICTMD"
-const DEFAULT_HEALTH_GID = "1414294567"
+/** PRO4A BMI source: RICTMD tab only. */
+export const DEFAULT_HEALTH_SHEET_ID = "1YKb4nj2IHXl2DdmN7Yvya4lru5j3agdQ"
+export const DEFAULT_HEALTH_GID = "1414294567"
+const HEALTH_RICTMD_BMI_COLUMNS = "P, Q"
+const HEALTH_CACHE_SECONDS = 600
 
 export function getSheetCsvUrl(sheetId?: string) {
   const id = sheetId ?? process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
@@ -54,42 +56,34 @@ export async function fetchMobilitySheetCsv(options?: {
 
 export function getHealthSheetCsvUrl(options?: {
   sheetId?: string
-  sheetTab?: string
   gid?: string
 }) {
   const id =
     options?.sheetId ??
     process.env.GOOGLE_HEALTH_SHEET_ID ??
     DEFAULT_HEALTH_SHEET_ID
-  const gid =
-    options?.gid ?? process.env.GOOGLE_HEALTH_SHEET_GID ?? DEFAULT_HEALTH_GID
-  const tab = options?.sheetTab ?? process.env.GOOGLE_HEALTH_SHEET_TAB ?? DEFAULT_HEALTH_TAB
+  const gid = options?.gid ?? process.env.GOOGLE_HEALTH_SHEET_GID ?? DEFAULT_HEALTH_GID
 
   const params = new URLSearchParams({
     tqx: "out:csv",
     headers: "1",
+    gid,
+    tq: `SELECT ${HEALTH_RICTMD_BMI_COLUMNS.replace(/,/g, ", ")}`,
   })
-
-  if (gid) {
-    params.set("gid", gid)
-  } else {
-    params.set("sheet", tab)
-  }
 
   return `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?${params.toString()}`
 }
 
 export async function fetchHealthSheetCsv(options?: {
   sheetId?: string
-  sheetTab?: string
   gid?: string
 }): Promise<string> {
-  return fetchCsv(getHealthSheetCsvUrl(options))
+  return fetchCsv(getHealthSheetCsvUrl(options), HEALTH_CACHE_SECONDS)
 }
 
-async function fetchCsv(url: string): Promise<string> {
+async function fetchCsv(url: string, revalidateSeconds = 300): Promise<string> {
   const response = await fetch(url, {
-    next: { revalidate: 300 },
+    next: { revalidate: revalidateSeconds },
   })
 
   if (!response.ok) {
