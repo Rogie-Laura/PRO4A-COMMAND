@@ -22,7 +22,11 @@ export async function validateAccessKey(accessKey: string): Promise<ValidatedAcc
     .eq("is_active", true)
     .maybeSingle()
 
-  if (error || !data) {
+  if (error) {
+    throw new Error("Unable to verify access key. Please contact super admin.")
+  }
+
+  if (!data) {
     throw new Error("Access key is invalid or has been revoked.")
   }
 

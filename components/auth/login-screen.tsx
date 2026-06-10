@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 
@@ -27,12 +27,14 @@ export function LoginScreen() {
   const [rememberDevice, setRememberDevice] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const autoLoginAttempted = useRef(false)
 
   useEffect(() => {
     const keyFromUrl = searchParams.get("key") ?? searchParams.get("t")
 
-    if (!keyFromUrl) return
+    if (!keyFromUrl || autoLoginAttempted.current) return
 
+    autoLoginAttempted.current = true
     setAccessKey(keyFromUrl)
     window.history.replaceState({}, "", "/login")
     submitLogin(keyFromUrl)
@@ -46,7 +48,11 @@ export function LoginScreen() {
       try {
         const normalized = normalizeAccessKeyInput(keyValue)
         const nextPath = searchParams.get("next") ?? "/"
-        await loginWithAccessKeyAction(normalized, rememberDevice, nextPath)
+        const result = await loginWithAccessKeyAction(normalized, rememberDevice, nextPath)
+
+        if (result?.error) {
+          setError(result.error)
+        }
       } catch (loginError) {
         if (isNextRedirect(loginError)) {
           throw loginError
