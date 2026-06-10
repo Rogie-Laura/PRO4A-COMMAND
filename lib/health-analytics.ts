@@ -7,7 +7,11 @@ import {
   type BmiCategoryId,
 } from "@/lib/bmi-config"
 import { fetchRictmdBmiSheetCsv, parseCsv } from "@/lib/google-sheets"
-import { isRictmdBmiSheet, RICTMD_BMI_SHEET } from "@/lib/rictmd-bmi-sheet"
+import {
+  isRictmdBmiSheet,
+  isRictmdPersonnelRow,
+  RICTMD_BMI_SHEET,
+} from "@/lib/rictmd-bmi-sheet"
 import type { BmiCategoryCount, HealthAnalytics } from "@/lib/health-types"
 
 function pickField(row: Record<string, string>, keys: string[]) {
@@ -98,7 +102,8 @@ async function loadHealthAnalytics(): Promise<HealthAnalytics> {
       return emptyAnalytics()
     }
 
-    const categories = buildCategoryCounts(rows)
+    const rictmdRows = rows.filter(isRictmdPersonnelRow)
+    const categories = buildCategoryCounts(rictmdRows)
     const totalAssessed = categories.reduce((sum, category) => sum + category.count, 0)
 
     if (totalAssessed === 0) {
@@ -119,7 +124,7 @@ async function loadHealthAnalytics(): Promise<HealthAnalytics> {
 
 const getCachedHealthAnalytics = unstable_cache(
   loadHealthAnalytics,
-  ["health-analytics-rictmd"],
+  ["health-analytics-rictmd-personnel"],
   { revalidate: 600 },
 )
 

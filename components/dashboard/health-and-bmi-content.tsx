@@ -35,8 +35,8 @@ export async function HealthAndBmiContent() {
       {!data.dataReady && (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">
           <CardContent className="py-4 text-sm text-muted-foreground">
-            Walang BMI records mula sa RICTMD sheet pa. Siguraduhing naka-public ang Google
-            Sheet at may columns na BMI / BMI Category sa RICTMD tab.
+            Walang BMI records mula sa RICTMD personnel pa. Siguraduhing naka-public ang
+            Google Sheet at may Station/Office, BMI, at BMI Category sa RICTMD tab.
           </CardContent>
         </Card>
       )}
