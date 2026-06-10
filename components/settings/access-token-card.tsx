@@ -6,6 +6,7 @@ import QRCode from "react-qr-code"
 
 import {
   createAccessTokenAction,
+  getAccessTokenQrUrlAction,
   revokeAccessTokenAction,
 } from "@/app/settings/actions"
 import { Badge } from "@/components/ui/badge"
@@ -68,6 +69,9 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
   const [newToken, setNewToken] = useState<string | null>(null)
   const [newTokenRole, setNewTokenRole] = useState<AccessKeyRole>("officer")
   const [copied, setCopied] = useState(false)
+  const [viewQrLabel, setViewQrLabel] = useState<string | null>(null)
+  const [viewQrUrl, setViewQrUrl] = useState<string | null>(null)
+  const [viewQrError, setViewQrError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const loginQrUrl = useMemo(() => {
     if (!newToken) return null
@@ -118,6 +122,23 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
     await navigator.clipboard.writeText(newToken)
     setCopied(true)
     window.setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleViewQr(token: AccessTokenListItem) {
+    setViewQrError(null)
+    setViewQrLabel(token.label)
+    setViewQrUrl(null)
+
+    startTransition(async () => {
+      try {
+        const result = await getAccessTokenQrUrlAction(token.id)
+        setViewQrUrl(result.loginUrl)
+      } catch (qrError) {
+        setViewQrError(
+          qrError instanceof Error ? qrError.message : "Unable to load login QR.",
+        )
+      }
+    })
   }
 
   return (
@@ -229,16 +250,31 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
                   </div>
 
                   {token.is_active ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRevoke(token.id)}
-                      disabled={isPending}
-                      className="shrink-0"
-                    >
-                      <ShieldOffIcon />
-                      Revoke
-                    </Button>
+                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewQr(token)}
+                        disabled={isPending || !token.has_qr}
+                        title={
+                          token.has_qr
+                            ? "View login QR"
+                            : "QR available only for newly created keys"
+                        }
+                      >
+                        <QrCodeIcon />
+                        View QR
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRevoke(token.id)}
+                        disabled={isPending}
+                      >
+                        <ShieldOffIcon />
+                        Revoke
+                      </Button>
+                    </div>
                   ) : null}
                 </div>
               ))
@@ -259,7 +295,7 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
               {newTokenRole === "super_admin" ? "Super Admin Key Created" : "Officer Key Created"}
             </DialogTitle>
             <DialogDescription>
-              Save this key and QR now. You will not see the full key again.
+              Save this key now. You can open the login QR again anytime from Settings.
             </DialogDescription>
           </DialogHeader>
           <DialogBody className="space-y-4">
@@ -293,6 +329,51 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
             <Button onClick={handleCopy}>
               {copied ? <CheckIcon /> : <CopyIcon />}
               {copied ? "Copied" : "Copy Token"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(viewQrLabel)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewQrLabel(null)
+            setViewQrUrl(null)
+            setViewQrError(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{viewQrLabel ? `${viewQrLabel} — Login QR` : "Login QR"}</DialogTitle>
+            <DialogDescription>
+              I-scan o i-print ang QR para sa mabilis na login.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogBody className="space-y-4">
+            {viewQrError ? <p className="text-sm text-destructive">{viewQrError}</p> : null}
+            {viewQrUrl ? (
+              <div className="mx-auto flex w-fit flex-col items-center gap-3 rounded-xl border bg-white p-4">
+                <QRCode value={viewQrUrl} size={200} />
+                <p className="max-w-[220px] text-center text-xs text-black/70 break-all">
+                  {viewQrUrl}
+                </p>
+              </div>
+            ) : (
+              <p className="text-center text-sm text-muted-foreground">Loading QR...</p>
+            )}
+          </DialogBody>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setViewQrLabel(null)
+                setViewQrUrl(null)
+                setViewQrError(null)
+              }}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

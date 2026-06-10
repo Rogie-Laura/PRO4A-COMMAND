@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import {
   createAccessToken,
+  getAccessTokenLoginUrl,
   listAccessTokens,
   revokeAccessToken,
 } from "@/lib/access-tokens"
@@ -39,6 +40,20 @@ export async function createAccessTokenAction(
   })
   revalidatePath("/settings")
   return result
+}
+
+export async function getAccessTokenQrUrlAction(id: string) {
+  await requireSuperAdminSession()
+
+  if (!id) {
+    throw new Error("Token id is required.")
+  }
+
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://pro4a-command.vercel.app")
+
+  return getAccessTokenLoginUrl(id, origin)
 }
 
 export async function revokeAccessTokenAction(id: string) {
