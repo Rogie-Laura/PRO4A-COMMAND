@@ -1,4 +1,6 @@
-import { fetchMobilitySheetCsv, parseCsv } from "@/lib/google-sheets"
+import { unstable_cache } from "next/cache"
+
+import { fetchMobilityProbeCsv, fetchMobilitySheetCsv, parseCsv } from "@/lib/google-sheets"
 import {
   VEHICLE_CONDITION_CATEGORIES,
   VEHICLE_OWNERSHIP_CATEGORIES,
@@ -259,15 +261,17 @@ function emptyAnalytics(): MobilityAnalytics {
   }
 }
 
-export async function getMobilityAnalytics(): Promise<MobilityAnalytics> {
+async function loadMobilityAnalytics(): Promise<MobilityAnalytics> {
   try {
-    const csv = await fetchMobilitySheetCsv()
-    const rows = parseCsv(csv)
+    const probeCsv = await fetchMobilityProbeCsv()
+    const probeRows = parseCsv(probeCsv)
 
-    if (!looksLikeVehicleSheet(rows)) {
+    if (!looksLikeVehicleSheet(probeRows)) {
       return emptyAnalytics()
     }
 
+    const csv = await fetchMobilitySheetCsv()
+    const rows = parseCsv(csv)
     const records = rows
       .map(mapVehicleRow)
       .filter((record): record is VehicleRecord => record !== null)
@@ -294,4 +298,14 @@ export async function getMobilityAnalytics(): Promise<MobilityAnalytics> {
   } catch {
     return emptyAnalytics()
   }
+}
+
+const getCachedMobilityAnalytics = unstable_cache(
+  loadMobilityAnalytics,
+  ["mobility-analytics"],
+  { revalidate: 600 },
+)
+
+export async function getMobilityAnalytics(): Promise<MobilityAnalytics> {
+  return getCachedMobilityAnalytics()
 }

@@ -1,14 +1,12 @@
-import { LeadershipSection } from "@/components/dashboard/leadership-section"
-import { UnitTable } from "@/components/dashboard/unit-table"
-import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
+import { Suspense } from "react"
 
-export default async function UsersPage() {
-  const data = await getPersonnelAnalytics()
+import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
+import { PersonnelUsersContent } from "@/components/dashboard/personnel-users-content"
 
+export default function UsersPage() {
   return (
-    <div className="space-y-6">
-      <LeadershipSection leadership={data.leadership} />
-      <UnitTable rows={data.unitRows} />
-    </div>
+    <Suspense fallback={<DashboardLoading />}>
+      <PersonnelUsersContent />
+    </Suspense>
   )
 }

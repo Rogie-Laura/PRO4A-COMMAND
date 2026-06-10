@@ -1,17 +1,12 @@
-import { TotalVehiclesSection } from "@/components/dashboard/total-vehicles-section"
-import { getMobilityAnalytics } from "@/lib/mobility-analytics"
+import { Suspense } from "react"
 
-export default async function MobilityPage() {
-  const data = await getMobilityAnalytics()
+import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
+import { MobilityPageContent } from "@/components/dashboard/mobility-page-content"
 
+export default function MobilityPage() {
   return (
-      <TotalVehiclesSection
-        total={data.totalVehicles}
-        offices={data.officeBreakdown}
-        ownership={data.ownershipDistribution}
-        condition={data.conditionDistribution}
-        fleet={data.fleet}
-        dataReady={data.dataReady}
-      />
+    <Suspense fallback={<DashboardLoading />}>
+      <MobilityPageContent />
+    </Suspense>
   )
 }

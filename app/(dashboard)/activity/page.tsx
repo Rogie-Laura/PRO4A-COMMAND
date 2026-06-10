@@ -1,14 +1,12 @@
-import { BreakdownCard } from "@/components/dashboard/breakdown-card"
-import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
+import { Suspense } from "react"
 
-export default async function ActivityPage() {
-  const data = await getPersonnelAnalytics()
+import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
+import { PersonnelActivityContent } from "@/components/dashboard/personnel-activity-content"
 
+export default function ActivityPage() {
   return (
-    <BreakdownCard
-      title="Personnel Status"
-      description="Live count from Google Sheets roster"
-      items={data.statusStats}
-    />
+    <Suspense fallback={<DashboardLoading />}>
+      <PersonnelActivityContent />
+    </Suspense>
   )
 }

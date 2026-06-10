@@ -1,5 +1,7 @@
+import { unstable_cache } from "next/cache"
+
 import { AGE_ABOVE_56_ID, AGE_BRACKETS, getAgeBracketFromBirthDate } from "@/lib/age-config"
-import { fetchSheetCsv, parseCsv } from "@/lib/google-sheets"
+import { fetchPersonnelSheetCsv, parseCsv } from "@/lib/google-sheets"
 import {
   type LeadershipSlot,
   PROVINCIAL_DIRECTOR_SLOTS,
@@ -379,8 +381,8 @@ function buildLeadership(records: PersonnelRecord[]): LeadershipGroups {
   }
 }
 
-export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
-  const csv = await fetchSheetCsv()
+async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
+  const csv = await fetchPersonnelSheetCsv()
   const rows = parseCsv(csv)
   const records = rows.map(mapRow).filter((r) => r.lastName || r.firstName)
   const total = records.length
@@ -404,4 +406,14 @@ export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
     unitRows: buildUnitRows(records),
     leadership: buildLeadership(records),
   }
+}
+
+const getCachedPersonnelAnalytics = unstable_cache(
+  loadPersonnelAnalytics,
+  ["personnel-analytics"],
+  { revalidate: 600 },
+)
+
+export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {
+  return getCachedPersonnelAnalytics()
 }
