@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 
 import { LogoutButton } from "@/components/auth/logout-button"
-import { isSuperAdmin, type AccessKeyRole } from "@/lib/auth/roles"
+import type { AccessKeyRole } from "@/lib/auth/roles"
 import {
   Sidebar,
   SidebarContent,
@@ -45,11 +45,9 @@ type AppSidebarProps = {
   role: AccessKeyRole
 }
 
-export function AppSidebar({ role }: AppSidebarProps) {
+export function AppSidebar({ role: _role }: AppSidebarProps) {
   const pathname = usePathname()
-  const navItems = isSuperAdmin(role)
-    ? allNavItems
-    : allNavItems.filter((item) => item.href !== "/settings")
+  const navItems = allNavItems
 
   return (
     <Sidebar>

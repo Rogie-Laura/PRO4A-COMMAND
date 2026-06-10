@@ -50,9 +50,7 @@ export async function loginWithAccessKeyAction(
 
     const safeNext =
       nextPath && nextPath.startsWith("/") && !nextPath.startsWith("/login")
-        ? validated.role === "super_admin" || nextPath !== "/settings"
-          ? nextPath
-          : "/"
+        ? nextPath
         : "/"
 
     redirect(safeNext)

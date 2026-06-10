@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-import { isSuperAdmin } from "@/lib/auth/roles"
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth/session"
 
 const PUBLIC_PATHS = ["/login"]
@@ -39,10 +38,6 @@ export async function middleware(request: NextRequest) {
 
   if (session) {
     if (pathname === "/login") {
-      return NextResponse.redirect(new URL("/", request.url))
-    }
-
-    if (pathname.startsWith("/settings") && !isSuperAdmin(session.role)) {
       return NextResponse.redirect(new URL("/", request.url))
     }
 

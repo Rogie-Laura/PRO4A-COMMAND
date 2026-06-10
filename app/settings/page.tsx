@@ -18,20 +18,24 @@ import { isSuperAdmin } from "@/lib/auth/roles"
 export default async function SettingsPage() {
   const session = await getSession()
 
-  if (!session || !isSuperAdmin(session.role)) {
-    redirect("/")
+  if (!session) {
+    redirect("/login")
   }
+
+  const canManageTokens = isSuperAdmin(session.role)
 
   let tokens: AccessTokenListItem[] = []
   let tokenError: string | null = null
 
-  try {
-    tokens = await listAccessTokens()
-  } catch (error) {
-    tokenError =
-      error instanceof Error
-        ? error.message
-        : "Unable to load access tokens from Supabase."
+  if (canManageTokens) {
+    try {
+      tokens = await listAccessTokens()
+    } catch (error) {
+      tokenError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load access tokens from Supabase."
+    }
   }
 
   return (
@@ -41,19 +45,21 @@ export default async function SettingsPage() {
 
         <InstallAppCard />
 
-        {tokenError ? (
-          <Card className="border-destructive/30">
-            <CardHeader>
-              <CardTitle>Access Tokens</CardTitle>
-              <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-destructive">{tokenError}</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <AccessTokenCard initialTokens={tokens} />
-        )}
+        {canManageTokens ? (
+          tokenError ? (
+            <Card className="border-destructive/30">
+              <CardHeader>
+                <CardTitle>Access Tokens</CardTitle>
+                <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-destructive">{tokenError}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <AccessTokenCard initialTokens={tokens} />
+          )
+        ) : null}
       </div>
     </DashboardLayout>
   )
