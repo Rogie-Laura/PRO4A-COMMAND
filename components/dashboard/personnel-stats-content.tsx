@@ -14,7 +14,7 @@ export async function PersonnelStatsContent() {
 
   return (
     <div className="space-y-6">
-      <DataSyncBanner lastUpdated={data.lastUpdated} />
+      <DataSyncBanner lastUpdated={data.lastUpdated} sourceLabel="Personnel tab" />
 
       {totalKpi && (
         <TotalPersonnelSection

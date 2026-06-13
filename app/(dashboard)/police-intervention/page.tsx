@@ -1,8 +1,12 @@
-import {
-  getPatrollersMonitorUrl,
-} from "@/lib/patrol-intervention-config"
+import { Suspense } from "react"
+
+import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
 import { PoliceInterventionContent } from "@/components/dashboard/police-intervention-content"
 
 export default function PoliceInterventionPage() {
-  return <PoliceInterventionContent patrollersUrl={getPatrollersMonitorUrl()} />
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <PoliceInterventionContent />
+    </Suspense>
+  )
 }
