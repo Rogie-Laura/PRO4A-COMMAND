@@ -71,6 +71,14 @@ export async function PoliceInterventionContent() {
           <p className="text-4xl font-bold tabular-nums text-primary sm:text-5xl">
             {data.ok ? data.total : "—"}
           </p>
+          {data.ok && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              <span className="font-semibold tabular-nums text-foreground">
+                {data.duty_total}
+              </span>{" "}
+              personnel on duty
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -101,12 +109,20 @@ export async function PoliceInterventionContent() {
                   <CardTitle className="text-3xl tabular-nums">
                     {data.ok ? (data.counts[type.id] ?? 0) : "—"}
                   </CardTitle>
+                  {data.ok && (
+                    <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">
+                      <span className="font-semibold text-foreground">
+                        {data.duty_counts[type.id] ?? 0}
+                      </span>{" "}
+                      on duty
+                    </p>
+                  )}
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground">
-                Units on map tagged as {type.label.toLowerCase()}.
+                Active units on map · personnel marked on duty in the mobile app.
               </p>
             </CardContent>
           </Card>

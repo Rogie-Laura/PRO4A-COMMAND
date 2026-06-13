@@ -7,7 +7,9 @@ import {
 export type PatrolCountsPayload = {
   ok: boolean
   counts: PatrolUnitCounts
+  duty_counts: PatrolUnitCounts
   total: number
+  duty_total: number
   updated_at: string | null
   error?: string
 }
@@ -32,7 +34,9 @@ export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCount
     return {
       ok: false,
       counts: EMPTY_PATROL_COUNTS,
+      duty_counts: EMPTY_PATROL_COUNTS,
       total: 0,
+      duty_total: 0,
       updated_at: null,
       error:
         "Patrollers API URL is not configured. Set PATROLLERS_API_URL on PRO4A-COMMAND.",
@@ -53,7 +57,9 @@ export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCount
     const data = (await response.json()) as {
       ok?: boolean
       counts?: Record<string, number>
+      duty_counts?: Record<string, number>
       total?: number
+      duty_total?: number
       updated_at?: string
       error?: string
     }
@@ -62,29 +68,40 @@ export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCount
       return {
         ok: false,
         counts: EMPTY_PATROL_COUNTS,
+        duty_counts: EMPTY_PATROL_COUNTS,
         total: 0,
+        duty_total: 0,
         updated_at: null,
         error: data.error ?? `Patrollers API returned ${response.status}.`,
       }
     }
 
     const counts = normalizeCounts(data.counts)
+    const duty_counts = normalizeCounts(data.duty_counts)
     const total =
       typeof data.total === "number"
         ? data.total
         : Object.values(counts).reduce((sum, n) => sum + n, 0)
+    const duty_total =
+      typeof data.duty_total === "number"
+        ? data.duty_total
+        : Object.values(duty_counts).reduce((sum, n) => sum + n, 0)
 
     return {
       ok: true,
       counts,
+      duty_counts,
       total,
+      duty_total,
       updated_at: data.updated_at ?? new Date().toISOString(),
     }
   } catch (err) {
     return {
       ok: false,
       counts: EMPTY_PATROL_COUNTS,
+      duty_counts: EMPTY_PATROL_COUNTS,
       total: 0,
+      duty_total: 0,
       updated_at: null,
       error:
         err instanceof Error
