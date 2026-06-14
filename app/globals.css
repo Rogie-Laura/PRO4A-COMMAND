@@ -158,9 +158,8 @@ html.show-command-splash body {
 }
 
 #command-native-splash img {
-  width: auto;
+  width: 100%;
+  max-width: 36rem;
   height: auto;
-  max-width: 12rem;
-  max-height: 14rem;
   object-fit: contain;
 }

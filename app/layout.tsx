@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
-import { COMMAND_BRAND_BG, COMMAND_ICON_VERSION, PRO4A_LOGO } from "@/lib/brand-config"
+import { COMMAND_BRAND, COMMAND_BRAND_BG, COMMAND_BRAND_VERSION, COMMAND_ICON_VERSION } from "@/lib/brand-config"
 import { PwaRegister } from "@/components/pwa/pwa-register"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -75,10 +75,10 @@ export default function RootLayout({
         <div id="command-native-splash" aria-hidden="true">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`${PRO4A_LOGO.src}?v=${COMMAND_ICON_VERSION}`}
+            src={`${COMMAND_BRAND.src}?v=${COMMAND_BRAND_VERSION}`}
             alt=""
-            width={PRO4A_LOGO.width}
-            height={PRO4A_LOGO.height}
+            width={COMMAND_BRAND.width}
+            height={COMMAND_BRAND.height}
             decoding="sync"
             fetchPriority="high"
           />

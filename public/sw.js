@@ -1,4 +1,4 @@
-const CACHE_NAME = "pro4a-command-v3"
+const CACHE_NAME = "pro4a-command-v4"
 
 self.addEventListener("install", () => {
   self.skipWaiting()

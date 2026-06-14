@@ -1,5 +1,5 @@
 /** Brand assets (public/logos). */
-export const COMMAND_BRAND_VERSION = "3"
+export const COMMAND_BRAND_VERSION = "4"
 
 export const COMMAND_BRAND = {
   src: "/logos/command.png",
@@ -20,4 +20,4 @@ export const PRO4A_APP_TAGLINE = "Operational Dashboard"
 
 export const COMMAND_BRAND_BG = "#05070f"
 
-export const COMMAND_ICON_VERSION = "3"
+export const COMMAND_ICON_VERSION = "4"
