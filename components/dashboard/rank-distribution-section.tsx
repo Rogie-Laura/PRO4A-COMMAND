@@ -12,11 +12,13 @@ export function RankDistributionSection({ distribution }: RankDistributionSectio
         title="Distribution of Personnel by Rank (PCO)"
         description="Commissioned officers by rank"
         data={distribution.pco}
+        variant="pco"
       />
       <RankPieCard
         title="Distribution of Personnel by Rank (PNCO)"
         description="Non-commissioned officers by rank"
         data={distribution.pnco}
+        variant="pnco"
       />
     </div>
   )
