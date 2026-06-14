@@ -9,6 +9,8 @@ export async function DashboardLayout({ children }: DashboardLayoutProps) {
   const session = await getSession()
 
   return (
-    <DashboardLayoutClient role={session?.role ?? "officer"}>{children}</DashboardLayoutClient>
+    <DashboardLayoutClient title="PRO4A COMMAND" role={session?.role ?? "officer"}>
+      {children}
+    </DashboardLayoutClient>
   )
 }

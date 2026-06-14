@@ -1,6 +1,9 @@
 "use client"
 
+import { usePathname } from "next/navigation"
+
 import { DashboardLayoutClient } from "@/components/dashboard-layout-client"
+import { getDashboardRouteMeta } from "@/lib/dashboard-routes"
 import type { AccessKeyRole } from "@/lib/auth/roles"
 
 type DashboardShellProps = {
@@ -9,5 +12,12 @@ type DashboardShellProps = {
 }
 
 export function DashboardShell({ role, children }: DashboardShellProps) {
-  return <DashboardLayoutClient role={role}>{children}</DashboardLayoutClient>
+  const pathname = usePathname()
+  const { title, description } = getDashboardRouteMeta(pathname)
+
+  return (
+    <DashboardLayoutClient title={title} description={description} role={role}>
+      {children}
+    </DashboardLayoutClient>
+  )
 }

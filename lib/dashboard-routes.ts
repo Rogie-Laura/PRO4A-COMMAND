@@ -1,15 +1,10 @@
 export type DashboardRouteMeta = {
   title: string
   description?: string
-  logo?: string
 }
 
 export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
-  "/": {
-    title: "PRO4A COMMAND",
-    description: "Operational Dashboard",
-    logo: "/logos/PRO4A.png",
-  },
+  "/": { title: "Personnel Stats" },
   "/mobility": {
     title: "Mobility",
     description: "Regional fleet registry and vehicle distribution",
