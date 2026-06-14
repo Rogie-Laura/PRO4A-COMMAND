@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next"
 
-import { COMMAND_BRAND_BG } from "@/lib/brand-config"
+import { COMMAND_BRAND_BG, COMMAND_ICON_VERSION } from "@/lib/brand-config"
+
+const icon192 = `/icons/icon-192.png?v=${COMMAND_ICON_VERSION}`
+const icon512 = `/icons/icon-512.png?v=${COMMAND_ICON_VERSION}`
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -15,19 +18,19 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "any",
     icons: [
       {
-        src: "/icons/icon-192.png",
+        src: icon192,
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/icons/icon-512.png",
+        src: icon512,
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/icons/icon-512.png",
+        src: icon512,
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

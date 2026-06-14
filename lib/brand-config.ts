@@ -1,4 +1,6 @@
 /** PRO4A COMMAND wide brand banner (public/logos/command.png). */
+export const COMMAND_BRAND_VERSION = "2"
+
 export const COMMAND_BRAND = {
   src: "/logos/command.png",
   width: 677,
@@ -7,3 +9,5 @@ export const COMMAND_BRAND = {
 } as const
 
 export const COMMAND_BRAND_BG = "#05070f"
+
+export const COMMAND_ICON_VERSION = "2"
