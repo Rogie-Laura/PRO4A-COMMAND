@@ -13,6 +13,10 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
   "/camps-offices": { title: "Camps and Offices" },
   "/crime-statistics": { title: "Crime Statistics" },
   "/police-intervention": { title: "Police Intervention" },
+  "/ict-equipment-inventory": {
+    title: "Inventory of ICT Equipment",
+    description: "Regional ICT assets and equipment registry",
+  },
   "/health-and-bmi": {
     title: "Health and BMI",
     description: "Personnel body mass index classification",
