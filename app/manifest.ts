@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next"
 
+import { COMMAND_BRAND_BG } from "@/lib/brand-config"
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "PRO4A COMMAND",
@@ -8,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     scope: "/",
     display: "standalone",
-    background_color: "#0f1117",
-    theme_color: "#0f1117",
+    background_color: COMMAND_BRAND_BG,
+    theme_color: COMMAND_BRAND_BG,
     orientation: "any",
     icons: [
       {

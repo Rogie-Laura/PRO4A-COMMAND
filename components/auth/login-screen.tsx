@@ -1,11 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState, useTransition } from "react"
-import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 
 import { loginWithAccessKeyAction } from "@/app/login/actions"
-import { CommandTagline } from "@/components/auth/command-tagline"
+import { CommandBrandBanner } from "@/components/auth/command-brand-banner"
 import { QrScanButton } from "@/components/auth/qr-scanner-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -76,13 +75,9 @@ export function LoginScreen() {
     <div className="min-h-dvh bg-[#05070f] px-4 py-10 text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.22),_transparent_40%)]" />
 
-      <div className="relative mx-auto flex w-full max-w-md flex-col gap-8">
-        <div className="text-center">
-          <div className="mx-auto mb-5 flex size-20 items-center justify-center rounded-2xl border border-white/15 bg-white/10 shadow-lg">
-            <Image src="/logos/PRO4A.png" alt="PRO4A" width={56} height={56} className="size-14" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">PRO4A COMMAND</h1>
-          <CommandTagline />
+      <div className="relative mx-auto flex w-full max-w-xl flex-col gap-8">
+        <div className="w-full">
+          <CommandBrandBanner priority />
         </div>
 
         <div className="rounded-2xl border border-slate-700 bg-slate-950/95 p-6 shadow-2xl">

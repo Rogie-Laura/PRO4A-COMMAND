@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 
 import "./globals.css"
+import { COMMAND_BRAND_BG } from "@/lib/brand-config"
+import { CommandSplash } from "@/components/pwa/command-splash"
 import { PwaRegister } from "@/components/pwa/pwa-register"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -37,8 +39,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f1117" },
+    { media: "(prefers-color-scheme: light)", color: COMMAND_BRAND_BG },
+    { media: "(prefers-color-scheme: dark)", color: COMMAND_BRAND_BG },
   ],
 }
 
@@ -57,6 +59,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <TooltipProvider>
             {children}
+            <CommandSplash />
             <PwaRegister />
           </TooltipProvider>
         </ThemeProvider>
