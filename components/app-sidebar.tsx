@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -17,6 +18,7 @@ import {
 
 import { LogoutButton } from "@/components/auth/logout-button"
 import type { AccessKeyRole } from "@/lib/auth/roles"
+import { PRO4A_APP_TAGLINE, PRO4A_APP_TITLE, PRO4A_LOGO } from "@/lib/brand-config"
 import {
   Sidebar,
   SidebarContent,
@@ -69,15 +71,19 @@ export function AppSidebar({ role: _role }: AppSidebarProps) {
             }
           }}
         >
-          <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <BarChart3 className="size-5" />
-          </div>
+          <Image
+            src={PRO4A_LOGO.src}
+            alt={PRO4A_LOGO.alt}
+            width={PRO4A_LOGO.width}
+            height={PRO4A_LOGO.height}
+            className="size-9 shrink-0 object-contain"
+          />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold tracking-tight">
-              PRO4A COMMAND
+              {PRO4A_APP_TITLE}
             </p>
             <p className="truncate text-xs text-muted-foreground">
-              Operations Dashboard
+              {PRO4A_APP_TAGLINE}
             </p>
           </div>
         </Link>

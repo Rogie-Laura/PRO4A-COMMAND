@@ -1,5 +1,5 @@
-/** PRO4A COMMAND wide brand banner (public/logos/command.png). */
-export const COMMAND_BRAND_VERSION = "2"
+/** Brand assets (public/logos). */
+export const COMMAND_BRAND_VERSION = "3"
 
 export const COMMAND_BRAND = {
   src: "/logos/command.png",
@@ -8,6 +8,16 @@ export const COMMAND_BRAND = {
   alt: "PRO4A COMMAND — Centralized Operations Monitoring and Management Dashboard",
 } as const
 
+export const PRO4A_LOGO = {
+  src: "/logos/PRO4A.png",
+  width: 284,
+  height: 318,
+  alt: "PRO4A",
+} as const
+
+export const PRO4A_APP_TITLE = "PRO4A COMMAND"
+export const PRO4A_APP_TAGLINE = "Operational Dashboard"
+
 export const COMMAND_BRAND_BG = "#05070f"
 
-export const COMMAND_ICON_VERSION = "2"
+export const COMMAND_ICON_VERSION = "3"

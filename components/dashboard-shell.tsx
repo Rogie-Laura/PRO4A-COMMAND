@@ -13,10 +13,10 @@ type DashboardShellProps = {
 
 export function DashboardShell({ role, children }: DashboardShellProps) {
   const pathname = usePathname()
-  const { title, description } = getDashboardRouteMeta(pathname)
+  const { title, description, logo } = getDashboardRouteMeta(pathname)
 
   return (
-    <DashboardLayoutClient title={title} description={description} role={role}>
+    <DashboardLayoutClient title={title} description={description} logo={logo} role={role}>
       {children}
     </DashboardLayoutClient>
   )

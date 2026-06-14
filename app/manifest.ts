@@ -9,6 +9,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "PRO4A COMMAND",
     short_name: "PRO4A",
+    id: "/?source=pwa",
     description: "PRO CALABARZON personnel analytics dashboard",
     start_url: "/",
     scope: "/",
