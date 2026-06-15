@@ -1,5 +1,5 @@
-import { SectionPlaceholder } from "@/components/section-placeholder"
+import { CrimeStatisticsPageContent } from "@/components/dashboard/crime-statistics-page"
 
 export default function CrimeStatisticsPage() {
-  return <SectionPlaceholder title="Crime Statistics" />
+  return <CrimeStatisticsPageContent />
 }
