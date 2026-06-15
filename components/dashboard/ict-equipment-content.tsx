@@ -1,7 +1,8 @@
-import { ArchiveX, Monitor, MonitorOff } from "lucide-react"
+import { Monitor } from "lucide-react"
 
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
-import { IctOfficeCards } from "@/components/dashboard/ict-office-cards"
+import { IctStatusCard } from "@/components/dashboard/ict-status-card"
+import { IctStatusCarousel } from "@/components/dashboard/ict-status-carousel"
 import {
   Card,
   CardContent,
@@ -12,40 +13,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { getIctEquipmentAnalytics } from "@/lib/ict-equipment-analytics"
 import type { IctStatusSection } from "@/lib/ict-equipment-types"
-import { cn } from "@/lib/utils"
-
-const STATUS_VARIANTS = {
-  serviceable: {
-    shortLabel: "Serviceable",
-    card: "border-emerald-500/25 bg-gradient-to-br from-emerald-500/12 via-emerald-500/5 to-card dark:border-emerald-400/20",
-    icon: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-    value: "text-emerald-700 dark:text-emerald-400",
-    label: "text-emerald-700/80 dark:text-emerald-400/80",
-    count: "text-emerald-600 dark:text-emerald-400",
-    divider: "border-emerald-500/15",
-    Icon: Monitor,
-  },
-  unserviceable: {
-    shortLabel: "Unserviceable",
-    card: "border-rose-500/25 bg-gradient-to-br from-rose-500/12 via-rose-500/5 to-card dark:border-rose-400/20",
-    icon: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
-    value: "text-rose-700 dark:text-rose-400",
-    label: "text-rose-700/80 dark:text-rose-400/80",
-    count: "text-rose-600 dark:text-rose-400",
-    divider: "border-rose-500/15",
-    Icon: MonitorOff,
-  },
-  ber: {
-    shortLabel: "BER",
-    card: "border-orange-500/25 bg-gradient-to-br from-orange-500/12 via-orange-500/5 to-card dark:border-orange-400/20",
-    icon: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
-    value: "text-orange-700 dark:text-orange-400",
-    label: "text-orange-700/80 dark:text-orange-400/80",
-    count: "text-orange-600 dark:text-orange-400",
-    divider: "border-orange-500/15",
-    Icon: ArchiveX,
-  },
-} as const
 
 function BreakdownStat({
   label,
@@ -94,60 +61,13 @@ function TotalIctEquipmentCard({
   )
 }
 
-function IctStatusCard({
-  section,
-  variant,
-}: {
-  section: IctStatusSection
-  variant: keyof typeof STATUS_VARIANTS
-}) {
-  const styles = STATUS_VARIANTS[variant]
-  const StatusIcon = styles.Icon
-
-  return (
-    <Card className={cn("gap-0 overflow-hidden", styles.card)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start gap-4">
-          <div
-            className={cn(
-              "flex size-11 shrink-0 items-center justify-center rounded-xl",
-              styles.icon,
-            )}
-          >
-            <StatusIcon className="size-5" aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1 space-y-1">
-            <CardDescription className={cn("font-medium", styles.label)}>
-              {styles.shortLabel}
-            </CardDescription>
-            <CardTitle className={cn("text-3xl font-bold tabular-nums sm:text-4xl", styles.value)}>
-              {section.breakdown.total.toLocaleString()}
-            </CardTitle>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <BreakdownStat label="2025 & Below" value={section.breakdown.year2025Below} />
-          <BreakdownStat label="As of January 2026" value={section.breakdown.asOfJanuary2026} />
-        </div>
-
-        <div className={cn("border-t pt-4", styles.divider)}>
-          <p className="mb-3 text-sm font-medium text-foreground">Breakdown by PPO</p>
-          <IctOfficeCards offices={section.offices} countClassName={styles.count} />
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 export function IctEquipmentLoading() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-16 w-full rounded-lg" />
       <Skeleton className="h-40 max-w-xl rounded-xl" />
-      <div className="grid gap-4 lg:grid-cols-3">
+      <Skeleton className="h-[28rem] rounded-xl lg:hidden" />
+      <div className="hidden gap-4 lg:grid lg:grid-cols-3">
         <Skeleton className="h-[28rem] rounded-xl" />
         <Skeleton className="h-[28rem] rounded-xl" />
         <Skeleton className="h-[28rem] rounded-xl" />
@@ -158,6 +78,12 @@ export function IctEquipmentLoading() {
 
 export async function IctEquipmentContent() {
   const data = await getIctEquipmentAnalytics()
+
+  const statusSlides = [
+    { variant: "serviceable" as const, section: data.serviceable },
+    { variant: "unserviceable" as const, section: data.unserviceable },
+    { variant: "ber" as const, section: data.ber },
+  ]
 
   return (
     <div className="relative space-y-6">
@@ -185,10 +111,12 @@ export async function IctEquipmentContent() {
         breakdown={data.grandTotal.breakdown}
       />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <IctStatusCard section={data.serviceable} variant="serviceable" />
-        <IctStatusCard section={data.unserviceable} variant="unserviceable" />
-        <IctStatusCard section={data.ber} variant="ber" />
+      <IctStatusCarousel slides={statusSlides} />
+
+      <div className="hidden items-stretch gap-4 lg:grid lg:grid-cols-3">
+        <IctStatusCard section={data.serviceable} variant="serviceable" compactOffices />
+        <IctStatusCard section={data.unserviceable} variant="unserviceable" compactOffices />
+        <IctStatusCard section={data.ber} variant="ber" compactOffices />
       </div>
     </div>
   )
