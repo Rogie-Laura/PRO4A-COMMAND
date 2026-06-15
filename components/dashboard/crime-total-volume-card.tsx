@@ -27,7 +27,7 @@ export function CrimeTotalVolumeCard({ data }: CrimeTotalVolumeCardProps) {
   const coveredPeriod = formatCoveredPeriod(data)
 
   return (
-    <Card className="gap-0 overflow-hidden border-rose-500/25 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-card sm:max-w-xl">
+    <Card className="gap-0 overflow-hidden border-rose-500/25 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-card">
       <CardHeader className="pb-2">
         <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
           <Scale className="size-5" aria-hidden />

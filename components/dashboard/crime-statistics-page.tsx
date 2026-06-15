@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react"
 import { FileSpreadsheet, Loader2, Upload } from "lucide-react"
 
-import { CrimeTotalVolumeCard } from "@/components/dashboard/crime-total-volume-card"
+import { CrimeVolumeSection } from "@/components/dashboard/crime-volume-section"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -131,7 +131,7 @@ export function CrimeStatisticsPageContent() {
       </Card>
 
       {data ? (
-        <CrimeTotalVolumeCard data={data} />
+        <CrimeVolumeSection data={data} />
       ) : (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 sm:max-w-xl">
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
