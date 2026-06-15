@@ -1,11 +1,13 @@
 import { OfficeLogo } from "@/components/dashboard/office-logo"
 import type { IctOfficeBreakdownItem } from "@/lib/ict-equipment-types"
+import { cn } from "@/lib/utils"
 
 type IctOfficeCardsProps = {
   offices: IctOfficeBreakdownItem[]
+  countClassName?: string
 }
 
-export function IctOfficeCards({ offices }: IctOfficeCardsProps) {
+export function IctOfficeCards({ offices, countClassName }: IctOfficeCardsProps) {
   return (
     <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {offices.map((office) => (
@@ -28,7 +30,12 @@ export function IctOfficeCards({ offices }: IctOfficeCardsProps) {
               </p>
             </div>
           </div>
-          <span className="shrink-0 text-sm font-bold tabular-nums text-primary">
+          <span
+            className={cn(
+              "shrink-0 text-sm font-bold tabular-nums",
+              countClassName ?? "text-primary",
+            )}
+          >
             {office.count.toLocaleString()}
           </span>
         </div>

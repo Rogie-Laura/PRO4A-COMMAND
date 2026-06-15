@@ -16,16 +16,20 @@ import { cn } from "@/lib/utils"
 
 const STATUS_STYLES = {
   serviceable: {
-    card: "border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-card",
-    icon: "bg-primary/15 text-primary",
-    value: "text-primary",
-    label: "text-primary/80",
+    card: "border-emerald-500/25 bg-gradient-to-br from-emerald-500/12 via-emerald-500/5 to-card dark:border-emerald-400/20",
+    icon: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    value: "text-emerald-700 dark:text-emerald-400",
+    label: "text-emerald-700/80 dark:text-emerald-400/80",
+    count: "text-emerald-600 dark:text-emerald-400",
+    divider: "border-emerald-500/15",
   },
   unserviceable: {
-    card: "border-amber-500/25 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-card dark:border-amber-400/20",
-    icon: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-    value: "text-amber-700 dark:text-amber-400",
-    label: "text-amber-700/80 dark:text-amber-400/80",
+    card: "border-rose-500/25 bg-gradient-to-br from-rose-500/12 via-rose-500/5 to-card dark:border-rose-400/20",
+    icon: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+    value: "text-rose-700 dark:text-rose-400",
+    label: "text-rose-700/80 dark:text-rose-400/80",
+    count: "text-rose-600 dark:text-rose-400",
+    divider: "border-rose-500/15",
   },
 } as const
 
@@ -44,65 +48,52 @@ function BreakdownStat({
   )
 }
 
-function IctStatusSectionGrid({
+function IctStatusCard({
   section,
   variant,
-  officeTitle,
 }: {
   section: IctStatusSection
   variant: keyof typeof STATUS_STYLES
-  officeTitle: string
 }) {
   const styles = STATUS_STYLES[variant]
   const Icon = variant === "serviceable" ? Monitor : MonitorOff
+  const shortLabel = variant === "serviceable" ? "Serviceable" : "Unserviceable"
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(260px,320px)_1fr]">
-      <Card className={cn("gap-0 overflow-hidden", styles.card)}>
-        <CardHeader className="pb-2">
-          <div className="flex items-start gap-4">
-            <div
-              className={cn(
-                "flex size-12 shrink-0 items-center justify-center rounded-xl",
-                styles.icon,
-              )}
-            >
-              <Icon className="size-6" aria-hidden />
-            </div>
-            <div className="min-w-0 space-y-1">
-              <CardDescription className={cn("font-medium", styles.label)}>
-                {section.label}
-              </CardDescription>
-              <CardTitle
-                className={cn("text-4xl font-bold tabular-nums sm:text-5xl", styles.value)}
-              >
-                {section.breakdown.total.toLocaleString()}
-              </CardTitle>
-            </div>
+    <Card className={cn("gap-0 overflow-hidden", styles.card)}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start gap-4">
+          <div
+            className={cn(
+              "flex size-11 shrink-0 items-center justify-center rounded-xl",
+              styles.icon,
+            )}
+          >
+            <Icon className="size-5" aria-hidden />
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <BreakdownStat label="2025 & Below" value={section.breakdown.year2025Below} />
-            <BreakdownStat
-              label="As of January 2026"
-              value={section.breakdown.asOfJanuary2026}
-            />
+          <div className="min-w-0 flex-1 space-y-1">
+            <CardDescription className={cn("font-medium", styles.label)}>
+              {shortLabel}
+            </CardDescription>
+            <CardTitle className={cn("text-3xl font-bold tabular-nums sm:text-4xl", styles.value)}>
+              {section.breakdown.total.toLocaleString()}
+            </CardTitle>
           </div>
-          <p className="text-sm text-muted-foreground">{section.detail}</p>
-        </CardContent>
-      </Card>
+        </div>
+      </CardHeader>
 
-      <Card className="gap-0 py-0">
-        <CardHeader className="border-b px-4 py-3">
-          <CardDescription className="font-medium">By Office</CardDescription>
-          <CardTitle className="text-base">{officeTitle}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4">
-          <IctOfficeCards offices={section.offices} />
-        </CardContent>
-      </Card>
-    </div>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <BreakdownStat label="2025 & Below" value={section.breakdown.year2025Below} />
+          <BreakdownStat label="As of January 2026" value={section.breakdown.asOfJanuary2026} />
+        </div>
+
+        <div className={cn("border-t pt-4", styles.divider)}>
+          <p className="mb-3 text-sm font-medium text-foreground">Breakdown by PPO</p>
+          <IctOfficeCards offices={section.offices} countClassName={styles.count} />
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -110,12 +101,10 @@ export function IctEquipmentLoading() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-16 w-full rounded-lg" />
-      {Array.from({ length: 2 }).map((_, index) => (
-        <div key={index} className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
-          <Skeleton className="h-56 rounded-xl" />
-          <Skeleton className="h-56 rounded-xl" />
-        </div>
-      ))}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Skeleton className="h-[28rem] rounded-xl" />
+        <Skeleton className="h-[28rem] rounded-xl" />
+      </div>
     </div>
   )
 }
@@ -129,8 +118,8 @@ export async function IctEquipmentContent() {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-xl"
       >
-        <div className="absolute -left-20 top-0 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute right-0 top-1/3 h-72 w-72 rounded-full bg-amber-500/15 blur-3xl" />
+        <div className="absolute -left-20 top-0 h-64 w-64 rounded-full bg-emerald-500/15 blur-3xl" />
+        <div className="absolute right-0 top-1/3 h-72 w-72 rounded-full bg-rose-500/15 blur-3xl" />
       </div>
 
       <DataSyncBanner lastUpdated={data.lastUpdated} sourceLabel={data.dataSource} />
@@ -144,17 +133,9 @@ export async function IctEquipmentContent() {
         </Card>
       )}
 
-      <div className="space-y-6">
-        <IctStatusSectionGrid
-          section={data.serviceable}
-          variant="serviceable"
-          officeTitle="Serviceable breakdown"
-        />
-        <IctStatusSectionGrid
-          section={data.unserviceable}
-          variant="unserviceable"
-          officeTitle="Unserviceable breakdown"
-        />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <IctStatusCard section={data.serviceable} variant="serviceable" />
+        <IctStatusCard section={data.unserviceable} variant="unserviceable" />
       </div>
     </div>
   )
