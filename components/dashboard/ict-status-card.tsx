@@ -1,4 +1,4 @@
-import { ArchiveX, Monitor, MonitorOff } from "lucide-react"
+import { ArchiveX, Monitor, MonitorOff, Package, Shield } from "lucide-react"
 
 import { IctOfficeCards } from "@/components/dashboard/ict-office-cards"
 import {
@@ -44,6 +44,28 @@ export const ICT_STATUS_VARIANTS = {
     divider: "border-orange-500/15",
     dot: "bg-orange-500",
     Icon: ArchiveX,
+  },
+  pnpNhq: {
+    shortLabel: "PNP Issued by NHQ",
+    card: "border-sky-500/25 bg-gradient-to-br from-sky-500/12 via-sky-500/5 to-card dark:border-sky-400/20",
+    icon: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+    value: "text-sky-700 dark:text-sky-400",
+    label: "text-sky-700/80 dark:text-sky-400/80",
+    count: "text-sky-600 dark:text-sky-400",
+    divider: "border-sky-500/15",
+    dot: "bg-sky-500",
+    Icon: Shield,
+  },
+  procuredPro: {
+    shortLabel: "Procured by PRO",
+    card: "border-violet-500/25 bg-gradient-to-br from-violet-500/12 via-violet-500/5 to-card dark:border-violet-400/20",
+    icon: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    value: "text-violet-700 dark:text-violet-400",
+    label: "text-violet-700/80 dark:text-violet-400/80",
+    count: "text-violet-600 dark:text-violet-400",
+    divider: "border-violet-500/15",
+    dot: "bg-violet-500",
+    Icon: Package,
   },
 } as const
 

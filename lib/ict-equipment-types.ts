@@ -32,6 +32,8 @@ export type IctEquipmentAnalytics = {
   serviceable: IctStatusSection
   unserviceable: IctStatusSection
   ber: IctStatusSection
+  pnpIssuedByNhq: IctStatusSection
+  procuredByPro: IctStatusSection
 }
 
 /** @deprecated Use IctPeriodBreakdown */

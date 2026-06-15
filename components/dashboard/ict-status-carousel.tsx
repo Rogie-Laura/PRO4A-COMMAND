@@ -15,9 +15,15 @@ type IctStatusCarouselProps = {
     variant: IctStatusVariant
     section: IctStatusSection
   }>
+  swipeHint?: string
+  ariaLabel?: string
 }
 
-export function IctStatusCarousel({ slides }: IctStatusCarouselProps) {
+export function IctStatusCarousel({
+  slides,
+  swipeHint,
+  ariaLabel = "ICT equipment cards",
+}: IctStatusCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
 
@@ -42,15 +48,15 @@ export function IctStatusCarousel({ slides }: IctStatusCarouselProps) {
 
   return (
     <div className="space-y-3 lg:hidden">
-      <p className="text-center text-xs text-muted-foreground">
-        Swipe left for Serviceable · Unserviceable · BER
-      </p>
+      {swipeHint ? (
+        <p className="text-center text-xs text-muted-foreground">{swipeHint}</p>
+      ) : null}
 
       <div
         ref={scrollRef}
         onScroll={updateActiveIndex}
         className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        aria-label="ICT equipment status cards"
+        aria-label={ariaLabel}
       >
         {slides.map((slide) => (
           <div

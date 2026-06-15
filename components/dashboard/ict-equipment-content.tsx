@@ -61,14 +61,29 @@ function TotalIctEquipmentCard({
   )
 }
 
+function SectionHeading({ title, description }: { title: string; description?: string }) {
+  return (
+    <div className="space-y-1">
+      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+      {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+    </div>
+  )
+}
+
 export function IctEquipmentLoading() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <Skeleton className="h-16 w-full rounded-lg" />
       <Skeleton className="h-40 max-w-xl rounded-xl" />
       <Skeleton className="h-[28rem] rounded-xl lg:hidden" />
       <div className="hidden gap-4 lg:grid lg:grid-cols-3">
         <Skeleton className="h-[28rem] rounded-xl" />
+        <Skeleton className="h-[28rem] rounded-xl" />
+        <Skeleton className="h-[28rem] rounded-xl" />
+      </div>
+      <Skeleton className="h-6 w-48 rounded" />
+      <Skeleton className="h-[28rem] rounded-xl lg:hidden" />
+      <div className="hidden gap-4 lg:grid lg:grid-cols-2">
         <Skeleton className="h-[28rem] rounded-xl" />
         <Skeleton className="h-[28rem] rounded-xl" />
       </div>
@@ -85,8 +100,13 @@ export async function IctEquipmentContent() {
     { variant: "ber" as const, section: data.ber },
   ]
 
+  const acquisitionSlides = [
+    { variant: "pnpNhq" as const, section: data.pnpIssuedByNhq },
+    { variant: "procuredPro" as const, section: data.procuredByPro },
+  ]
+
   return (
-    <div className="relative space-y-6">
+    <div className="relative space-y-8">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-xl"
@@ -101,7 +121,7 @@ export async function IctEquipmentContent() {
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">
           <CardContent className="py-4 text-sm text-muted-foreground">
             Walang ICT equipment data mula sa RECAP tab pa. Siguraduhing naka-public ang
-            Google Sheet at may Serviceable, Unserviceable, at BER blocks.
+            Google Sheet at may kumpletong RECAP blocks.
           </CardContent>
         </Card>
       )}
@@ -111,12 +131,31 @@ export async function IctEquipmentContent() {
         breakdown={data.grandTotal.breakdown}
       />
 
-      <IctStatusCarousel slides={statusSlides} />
+      <div className="space-y-4">
+        <SectionHeading title="Device Condition" />
+        <IctStatusCarousel
+          slides={statusSlides}
+          swipeHint="Swipe left for Serviceable · Unserviceable · BER"
+          ariaLabel="ICT equipment condition cards"
+        />
+        <div className="hidden items-stretch gap-4 lg:grid lg:grid-cols-3">
+          <IctStatusCard section={data.serviceable} variant="serviceable" compactOffices />
+          <IctStatusCard section={data.unserviceable} variant="unserviceable" compactOffices />
+          <IctStatusCard section={data.ber} variant="ber" compactOffices />
+        </div>
+      </div>
 
-      <div className="hidden items-stretch gap-4 lg:grid lg:grid-cols-3">
-        <IctStatusCard section={data.serviceable} variant="serviceable" compactOffices />
-        <IctStatusCard section={data.unserviceable} variant="unserviceable" compactOffices />
-        <IctStatusCard section={data.ber} variant="ber" compactOffices />
+      <div className="space-y-4">
+        <SectionHeading title="Device Source" />
+        <IctStatusCarousel
+          slides={acquisitionSlides}
+          swipeHint="Swipe left for PNP Issued by NHQ · Procured by PRO"
+          ariaLabel="ICT equipment source cards"
+        />
+        <div className="hidden items-stretch gap-4 lg:grid lg:grid-cols-2">
+          <IctStatusCard section={data.pnpIssuedByNhq} variant="pnpNhq" compactOffices />
+          <IctStatusCard section={data.procuredByPro} variant="procuredPro" compactOffices />
+        </div>
       </div>
     </div>
   )

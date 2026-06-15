@@ -73,11 +73,15 @@ function parseGrandTotalBreakdown(cells: string[]): IctPeriodBreakdown | null {
 
 function parsePeriodBreakdown(cells: string[]): IctPeriodBreakdown | null {
   const year2025Below = parseNumber(cells[PERIOD_2025_COL])
-  const asOfJanuary2026 = parseNumber(cells[PERIOD_JAN_2026_COL])
-  const total = parseNumber(cells[PERIOD_TOTAL_COL])
+  const asOfJanuary2026 = parseNumber(cells[PERIOD_JAN_2026_COL]) ?? 0
 
-  if (year2025Below === null || asOfJanuary2026 === null || total === null) {
+  if (year2025Below === null) {
     return null
+  }
+
+  let total = parseNumber(cells[PERIOD_TOTAL_COL])
+  if (total === null) {
+    total = year2025Below + asOfJanuary2026
   }
 
   if (total !== year2025Below + asOfJanuary2026) {
@@ -129,6 +133,14 @@ function emptyAnalytics(): IctEquipmentAnalytics {
     ber: emptyStatusSection(
       "Beyond Economic Repair (BER)",
       "Walang data mula sa RECAP BER block (row 41)",
+    ),
+    pnpIssuedByNhq: emptyStatusSection(
+      "PNP Issued by NHQ",
+      "Walang data mula sa RECAP PNP Issued by NHQ block (row 51)",
+    ),
+    procuredByPro: emptyStatusSection(
+      "Procured by PRO",
+      "Walang data mula sa RECAP Procured by PRO block (row 63)",
     ),
   }
 }
@@ -217,8 +229,10 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
     const serviceable = blocks[0]
     const unserviceable = blocks[1]
     const ber = blocks[2]
+    const pnpIssuedByNhq = blocks[3]
+    const procuredByPro = blocks[4]
 
-    if (!serviceable || !unserviceable || !ber || !grandTotal) {
+    if (!serviceable || !unserviceable || !ber || !pnpIssuedByNhq || !procuredByPro || !grandTotal) {
       return emptyAnalytics()
     }
 
@@ -248,6 +262,18 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
         detail: "BER · RECAP row 41 · PRO CALABARZON",
         offices: ber.offices,
       },
+      pnpIssuedByNhq: {
+        label: "PNP Issued by NHQ",
+        breakdown: pnpIssuedByNhq.breakdown,
+        detail: "PNP Issued by NHQ · RECAP row 51 · PRO CALABARZON",
+        offices: pnpIssuedByNhq.offices,
+      },
+      procuredByPro: {
+        label: "Procured by PRO",
+        breakdown: procuredByPro.breakdown,
+        detail: "Procured by PRO · RECAP row 63 · PRO CALABARZON",
+        offices: procuredByPro.offices,
+      },
     }
   } catch {
     return emptyAnalytics()
@@ -256,7 +282,7 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
 
 const getCachedIctEquipmentAnalytics = unstable_cache(
   loadIctEquipmentAnalytics,
-  ["ict-equipment-analytics-recap-v6"],
+  ["ict-equipment-analytics-recap-v7"],
   { revalidate: 600 },
 )
 
