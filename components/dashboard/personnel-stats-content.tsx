@@ -2,7 +2,6 @@ import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { AdminHoldingSection } from "@/components/dashboard/admin-holding-section"
 import { AgeDistributionTable } from "@/components/dashboard/age-distribution-table"
 import { RankTenureTable } from "@/components/dashboard/rank-tenure-table"
-import { BreakdownCard } from "@/components/dashboard/breakdown-card"
 import { LeadershipSection } from "@/components/dashboard/leadership-section"
 import { PersonnelStatsRefreshButton } from "@/components/dashboard/personnel-stats-refresh-button"
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
@@ -46,12 +45,6 @@ export async function PersonnelStatsContent() {
       <RankTenureTable rows={data.rankTenureDistribution} />
 
       <UnitTable rows={data.unitRows} />
-
-      <BreakdownCard
-        title="Personnel Status"
-        description="Current duty and assignment status"
-        items={data.statusStats}
-      />
 
       <AdminHoldingSection data={adminHolding} />
     </div>
