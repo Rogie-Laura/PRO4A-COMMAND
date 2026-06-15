@@ -1,6 +1,7 @@
 import { Monitor } from "lucide-react"
 
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
+import { IctEquipmentRefreshButton } from "@/components/dashboard/ict-equipment-refresh-button"
 import { IctStatusCard } from "@/components/dashboard/ict-status-card"
 import { IctStatusCarousel } from "@/components/dashboard/ict-status-carousel"
 import {
@@ -115,7 +116,14 @@ export async function IctEquipmentContent() {
         <div className="absolute right-0 top-1/3 h-72 w-72 rounded-full bg-orange-500/15 blur-3xl" />
       </div>
 
-      <DataSyncBanner lastUpdated={data.lastUpdated} sourceLabel={data.dataSource} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <DataSyncBanner
+          lastUpdated={data.lastUpdated}
+          sourceLabel={data.dataSource}
+          syncDescription="synced from Google Sheet (cached until you refresh)"
+        />
+        <IctEquipmentRefreshButton />
+      </div>
 
       {!data.dataReady && (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">

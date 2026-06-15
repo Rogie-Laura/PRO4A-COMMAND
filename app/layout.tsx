@@ -69,7 +69,7 @@ export default function RootLayout({
       <body>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var standalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;if(!standalone)return;var nav=window.performance&&window.performance.getEntriesByType?window.performance.getEntriesByType("navigation")[0]:null;if(nav&&nav.type==="reload")return;if(window.sessionStorage.getItem("command-splash-shown")==="1")return;window.sessionStorage.setItem("command-splash-shown","1");document.documentElement.classList.add("show-command-splash");window.setTimeout(function(){document.documentElement.classList.remove("show-command-splash")},2800)}catch(e){}})();`,
+            __html: `(function(){try{var standalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;if(!standalone)return;var nav=window.performance&&window.performance.getEntriesByType?window.performance.getEntriesByType("navigation")[0]:null;if(nav&&nav.type==="reload")return;if(window.localStorage.getItem("command-splash-shown")==="1")return;window.localStorage.setItem("command-splash-shown","1");document.documentElement.classList.add("show-command-splash");window.setTimeout(function(){document.documentElement.classList.remove("show-command-splash")},2800)}catch(e){}})();`,
           }}
         />
         <div id="command-native-splash" aria-hidden="true">

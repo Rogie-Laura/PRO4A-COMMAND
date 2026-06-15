@@ -71,10 +71,13 @@ async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
   }
 }
 
+export const PERSONNEL_ANALYTICS_CACHE_TAG = "personnel-analytics-recap-v1"
+
+/** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedPersonnelAnalytics = unstable_cache(
   loadPersonnelAnalytics,
-  ["personnel-analytics-recap-v1"],
-  { revalidate: 600 },
+  [PERSONNEL_ANALYTICS_CACHE_TAG],
+  { revalidate: false, tags: [PERSONNEL_ANALYTICS_CACHE_TAG] },
 )
 
 export async function getPersonnelAnalytics(): Promise<PersonnelAnalytics> {

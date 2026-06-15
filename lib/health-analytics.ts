@@ -186,10 +186,13 @@ async function loadHealthAnalytics(): Promise<HealthAnalytics> {
   }
 }
 
+export const HEALTH_ANALYTICS_CACHE_TAG = "health-analytics-rictmd-personnel-v2"
+
+/** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedHealthAnalytics = unstable_cache(
   loadHealthAnalytics,
-  ["health-analytics-rictmd-personnel-v2"],
-  { revalidate: 600 },
+  [HEALTH_ANALYTICS_CACHE_TAG],
+  { revalidate: false, tags: [HEALTH_ANALYTICS_CACHE_TAG] },
 )
 
 export async function getHealthAnalytics(): Promise<HealthAnalytics> {

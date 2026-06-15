@@ -280,10 +280,13 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
   }
 }
 
+export const ICT_EQUIPMENT_ANALYTICS_CACHE_TAG = "ict-equipment-analytics-recap-v7"
+
+/** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedIctEquipmentAnalytics = unstable_cache(
   loadIctEquipmentAnalytics,
-  ["ict-equipment-analytics-recap-v7"],
-  { revalidate: 600 },
+  [ICT_EQUIPMENT_ANALYTICS_CACHE_TAG],
+  { revalidate: false, tags: [ICT_EQUIPMENT_ANALYTICS_CACHE_TAG] },
 )
 
 export async function getIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {

@@ -3,6 +3,7 @@ import { AgeDistributionTable } from "@/components/dashboard/age-distribution-ta
 import { RankTenureTable } from "@/components/dashboard/rank-tenure-table"
 import { BreakdownCard } from "@/components/dashboard/breakdown-card"
 import { LeadershipSection } from "@/components/dashboard/leadership-section"
+import { PersonnelStatsRefreshButton } from "@/components/dashboard/personnel-stats-refresh-button"
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
 import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
 import { UnitTable } from "@/components/dashboard/unit-table"
@@ -14,7 +15,14 @@ export async function PersonnelStatsContent() {
 
   return (
     <div className="space-y-6">
-      <DataSyncBanner lastUpdated={data.lastUpdated} sourceLabel="Personnel tab" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <DataSyncBanner
+          lastUpdated={data.lastUpdated}
+          sourceLabel="Personnel tab"
+          syncDescription="synced from Google Sheet (cached until you refresh)"
+        />
+        <PersonnelStatsRefreshButton />
+      </div>
 
       {totalKpi && (
         <TotalPersonnelSection

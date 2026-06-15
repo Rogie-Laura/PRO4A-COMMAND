@@ -1,5 +1,6 @@
 import { BmiCategoryCards } from "@/components/dashboard/bmi-category-cards"
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
+import { HealthAndBmiRefreshButton } from "@/components/dashboard/health-and-bmi-refresh-button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getHealthAnalytics } from "@/lib/health-analytics"
@@ -30,7 +31,14 @@ export async function HealthAndBmiContent() {
         <div className="absolute right-0 top-1/3 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-amber-500/15 blur-3xl" />
       </div>
-      <DataSyncBanner lastUpdated={data.lastUpdated} sourceLabel={data.dataSource} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <DataSyncBanner
+          lastUpdated={data.lastUpdated}
+          sourceLabel={data.dataSource}
+          syncDescription="synced from Google Sheet (cached until you refresh)"
+        />
+        <HealthAndBmiRefreshButton />
+      </div>
 
       {!data.dataReady && (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">

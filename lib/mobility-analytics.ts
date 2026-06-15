@@ -300,10 +300,13 @@ async function loadMobilityAnalytics(): Promise<MobilityAnalytics> {
   }
 }
 
+export const MOBILITY_ANALYTICS_CACHE_TAG = "mobility-analytics"
+
+/** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedMobilityAnalytics = unstable_cache(
   loadMobilityAnalytics,
-  ["mobility-analytics"],
-  { revalidate: 600 },
+  [MOBILITY_ANALYTICS_CACHE_TAG],
+  { revalidate: false, tags: [MOBILITY_ANALYTICS_CACHE_TAG] },
 )
 
 export async function getMobilityAnalytics(): Promise<MobilityAnalytics> {
