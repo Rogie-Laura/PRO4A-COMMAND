@@ -1,4 +1,4 @@
-import { Laptop, Monitor } from "lucide-react"
+import { Monitor } from "lucide-react"
 
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import {
@@ -10,51 +10,53 @@ import {
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getIctEquipmentAnalytics } from "@/lib/ict-equipment-analytics"
-import type { IctDeviceMetric } from "@/lib/ict-equipment-types"
-import { cn } from "@/lib/utils"
+import type { IctGrandTotalBreakdown } from "@/lib/ict-equipment-types"
 
-const DEVICE_CARD_STYLES = {
-  desktop:
-    "border-sky-500/25 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-card dark:border-sky-400/20",
-  laptop:
-    "border-violet-500/25 bg-gradient-to-br from-violet-500/15 via-violet-500/5 to-card dark:border-violet-400/20",
-} as const
-
-const DEVICE_ICON_STYLES = {
-  desktop: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-  laptop: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-} as const
-
-const DEVICE_ICONS = {
-  desktop: Monitor,
-  laptop: Laptop,
-} as const
-
-function DeviceMetricCard({ metric }: { metric: IctDeviceMetric }) {
-  const Icon = DEVICE_ICONS[metric.id]
-
+function BreakdownStat({
+  label,
+  value,
+}: {
+  label: string
+  value: number
+}) {
   return (
-    <Card className={cn("gap-0 overflow-hidden", DEVICE_CARD_STYLES[metric.id])}>
+    <div className="rounded-lg border border-border/60 bg-background/50 px-3 py-2">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-xl font-bold tabular-nums sm:text-2xl">{value.toLocaleString()}</p>
+    </div>
+  )
+}
+
+function TotalIctEquipmentCard({
+  label,
+  breakdown,
+  detail,
+}: {
+  label: string
+  breakdown: IctGrandTotalBreakdown
+  detail: string
+}) {
+  return (
+    <Card className="gap-0 overflow-hidden border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-card sm:max-w-2xl">
       <CardHeader className="pb-2">
         <div className="flex items-start gap-4">
-          <div
-            className={cn(
-              "flex size-12 shrink-0 items-center justify-center rounded-xl",
-              DEVICE_ICON_STYLES[metric.id],
-            )}
-          >
-            <Icon className="size-6" aria-hidden />
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Monitor className="size-6" aria-hidden />
           </div>
           <div className="min-w-0 space-y-1">
-            <CardDescription className="font-medium">{metric.label}</CardDescription>
-            <CardTitle className="text-4xl font-bold tabular-nums sm:text-5xl">
-              {metric.value.toLocaleString()}
+            <CardDescription className="font-medium text-primary/80">{label}</CardDescription>
+            <CardTitle className="text-4xl font-bold tabular-nums text-primary sm:text-5xl">
+              {breakdown.total.toLocaleString()}
             </CardTitle>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">{metric.detail}</p>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <BreakdownStat label="2025 & Below" value={breakdown.year2025Below} />
+          <BreakdownStat label="As of January 2026" value={breakdown.asOfJanuary2026} />
+        </div>
+        <p className="text-sm text-muted-foreground">{detail}</p>
       </CardContent>
     </Card>
   )
@@ -64,10 +66,7 @@ export function IctEquipmentLoading() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-16 w-full rounded-lg" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Skeleton className="h-40 rounded-xl" />
-        <Skeleton className="h-40 rounded-xl" />
-      </div>
+      <Skeleton className="h-48 max-w-2xl rounded-xl" />
     </div>
   )
 }
@@ -81,8 +80,8 @@ export async function IctEquipmentContent() {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-xl"
       >
-        <div className="absolute -left-20 top-0 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl" />
-        <div className="absolute right-0 top-1/3 h-72 w-72 rounded-full bg-violet-500/15 blur-3xl" />
+        <div className="absolute -left-20 top-0 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute right-0 top-1/3 h-72 w-72 rounded-full bg-sky-500/15 blur-3xl" />
       </div>
 
       <DataSyncBanner lastUpdated={data.lastUpdated} sourceLabel={data.dataSource} />
@@ -91,15 +90,16 @@ export async function IctEquipmentContent() {
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">
           <CardContent className="py-4 text-sm text-muted-foreground">
             Walang ICT equipment data mula sa RECAP tab pa. Siguraduhing naka-public ang
-            Google Sheet at may Total row na may Total Desktop at Total Laptop.
+            Google Sheet at may Total row (H29, I29, J29).
           </CardContent>
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <DeviceMetricCard metric={data.totalDesktop} />
-        <DeviceMetricCard metric={data.totalLaptop} />
-      </div>
+      <TotalIctEquipmentCard
+        label={data.grandTotal.label}
+        breakdown={data.grandTotal.breakdown}
+        detail={data.grandTotal.detail}
+      />
     </div>
   )
 }

@@ -2,11 +2,13 @@ import { unstable_cache } from "next/cache"
 
 import { fetchIctEquipmentSheetCsv } from "@/lib/google-sheets"
 import { ICT_EQUIPMENT_SHEET } from "@/lib/ict-equipment-sheet"
-import type { IctDeviceMetric, IctEquipmentAnalytics } from "@/lib/ict-equipment-types"
+import type { IctEquipmentAnalytics } from "@/lib/ict-equipment-types"
 
+/** RECAP simplified block — row 29 (H, I, J) GRAND TOTAL columns. */
+const GRAND_TOTAL_2025_COL = 7
+const GRAND_TOTAL_JAN_2026_COL = 8
+const GRAND_TOTAL_TOTAL_COL = 9
 const RECAP_TOTAL_ROW = "Total"
-const SERVICEABLE_DESKTOP_COL = 1
-const SERVICEABLE_LAPTOP_COL = 2
 
 function parseCsvLine(line: string): string[] {
   const values: string[] = []
@@ -43,70 +45,66 @@ function parseNumber(value: string | undefined) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-function buildMetric(
-  id: IctDeviceMetric["id"],
-  label: string,
-  value: number,
-  detail: string,
-): IctDeviceMetric {
-  return { id, label, value, detail }
-}
-
 function emptyAnalytics(): IctEquipmentAnalytics {
-  const detail = "Walang data mula sa RECAP tab"
-
   return {
     lastUpdated: new Date().toISOString(),
     dataReady: false,
     dataSource: ICT_EQUIPMENT_SHEET.label,
-    totalDesktop: buildMetric("desktop", "Total Desktop", 0, detail),
-    totalLaptop: buildMetric("laptop", "Total Laptop", 0, detail),
+    grandTotal: {
+      label: "Total ICT Equipment",
+      breakdown: {
+        year2025Below: 0,
+        asOfJanuary2026: 0,
+        total: 0,
+      },
+      detail: "Walang data mula sa RECAP tab (H29, I29, J29)",
+    },
   }
 }
 
-function parseRecapTotals(csv: string) {
-  const lines = csv.split(/\r?\n/).filter((line) => line.trim().length > 0)
-  if (lines.length < 2) return null
+function parseGrandTotal(csv: string) {
+  let match: {
+    year2025Below: number
+    asOfJanuary2026: number
+    total: number
+  } | null = null
 
-  for (const line of lines.slice(1)) {
+  for (const line of csv.split(/\r?\n/)) {
+    if (!line.trim()) continue
+
     const cells = parseCsvLine(line)
-    const unit = cells[0]?.trim()
+    if (cells[0]?.trim() !== RECAP_TOTAL_ROW) continue
 
-    if (unit !== RECAP_TOTAL_ROW) continue
+    const year2025Below = parseNumber(cells[GRAND_TOTAL_2025_COL])
+    const asOfJanuary2026 = parseNumber(cells[GRAND_TOTAL_JAN_2026_COL])
+    const total = parseNumber(cells[GRAND_TOTAL_TOTAL_COL])
 
-    const totalDesktop = parseNumber(cells[SERVICEABLE_DESKTOP_COL])
-    const totalLaptop = parseNumber(cells[SERVICEABLE_LAPTOP_COL])
+    if (year2025Below === null || asOfJanuary2026 === null || total === null) continue
 
-    if (totalDesktop === null || totalLaptop === null) continue
-
-    return { totalDesktop, totalLaptop }
+    match = { year2025Below, asOfJanuary2026, total }
   }
 
-  return null
+  return match
 }
 
 async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
   try {
     const csv = await fetchIctEquipmentSheetCsv()
-    const totals = parseRecapTotals(csv)
+    const breakdown = parseGrandTotal(csv)
 
-    if (!totals) {
+    if (!breakdown) {
       return emptyAnalytics()
     }
-
-    const detail = "Serviceable · 2025 and below · PRO CALABARZON"
 
     return {
       lastUpdated: new Date().toISOString(),
       dataReady: true,
       dataSource: ICT_EQUIPMENT_SHEET.label,
-      totalDesktop: buildMetric(
-        "desktop",
-        "Total Desktop",
-        totals.totalDesktop,
-        detail,
-      ),
-      totalLaptop: buildMetric("laptop", "Total Laptop", totals.totalLaptop, detail),
+      grandTotal: {
+        label: "Total ICT Equipment",
+        breakdown,
+        detail: "GRAND TOTAL · PRO CALABARZON · RECAP H29 / I29 / J29",
+      },
     }
   } catch {
     return emptyAnalytics()
@@ -115,7 +113,7 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
 
 const getCachedIctEquipmentAnalytics = unstable_cache(
   loadIctEquipmentAnalytics,
-  ["ict-equipment-analytics-recap-v1"],
+  ["ict-equipment-analytics-recap-v2"],
   { revalidate: 600 },
 )
 

@@ -1,14 +1,16 @@
-export type IctDeviceMetric = {
-  id: "desktop" | "laptop"
-  label: string
-  value: number
-  detail: string
+export type IctGrandTotalBreakdown = {
+  year2025Below: number
+  asOfJanuary2026: number
+  total: number
 }
 
 export type IctEquipmentAnalytics = {
   lastUpdated: string
   dataReady: boolean
   dataSource: string
-  totalDesktop: IctDeviceMetric
-  totalLaptop: IctDeviceMetric
+  grandTotal: {
+    label: string
+    breakdown: IctGrandTotalBreakdown
+    detail: string
+  }
 }
