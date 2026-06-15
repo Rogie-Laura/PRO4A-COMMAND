@@ -13,7 +13,19 @@ type CrimeTotalVolumeCardProps = {
   data: CrimeAnalytics
 }
 
+function formatCoveredPeriod(data: CrimeAnalytics) {
+  if (!data.coveredPeriodStart) return null
+
+  if (data.coveredPeriodEnd) {
+    return `${data.coveredPeriodStart} – ${data.coveredPeriodEnd}`
+  }
+
+  return data.coveredPeriodStart
+}
+
 export function CrimeTotalVolumeCard({ data }: CrimeTotalVolumeCardProps) {
+  const coveredPeriod = formatCoveredPeriod(data)
+
   return (
     <Card className="gap-0 overflow-hidden border-rose-500/25 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-card sm:max-w-xl">
       <CardHeader className="pb-2">
@@ -27,12 +39,12 @@ export function CrimeTotalVolumeCard({ data }: CrimeTotalVolumeCardProps) {
           {data.totalVolume.toLocaleString()}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-1">
         <p className="text-sm font-medium text-foreground">Total Crime Volume</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {data.year ? `${data.year} index crime incidents` : "Index crime incidents"} from uploaded
-          CSV
-        </p>
+        <p className="text-sm text-muted-foreground">Data from PNP-CIRAS</p>
+        {coveredPeriod ? (
+          <p className="text-sm text-muted-foreground">Covered Period {coveredPeriod}</p>
+        ) : null}
       </CardContent>
     </Card>
   )

@@ -80,10 +80,58 @@ function emptyAnalytics(fileName = ""): CrimeAnalytics {
     dataReady: false,
     year: null,
     totalVolume: 0,
+    coveredPeriodStart: null,
+    coveredPeriodEnd: null,
     ppoBreakdown: [],
     crimeBreakdown: [],
     statusBreakdown: [],
   }
+}
+
+function parseCommittedDate(value: string): Date | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const parts = trimmed.split("/")
+  if (parts.length !== 3) return null
+
+  const month = Number.parseInt(parts[0] ?? "", 10)
+  const day = Number.parseInt(parts[1] ?? "", 10)
+  let year = Number.parseInt(parts[2] ?? "", 10)
+
+  if (!Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(year)) {
+    return null
+  }
+
+  if (year < 100) {
+    year += 2000
+  }
+
+  const date = new Date(year, month - 1, day)
+  if (Number.isNaN(date.getTime()) || date.getMonth() !== month - 1) {
+    return null
+  }
+
+  return date
+}
+
+function formatCrimePeriodDate(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date)
+}
+
+function buildCoveredPeriod(year: number | null, latestCommitted: Date | null) {
+  if (!year) {
+    return { coveredPeriodStart: null, coveredPeriodEnd: null }
+  }
+
+  const coveredPeriodStart = formatCrimePeriodDate(new Date(year, 0, 1))
+  const coveredPeriodEnd = latestCommitted ? formatCrimePeriodDate(latestCommitted) : null
+
+  return { coveredPeriodStart, coveredPeriodEnd }
 }
 
 export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAnalytics {
@@ -99,6 +147,7 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
 
   const ppoIndex = headers.indexOf("ppo")
   const yearIndex = headers.indexOf("year")
+  const committedIndex = headers.indexOf("datecommitted")
   const crimeIndex = headers.indexOf("crime")
   const statusIndex = headers.indexOf("casestatus")
 
@@ -106,6 +155,7 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
   const crimeCounts = new Map<string, number>()
   const statusCounts = new Map<string, number>()
   let year: number | null = null
+  let latestCommitted: Date | null = null
   let totalVolume = 0
 
   for (const row of rows.slice(1)) {
@@ -118,8 +168,13 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
     totalVolume += 1
 
     const yearValue = Number.parseInt(row[yearIndex] ?? "", 10)
-    if (!year && Number.isFinite(yearValue)) {
-      year = yearValue
+    if (Number.isFinite(yearValue)) {
+      year ??= yearValue
+    }
+
+    const committedDate = parseCommittedDate(row[committedIndex] ?? "")
+    if (committedDate && (!latestCommitted || committedDate > latestCommitted)) {
+      latestCommitted = committedDate
     }
 
     ppoCounts.set(ppo, (ppoCounts.get(ppo) ?? 0) + 1)
@@ -134,12 +189,16 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
     return emptyAnalytics(fileName)
   }
 
+  const { coveredPeriodStart, coveredPeriodEnd } = buildCoveredPeriod(year, latestCommitted)
+
   return {
     lastUpdated: new Date().toISOString(),
     fileName,
     dataReady: true,
     year,
     totalVolume,
+    coveredPeriodStart,
+    coveredPeriodEnd,
     ppoBreakdown: buildCountItems(ppoCounts, totalVolume),
     crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
     statusBreakdown: buildCountItems(statusCounts, totalVolume),
