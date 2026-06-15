@@ -126,6 +126,10 @@ function emptyAnalytics(): IctEquipmentAnalytics {
       "Unserviceable ICT Equipment",
       "Walang data mula sa RECAP Unserviceable block (row 31)",
     ),
+    ber: emptyStatusSection(
+      "Beyond Economic Repair (BER)",
+      "Walang data mula sa RECAP BER block (row 41)",
+    ),
   }
 }
 
@@ -212,8 +216,9 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
     const { blocks, grandTotal } = parseAllStatusBlocks(csv)
     const serviceable = blocks[0]
     const unserviceable = blocks[1]
+    const ber = blocks[2]
 
-    if (!serviceable || !unserviceable || !grandTotal) {
+    if (!serviceable || !unserviceable || !ber || !grandTotal) {
       return emptyAnalytics()
     }
 
@@ -237,6 +242,12 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
         detail: "Unserviceable · RECAP row 31 · PRO CALABARZON",
         offices: unserviceable.offices,
       },
+      ber: {
+        label: "Beyond Economic Repair (BER)",
+        breakdown: ber.breakdown,
+        detail: "BER · RECAP row 41 · PRO CALABARZON",
+        offices: ber.offices,
+      },
     }
   } catch {
     return emptyAnalytics()
@@ -245,7 +256,7 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
 
 const getCachedIctEquipmentAnalytics = unstable_cache(
   loadIctEquipmentAnalytics,
-  ["ict-equipment-analytics-recap-v5"],
+  ["ict-equipment-analytics-recap-v6"],
   { revalidate: 600 },
 )
 
