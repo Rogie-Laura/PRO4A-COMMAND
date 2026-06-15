@@ -1,6 +1,6 @@
 import { ShieldAlert } from "lucide-react"
 
-import { BreakdownCard } from "@/components/dashboard/breakdown-card"
+import { AdminHoldingStatusBreakdown } from "@/components/dashboard/admin-holding-status-breakdown"
 import {
   Card,
   CardContent,
@@ -12,12 +12,6 @@ import type { AdminHoldingAnalytics } from "@/lib/admin-holding-types"
 
 type AdminHoldingSectionProps = {
   data: AdminHoldingAnalytics
-}
-
-function formatName(record: AdminHoldingAnalytics["records"][number]) {
-  return [record.lastName, `${record.firstName} ${record.middleName}`.trim()]
-    .filter(Boolean)
-    .join(", ")
 }
 
 export function AdminHoldingSection({ data }: AdminHoldingSectionProps) {
@@ -45,11 +39,7 @@ export function AdminHoldingSection({ data }: AdminHoldingSectionProps) {
         </Card>
 
         {data.statusStats.length > 0 ? (
-          <BreakdownCard
-            title="Admin Holding by Status"
-            description="Breakdown of current admin holding status"
-            items={data.statusStats}
-          />
+          <AdminHoldingStatusBreakdown items={data.statusStats} records={data.records} />
         ) : null}
       </div>
 
@@ -60,44 +50,7 @@ export function AdminHoldingSection({ data }: AdminHoldingSectionProps) {
             may records sa Admin Holding tab.
           </CardContent>
         </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin Holding Roster</CardTitle>
-            <CardDescription>
-              {data.total.toLocaleString()} personnel from {data.dataSource}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-3 pr-3 font-medium">No.</th>
-                    <th className="pb-3 pr-3 font-medium">Rank</th>
-                    <th className="pb-3 pr-3 font-medium">Name</th>
-                    <th className="pb-3 pr-3 font-medium">Former Unit</th>
-                    <th className="pb-3 pr-3 font-medium">Status</th>
-                    <th className="pb-3 font-medium">Remarks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.records.map((record) => (
-                    <tr key={record.no} className="border-b last:border-0">
-                      <td className="py-3 pr-3 tabular-nums">{record.no}</td>
-                      <td className="py-3 pr-3 font-medium">{record.rank}</td>
-                      <td className="py-3 pr-3">{formatName(record)}</td>
-                      <td className="py-3 pr-3 text-muted-foreground">{record.formerUnit}</td>
-                      <td className="py-3 pr-3">{record.status}</td>
-                      <td className="py-3 text-muted-foreground">{record.remarks || "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      ) : null}
     </div>
   )
 }
