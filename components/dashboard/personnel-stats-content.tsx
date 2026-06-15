@@ -1,4 +1,5 @@
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
+import { AdminHoldingSection } from "@/components/dashboard/admin-holding-section"
 import { AgeDistributionTable } from "@/components/dashboard/age-distribution-table"
 import { RankTenureTable } from "@/components/dashboard/rank-tenure-table"
 import { BreakdownCard } from "@/components/dashboard/breakdown-card"
@@ -7,10 +8,14 @@ import { PersonnelStatsRefreshButton } from "@/components/dashboard/personnel-st
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
 import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
 import { UnitTable } from "@/components/dashboard/unit-table"
+import { getAdminHoldingAnalytics } from "@/lib/admin-holding-analytics"
 import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
 
 export async function PersonnelStatsContent() {
-  const data = await getPersonnelAnalytics()
+  const [data, adminHolding] = await Promise.all([
+    getPersonnelAnalytics(),
+    getAdminHoldingAnalytics(),
+  ])
   const totalKpi = data.kpis.find((k) => k.id === "total")
 
   return (
@@ -47,6 +52,8 @@ export async function PersonnelStatsContent() {
         description="Current duty and assignment status"
         items={data.statusStats}
       />
+
+      <AdminHoldingSection data={adminHolding} />
     </div>
   )
 }

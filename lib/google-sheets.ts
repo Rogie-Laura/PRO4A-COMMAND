@@ -1,8 +1,9 @@
+import { getAdminHoldingCsvUrl, ADMIN_HOLDING_SHEET } from "@/lib/admin-holding-sheet"
 import { getIctEquipmentCsvUrl, ICT_EQUIPMENT_SHEET } from "@/lib/ict-equipment-sheet"
 import { getRictmdBmiCsvUrl, RICTMD_BMI_SHEET } from "@/lib/rictmd-bmi-sheet"
 import { PERSONNEL_RECAP_SHEET } from "@/lib/personnel-recap-sheet"
 
-export { ICT_EQUIPMENT_SHEET, RICTMD_BMI_SHEET, PERSONNEL_RECAP_SHEET }
+export { ICT_EQUIPMENT_SHEET, RICTMD_BMI_SHEET, PERSONNEL_RECAP_SHEET, ADMIN_HOLDING_SHEET }
 
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
 const DEFAULT_MOBILITY_TAB = "Mobility"
@@ -146,6 +147,10 @@ export async function fetchIctEquipmentSheetCsv(): Promise<string> {
   return fetchCsv(getIctEquipmentCsvUrl(), SHEET_CACHE_SECONDS)
 }
 
+export async function fetchAdminHoldingSheetCsv(): Promise<string> {
+  return fetchCsv(getAdminHoldingCsvUrl(), SHEET_CACHE_SECONDS)
+}
+
 /** @deprecated Use fetchRictmdBmiSheetCsv instead. */
 export async function fetchHealthSheetCsv(): Promise<string> {
   return fetchRictmdBmiSheetCsv()
@@ -188,6 +193,13 @@ function parseCsvLine(line: string): string[] {
 
   values.push(current)
   return values
+}
+
+export function parseCsvRows(text: string): string[][] {
+  return text
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0)
+    .map((line) => parseCsvLine(line).map((value) => value.trim()))
 }
 
 export function parseCsv(text: string): Record<string, string>[] {
