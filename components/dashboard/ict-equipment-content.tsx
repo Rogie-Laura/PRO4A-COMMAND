@@ -1,6 +1,7 @@
 import { Monitor } from "lucide-react"
 
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
+import { IctOfficeCards } from "@/components/dashboard/ict-office-cards"
 import {
   Card,
   CardContent,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getIctEquipmentAnalytics } from "@/lib/ict-equipment-analytics"
-import type { IctGrandTotalBreakdown } from "@/lib/ict-equipment-types"
+import type { IctServiceableBreakdown } from "@/lib/ict-equipment-types"
 
 function BreakdownStat({
   label,
@@ -27,17 +28,17 @@ function BreakdownStat({
   )
 }
 
-function TotalIctEquipmentCard({
+function ServiceableIctEquipmentSection({
   label,
   breakdown,
   detail,
 }: {
   label: string
-  breakdown: IctGrandTotalBreakdown
+  breakdown: IctServiceableBreakdown
   detail: string
 }) {
   return (
-    <Card className="gap-0 overflow-hidden border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-card sm:max-w-2xl">
+    <Card className="gap-0 overflow-hidden border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-card">
       <CardHeader className="pb-2">
         <div className="flex items-start gap-4">
           <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
@@ -66,7 +67,10 @@ export function IctEquipmentLoading() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-16 w-full rounded-lg" />
-      <Skeleton className="h-48 max-w-2xl rounded-xl" />
+      <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
+        <Skeleton className="h-56 rounded-xl" />
+        <Skeleton className="h-56 rounded-xl" />
+      </div>
     </div>
   )
 }
@@ -90,16 +94,28 @@ export async function IctEquipmentContent() {
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">
           <CardContent className="py-4 text-sm text-muted-foreground">
             Walang ICT equipment data mula sa RECAP tab pa. Siguraduhing naka-public ang
-            Google Sheet at may Total row (H29, I29, J29).
+            Google Sheet at may Serviceable block (row 19) na may office breakdown.
           </CardContent>
         </Card>
       )}
 
-      <TotalIctEquipmentCard
-        label={data.grandTotal.label}
-        breakdown={data.grandTotal.breakdown}
-        detail={data.grandTotal.detail}
-      />
+      <div className="grid gap-4 lg:grid-cols-[minmax(260px,320px)_1fr]">
+        <ServiceableIctEquipmentSection
+          label={data.serviceable.label}
+          breakdown={data.serviceable.breakdown}
+          detail={data.serviceable.detail}
+        />
+
+        <Card className="gap-0 py-0">
+          <CardHeader className="border-b px-4 py-3">
+            <CardDescription className="font-medium">By Office</CardDescription>
+            <CardTitle className="text-base">Serviceable breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <IctOfficeCards offices={data.serviceable.offices} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
