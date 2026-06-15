@@ -157,9 +157,40 @@ html.show-command-splash body {
   overflow: hidden;
 }
 
+#command-native-splash .command-splash-content {
+  display: flex;
+  width: 100%;
+  max-width: 36rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  text-align: center;
+}
+
 #command-native-splash img {
   width: 100%;
   max-width: 36rem;
   height: auto;
   object-fit: contain;
+}
+
+#command-native-splash .command-splash-tagline {
+  margin: 0;
+  max-width: 28rem;
+  font-size: clamp(0.95rem, 3.8vw, 1.2rem);
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  color: oklch(0.96 0.01 260);
+}
+
+#command-native-splash .command-splash-motto {
+  margin: 0;
+  max-width: 24rem;
+  font-size: clamp(0.8rem, 3.2vw, 0.95rem);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: oklch(0.72 0.08 250);
 }
