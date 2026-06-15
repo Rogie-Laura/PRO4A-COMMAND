@@ -13,6 +13,9 @@ import { fetchIctEquipmentSheetCsv } from "@/lib/google-sheets"
 const PERIOD_2025_COL = 1
 const PERIOD_JAN_2026_COL = 2
 const PERIOD_TOTAL_COL = 3
+const GRAND_TOTAL_2025_COL = 7
+const GRAND_TOTAL_JAN_2026_COL = 8
+const GRAND_TOTAL_TOTAL_COL = 9
 const RECAP_UNIT_HEADER = "UNIT"
 const RECAP_TOTAL_ROW = "Total"
 const RECAP_GRAND_TOTAL_ROW = "Grand total"
@@ -52,6 +55,22 @@ function parseNumber(value: string | undefined) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function parseGrandTotalBreakdown(cells: string[]): IctPeriodBreakdown | null {
+  const year2025Below = parseNumber(cells[GRAND_TOTAL_2025_COL])
+  const asOfJanuary2026 = parseNumber(cells[GRAND_TOTAL_JAN_2026_COL])
+  const total = parseNumber(cells[GRAND_TOTAL_TOTAL_COL])
+
+  if (year2025Below === null || asOfJanuary2026 === null || total === null) {
+    return null
+  }
+
+  if (total !== year2025Below + asOfJanuary2026) {
+    return null
+  }
+
+  return { year2025Below, asOfJanuary2026, total }
+}
+
 function parsePeriodBreakdown(cells: string[]): IctPeriodBreakdown | null {
   const year2025Below = parseNumber(cells[PERIOD_2025_COL])
   const asOfJanuary2026 = parseNumber(cells[PERIOD_JAN_2026_COL])
@@ -85,10 +104,20 @@ function emptyStatusSection(
 }
 
 function emptyAnalytics(): IctEquipmentAnalytics {
+  const emptyBreakdown = {
+    year2025Below: 0,
+    asOfJanuary2026: 0,
+    total: 0,
+  }
+
   return {
     lastUpdated: new Date().toISOString(),
     dataReady: false,
     dataSource: ICT_EQUIPMENT_SHEET.label,
+    grandTotal: {
+      label: "Total ICT Equipment",
+      breakdown: emptyBreakdown,
+    },
     serviceable: emptyStatusSection(
       "Serviceable ICT Equipment",
       "Walang data mula sa RECAP Serviceable block (row 19)",
@@ -130,6 +159,7 @@ function parseAllStatusBlocks(csv: string) {
     breakdown: IctPeriodBreakdown
     offices: IctOfficeBreakdownItem[]
   }> = []
+  let grandTotal: IctPeriodBreakdown | null = null
 
   for (let index = 0; index < lines.length; index++) {
     if (lines[index][0]?.trim() !== RECAP_UNIT_HEADER) continue
@@ -147,6 +177,9 @@ function parseAllStatusBlocks(csv: string) {
 
       if (unit === RECAP_TOTAL_ROW) {
         totalBreakdown = parsePeriodBreakdown(cells)
+        if (!grandTotal) {
+          grandTotal = parseGrandTotalBreakdown(cells)
+        }
         break
       }
 
@@ -170,17 +203,17 @@ function parseAllStatusBlocks(csv: string) {
     })
   }
 
-  return blocks
+  return { blocks, grandTotal }
 }
 
 async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
   try {
     const csv = await fetchIctEquipmentSheetCsv()
-    const blocks = parseAllStatusBlocks(csv)
+    const { blocks, grandTotal } = parseAllStatusBlocks(csv)
     const serviceable = blocks[0]
     const unserviceable = blocks[1]
 
-    if (!serviceable || !unserviceable) {
+    if (!serviceable || !unserviceable || !grandTotal) {
       return emptyAnalytics()
     }
 
@@ -188,6 +221,10 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
       lastUpdated: new Date().toISOString(),
       dataReady: true,
       dataSource: ICT_EQUIPMENT_SHEET.label,
+      grandTotal: {
+        label: "Total ICT Equipment",
+        breakdown: grandTotal,
+      },
       serviceable: {
         label: "Serviceable ICT Equipment",
         breakdown: serviceable.breakdown,
@@ -208,7 +245,7 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
 
 const getCachedIctEquipmentAnalytics = unstable_cache(
   loadIctEquipmentAnalytics,
-  ["ict-equipment-analytics-recap-v4"],
+  ["ict-equipment-analytics-recap-v5"],
   { revalidate: 600 },
 )
 

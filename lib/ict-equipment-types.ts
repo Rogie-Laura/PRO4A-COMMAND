@@ -25,6 +25,10 @@ export type IctEquipmentAnalytics = {
   lastUpdated: string
   dataReady: boolean
   dataSource: string
+  grandTotal: {
+    label: string
+    breakdown: IctPeriodBreakdown
+  }
   serviceable: IctStatusSection
   unserviceable: IctStatusSection
 }

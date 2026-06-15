@@ -48,6 +48,38 @@ function BreakdownStat({
   )
 }
 
+function TotalIctEquipmentCard({
+  label,
+  breakdown,
+}: {
+  label: string
+  breakdown: IctStatusSection["breakdown"]
+}) {
+  return (
+    <Card className="gap-0 overflow-hidden border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-card sm:max-w-xl">
+      <CardHeader className="pb-3">
+        <div className="flex items-start gap-4">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <Monitor className="size-6" aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1 space-y-1">
+            <CardDescription className="font-medium text-primary/80">{label}</CardDescription>
+            <CardTitle className="text-4xl font-bold tabular-nums text-primary sm:text-5xl">
+              {breakdown.total.toLocaleString()}
+            </CardTitle>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <BreakdownStat label="2025 & Below" value={breakdown.year2025Below} />
+          <BreakdownStat label="As of January 2026" value={breakdown.asOfJanuary2026} />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function IctStatusCard({
   section,
   variant,
@@ -101,6 +133,7 @@ export function IctEquipmentLoading() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-16 w-full rounded-lg" />
+      <Skeleton className="h-40 max-w-xl rounded-xl" />
       <div className="grid gap-4 lg:grid-cols-2">
         <Skeleton className="h-[28rem] rounded-xl" />
         <Skeleton className="h-[28rem] rounded-xl" />
@@ -132,6 +165,11 @@ export async function IctEquipmentContent() {
           </CardContent>
         </Card>
       )}
+
+      <TotalIctEquipmentCard
+        label={data.grandTotal.label}
+        breakdown={data.grandTotal.breakdown}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <IctStatusCard section={data.serviceable} variant="serviceable" />
