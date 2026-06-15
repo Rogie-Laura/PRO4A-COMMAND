@@ -1,20 +1,18 @@
 import { unstable_cache } from "next/cache"
 
-import {
-  ICT_SERVICEABLE_UNITS,
-  resolveIctOffice,
-} from "@/lib/ict-equipment-config"
+import { ICT_OFFICE_UNITS, resolveIctOffice } from "@/lib/ict-equipment-config"
 import { ICT_EQUIPMENT_SHEET } from "@/lib/ict-equipment-sheet"
 import type {
   IctEquipmentAnalytics,
   IctOfficeBreakdownItem,
-  IctServiceableBreakdown,
+  IctPeriodBreakdown,
+  IctStatusSection,
 } from "@/lib/ict-equipment-types"
 import { fetchIctEquipmentSheetCsv } from "@/lib/google-sheets"
 
-const SERVICEABLE_2025_COL = 1
-const SERVICEABLE_JAN_2026_COL = 2
-const SERVICEABLE_TOTAL_COL = 3
+const PERIOD_2025_COL = 1
+const PERIOD_JAN_2026_COL = 2
+const PERIOD_TOTAL_COL = 3
 const RECAP_UNIT_HEADER = "UNIT"
 const RECAP_TOTAL_ROW = "Total"
 const RECAP_GRAND_TOTAL_ROW = "Grand total"
@@ -54,10 +52,10 @@ function parseNumber(value: string | undefined) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-function parseServiceableBreakdown(cells: string[]): IctServiceableBreakdown | null {
-  const year2025Below = parseNumber(cells[SERVICEABLE_2025_COL])
-  const asOfJanuary2026 = parseNumber(cells[SERVICEABLE_JAN_2026_COL])
-  const total = parseNumber(cells[SERVICEABLE_TOTAL_COL])
+function parsePeriodBreakdown(cells: string[]): IctPeriodBreakdown | null {
+  const year2025Below = parseNumber(cells[PERIOD_2025_COL])
+  const asOfJanuary2026 = parseNumber(cells[PERIOD_JAN_2026_COL])
+  const total = parseNumber(cells[PERIOD_TOTAL_COL])
 
   if (year2025Below === null || asOfJanuary2026 === null || total === null) {
     return null
@@ -70,30 +68,44 @@ function parseServiceableBreakdown(cells: string[]): IctServiceableBreakdown | n
   return { year2025Below, asOfJanuary2026, total }
 }
 
+function emptyStatusSection(
+  label: string,
+  detail: string,
+): IctStatusSection {
+  return {
+    label,
+    breakdown: {
+      year2025Below: 0,
+      asOfJanuary2026: 0,
+      total: 0,
+    },
+    detail,
+    offices: [],
+  }
+}
+
 function emptyAnalytics(): IctEquipmentAnalytics {
   return {
     lastUpdated: new Date().toISOString(),
     dataReady: false,
     dataSource: ICT_EQUIPMENT_SHEET.label,
-    serviceable: {
-      label: "Serviceable ICT Equipment",
-      breakdown: {
-        year2025Below: 0,
-        asOfJanuary2026: 0,
-        total: 0,
-      },
-      detail: "Walang data mula sa RECAP Serviceable block (row 19)",
-      offices: [],
-    },
+    serviceable: emptyStatusSection(
+      "Serviceable ICT Equipment",
+      "Walang data mula sa RECAP Serviceable block (row 19)",
+    ),
+    unserviceable: emptyStatusSection(
+      "Unserviceable ICT Equipment",
+      "Walang data mula sa RECAP Unserviceable block (row 31)",
+    ),
   }
 }
 
 function buildOfficeBreakdown(
-  rows: Array<{ unit: string; breakdown: IctServiceableBreakdown }>,
+  rows: Array<{ unit: string; breakdown: IctPeriodBreakdown }>,
 ): IctOfficeBreakdownItem[] {
   const rowByUnit = new Map(rows.map((row) => [row.unit, row.breakdown]))
 
-  return ICT_SERVICEABLE_UNITS.flatMap((unit) => {
+  return ICT_OFFICE_UNITS.flatMap((unit) => {
     const office = resolveIctOffice(unit)
     const breakdown = rowByUnit.get(unit)
     if (!office || !breakdown) return []
@@ -112,14 +124,18 @@ function buildOfficeBreakdown(
   })
 }
 
-function parseServiceableBlock(csv: string) {
+function parseAllStatusBlocks(csv: string) {
   const lines = csv.split(/\r?\n/).map(parseCsvLine)
+  const blocks: Array<{
+    breakdown: IctPeriodBreakdown
+    offices: IctOfficeBreakdownItem[]
+  }> = []
 
   for (let index = 0; index < lines.length; index++) {
     if (lines[index][0]?.trim() !== RECAP_UNIT_HEADER) continue
 
-    const officeRows: Array<{ unit: string; breakdown: IctServiceableBreakdown }> = []
-    let totalBreakdown: IctServiceableBreakdown | null = null
+    const officeRows: Array<{ unit: string; breakdown: IctPeriodBreakdown }> = []
+    let totalBreakdown: IctPeriodBreakdown | null = null
 
     for (let rowIndex = index + 1; rowIndex < lines.length; rowIndex++) {
       const cells = lines[rowIndex]
@@ -130,39 +146,41 @@ function parseServiceableBlock(csv: string) {
       if (unit === RECAP_GRAND_TOTAL_ROW) break
 
       if (unit === RECAP_TOTAL_ROW) {
-        totalBreakdown = parseServiceableBreakdown(cells)
+        totalBreakdown = parsePeriodBreakdown(cells)
         break
       }
 
-      if (!ICT_SERVICEABLE_UNITS.includes(unit as (typeof ICT_SERVICEABLE_UNITS)[number])) {
+      if (!ICT_OFFICE_UNITS.includes(unit as (typeof ICT_OFFICE_UNITS)[number])) {
         continue
       }
 
-      const breakdown = parseServiceableBreakdown(cells)
+      const breakdown = parsePeriodBreakdown(cells)
       if (!breakdown) continue
 
       officeRows.push({ unit, breakdown })
     }
 
-    if (officeRows.length !== ICT_SERVICEABLE_UNITS.length || !totalBreakdown) {
+    if (officeRows.length !== ICT_OFFICE_UNITS.length || !totalBreakdown) {
       continue
     }
 
-    return {
+    blocks.push({
       breakdown: totalBreakdown,
       offices: buildOfficeBreakdown(officeRows),
-    }
+    })
   }
 
-  return null
+  return blocks
 }
 
 async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
   try {
     const csv = await fetchIctEquipmentSheetCsv()
-    const serviceable = parseServiceableBlock(csv)
+    const blocks = parseAllStatusBlocks(csv)
+    const serviceable = blocks[0]
+    const unserviceable = blocks[1]
 
-    if (!serviceable) {
+    if (!serviceable || !unserviceable) {
       return emptyAnalytics()
     }
 
@@ -176,6 +194,12 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
         detail: "Serviceable · RECAP row 19 · PRO CALABARZON",
         offices: serviceable.offices,
       },
+      unserviceable: {
+        label: "Unserviceable ICT Equipment",
+        breakdown: unserviceable.breakdown,
+        detail: "Unserviceable · RECAP row 31 · PRO CALABARZON",
+        offices: unserviceable.offices,
+      },
     }
   } catch {
     return emptyAnalytics()
@@ -184,7 +208,7 @@ async function loadIctEquipmentAnalytics(): Promise<IctEquipmentAnalytics> {
 
 const getCachedIctEquipmentAnalytics = unstable_cache(
   loadIctEquipmentAnalytics,
-  ["ict-equipment-analytics-recap-v3"],
+  ["ict-equipment-analytics-recap-v4"],
   { revalidate: 600 },
 )
 

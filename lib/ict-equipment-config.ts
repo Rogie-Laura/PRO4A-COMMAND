@@ -1,7 +1,7 @@
 import { OFFICES } from "@/lib/office-config"
 
 /** RECAP simplified block — row 19 Serviceable (B, C, D). */
-export const ICT_SERVICEABLE_UNITS = [
+export const ICT_OFFICE_UNITS = [
   "RHQ",
   "CAVITE PPO",
   "LAGUNA PPO",
@@ -11,7 +11,7 @@ export const ICT_SERVICEABLE_UNITS = [
   "RMFB",
 ] as const
 
-const SHEET_UNIT_TO_SUBUNIT: Record<(typeof ICT_SERVICEABLE_UNITS)[number], string> = {
+const SHEET_UNIT_TO_SUBUNIT: Record<(typeof ICT_OFFICE_UNITS)[number], string> = {
   RHQ: "REGIONAL HEADQUARTERS",
   "CAVITE PPO": "CAVITE POLICE PROVINCIAL OFFICE",
   "LAGUNA PPO": "LAGUNA POLICE PROVINCIAL OFFICE",
@@ -24,6 +24,6 @@ const SHEET_UNIT_TO_SUBUNIT: Record<(typeof ICT_SERVICEABLE_UNITS)[number], stri
 const OFFICE_BY_SUBUNIT = new Map(OFFICES.map((office) => [office.subUnit, office]))
 
 export function resolveIctOffice(unit: string) {
-  const subUnit = SHEET_UNIT_TO_SUBUNIT[unit as (typeof ICT_SERVICEABLE_UNITS)[number]]
+  const subUnit = SHEET_UNIT_TO_SUBUNIT[unit as (typeof ICT_OFFICE_UNITS)[number]]
   return subUnit ? OFFICE_BY_SUBUNIT.get(subUnit) : undefined
 }

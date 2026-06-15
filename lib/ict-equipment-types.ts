@@ -1,4 +1,4 @@
-export type IctServiceableBreakdown = {
+export type IctPeriodBreakdown = {
   year2025Below: number
   asOfJanuary2026: number
   total: number
@@ -11,17 +11,23 @@ export type IctOfficeBreakdownItem = {
   logo: string
   colorClass: string
   count: number
-  breakdown: IctServiceableBreakdown
+  breakdown: IctPeriodBreakdown
+}
+
+export type IctStatusSection = {
+  label: string
+  breakdown: IctPeriodBreakdown
+  detail: string
+  offices: IctOfficeBreakdownItem[]
 }
 
 export type IctEquipmentAnalytics = {
   lastUpdated: string
   dataReady: boolean
   dataSource: string
-  serviceable: {
-    label: string
-    breakdown: IctServiceableBreakdown
-    detail: string
-    offices: IctOfficeBreakdownItem[]
-  }
+  serviceable: IctStatusSection
+  unserviceable: IctStatusSection
 }
+
+/** @deprecated Use IctPeriodBreakdown */
+export type IctServiceableBreakdown = IctPeriodBreakdown
