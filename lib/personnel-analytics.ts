@@ -1,416 +1,79 @@
 import { unstable_cache } from "next/cache"
 
-import { AGE_ABOVE_56_ID, AGE_BRACKETS, getAgeBracketFromBirthDate } from "@/lib/age-config"
-import { fetchPersonnelSheetCsv, parseCsv } from "@/lib/google-sheets"
 import {
-  type LeadershipSlot,
-  PROVINCIAL_DIRECTOR_SLOTS,
-  R_STAFF_SLOTS,
-  REGIONAL_COMMAND_GROUP_SLOTS,
-} from "@/lib/leadership-config"
-import { OFFICES } from "@/lib/office-config"
-import {
-  RANK_TENURE_ABOVE_10_ID,
-  RANK_TENURE_BRACKETS,
-  RANK_TENURE_LESS_THAN_1_ID,
-  calculateYearsInRank,
-  getRankTenureBracketFromPromotionDate,
-  isRankTenureDrilldownBracket,
-  parsePromotionDate,
-} from "@/lib/rank-tenure-config"
-import { isNup, isPco, isPnco, PCO_RANK_ORDER, PNCO_RANK_ORDER } from "@/lib/rank-config"
-import { formatStationLabel } from "@/lib/station-labels"
-import { sortStationBreakdown } from "@/lib/station-sort"
-import type {
-  CountItem,
-  KpiMetric,
-  LeadershipGroups,
-  LeadershipRow,
-  OfficeAgeDistributionRow,
-  RankTenureDistributionRow,
-  RankTenurePersonDetail,
-  OfficeBreakdownItem,
-  PersonnelAnalytics,
-  PersonnelRecord,
-  RankChartPoint,
-  RankDistribution,
-  StationBreakdownItem,
-  UnitRow,
-  WorkforceSummary,
-} from "@/lib/personnel-types"
+  buildPersonnelAnalyticsFromRecords,
+  mapPersonnelRow,
+} from "@/lib/personnel-aggregations"
+import { fetchPersonnelRecapCsv, fetchPersonnelSheetCsv, parseCsv } from "@/lib/google-sheets"
+import { parsePersonnelRecap } from "@/lib/personnel-recap-parser"
+import type { PersonnelAnalytics } from "@/lib/personnel-types"
 
-function mapRow(row: Record<string, string>): PersonnelRecord {
+function emptyAnalytics(): PersonnelAnalytics {
   return {
-    rank: row.Rank ?? "",
-    lastName: row["Last Name"] ?? "",
-    firstName: row["First Name"] ?? "",
-    middleName: row["Middle Name"] ?? "",
-    badgeNumber: row["Badge Number"] ?? "",
-    birthDate: row.BirthDate ?? "",
-    lastPromotionDate: row["Last Promotion Date"] ?? "",
-    designation: row.Designation ?? "",
-    pStatus: row.PStatus ?? "",
-    gender: row.Gender ?? "",
-    civilStatus: row["Civil Status"] ?? "",
-    unit: row.Unit ?? "",
-    subUnit: row["Sub Unit"] ?? "",
-    station: row.Station ?? "",
-  }
-}
-
-function countBy<T>(items: T[], keyFn: (item: T) => string): Map<string, number> {
-  const counts = new Map<string, number>()
-
-  for (const item of items) {
-    const key = keyFn(item).trim() || "Unknown"
-    counts.set(key, (counts.get(key) ?? 0) + 1)
-  }
-
-  return counts
-}
-
-function toCountItems(counts: Map<string, number>, total: number): CountItem[] {
-  return [...counts.entries()]
-    .map(([name, count]) => ({
-      name,
-      count,
-      percentage: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
-    }))
-    .sort((a, b) => b.count - a.count)
-}
-
-function buildStationBreakdown(
-  records: PersonnelRecord[],
-  subUnit: string,
-): StationBreakdownItem[] {
-  const officeRecords = records.filter((r) => r.subUnit === subUnit)
-  const grouped = new Map<string, { pco: number; pnco: number; nup: number }>()
-
-  for (const record of officeRecords) {
-    const station = record.station.trim() || "Unassigned"
-    const entry = grouped.get(station) ?? { pco: 0, pnco: 0, nup: 0 }
-
-    if (isPco(record.rank)) {
-      entry.pco += 1
-    } else if (isPnco(record.rank)) {
-      entry.pnco += 1
-    } else if (isNup(record.rank)) {
-      entry.nup += 1
-    }
-
-    grouped.set(station, entry)
-  }
-
-  return sortStationBreakdown(
-    [...grouped.entries()]
-      .map(([rawStation, counts]) => ({
-        station: formatStationLabel(rawStation),
-        pco: counts.pco,
-        pnco: counts.pnco,
-        nup: counts.nup,
-        uniformed: counts.pco + counts.pnco,
-      }))
-      .filter((item) => item.uniformed + item.nup > 0),
-  )
-}
-
-function buildOfficeBreakdown(records: PersonnelRecord[]): OfficeBreakdownItem[] {
-  const counts = countBy(records, (r) => r.subUnit)
-
-  return OFFICES.map((office) => ({
-    subUnit: office.subUnit,
-    label: office.label,
-    shortLabel: office.shortLabel,
-    logo: office.logo,
-    count: counts.get(office.subUnit) ?? 0,
-    colorClass: office.colorClass,
-    stations: buildStationBreakdown(records, office.subUnit),
-  }))
-}
-
-function buildKpis(records: PersonnelRecord[]): KpiMetric[] {
-  return [
-    {
-      id: "total",
-      label: "Total Personnel",
-      value: records.length.toLocaleString(),
-      detail: "PRO CALABARZON roster",
+    lastUpdated: new Date().toISOString(),
+    kpis: [
+      {
+        id: "total",
+        label: "Total Personnel",
+        value: "0",
+        detail: "PRO CALABARZON roster",
+      },
+    ],
+    workforce: {
+      uniformed: { total: 0, pco: 0, pnco: 0 },
+      nup: 0,
+      gender: [],
     },
-  ]
+    officeBreakdown: [],
+    rankDistribution: { pco: [], pnco: [] },
+    ageDistributionByOffice: [],
+    rankTenureDistribution: [],
+    genderStats: [],
+    statusStats: [],
+    unitRows: [],
+    leadership: {
+      regionalCommandGroup: [],
+      rStaff: [],
+      provincialDirectors: [],
+    },
+  }
 }
 
-function buildWorkforceSummary(records: PersonnelRecord[]): WorkforceSummary {
-  const total = records.length
-  const pco = records.filter((r) => isPco(r.rank)).length
-  const pnco = records.filter((r) => isPnco(r.rank)).length
-  const nup = records.filter((r) => isNup(r.rank)).length
-  const uniformed = records.filter((r) => !isNup(r.rank)).length
+async function loadPersonnelAnalyticsFromRoster(): Promise<PersonnelAnalytics> {
+  const csv = await fetchPersonnelSheetCsv()
+  const rows = parseCsv(csv)
+  const records = rows.map(mapPersonnelRow).filter((r) => r.lastName || r.firstName)
+  const analytics = buildPersonnelAnalyticsFromRecords(records)
 
   return {
-    uniformed: { total: uniformed, pco, pnco },
-    nup,
-    gender: toCountItems(countBy(records, (r) => r.gender), total),
-  }
-}
-
-function buildRankSlice(
-  records: PersonnelRecord[],
-  rankOrder: readonly string[],
-  matcher: (rank: string) => boolean,
-): RankChartPoint[] {
-  const counts = countBy(
-    records.filter((record) => matcher(record.rank)),
-    (record) => record.rank,
-  )
-
-  return rankOrder
-    .filter((rank) => counts.has(rank))
-    .map((rank) => ({ rank, count: counts.get(rank) ?? 0 }))
-}
-
-function buildRankDistribution(records: PersonnelRecord[]): RankDistribution {
-  return {
-    pco: buildRankSlice(records, PCO_RANK_ORDER, isPco),
-    pnco: buildRankSlice(records, PNCO_RANK_ORDER, isPnco),
-  }
-}
-
-function createEmptyAgeBrackets(): Record<string, number> {
-  return {
-    ...Object.fromEntries(AGE_BRACKETS.map((bracket) => [bracket.id, 0])),
-    [AGE_ABOVE_56_ID]: 0,
-  }
-}
-
-function createEmptyRankTenureBrackets(): Record<string, number> {
-  return {
-    [RANK_TENURE_LESS_THAN_1_ID]: 0,
-    ...Object.fromEntries(RANK_TENURE_BRACKETS.map((bracket) => [bracket.id, 0])),
-    [RANK_TENURE_ABOVE_10_ID]: 0,
-  }
-}
-
-function getOfficeLabel(subUnit: string) {
-  return OFFICES.find((office) => office.subUnit === subUnit)?.label ?? (subUnit || "Unknown")
-}
-
-function formatPersonnelName(record: PersonnelRecord) {
-  const middle = record.middleName ? ` ${record.middleName.charAt(0)}.` : ""
-  return `${record.lastName}, ${record.firstName}${middle}`
-}
-
-function buildRankTenurePersonDetail(record: PersonnelRecord): RankTenurePersonDetail | null {
-  const parsed = parsePromotionDate(record.lastPromotionDate)
-  if (!parsed) return null
-
-  return {
-    id: record.badgeNumber || `${record.lastName}-${record.firstName}`,
-    name: formatPersonnelName(record),
-    rank: record.rank.trim(),
-    badgeNumber: record.badgeNumber.trim() || "—",
-    lastPromotionDate: record.lastPromotionDate,
-    yearsInRank: calculateYearsInRank(parsed),
-    office: record.unit.trim() || "Unassigned",
-    unit: getOfficeLabel(record.subUnit),
-  }
-}
-
-function buildRankTenureDistribution(records: PersonnelRecord[]): RankTenureDistributionRow[] {
-  const pncoByRank = new Map<string, PersonnelRecord[]>()
-
-  for (const rank of PNCO_RANK_ORDER) {
-    pncoByRank.set(rank, [])
-  }
-
-  for (const record of records) {
-    if (!isPnco(record.rank)) continue
-
-    const rank = record.rank.trim()
-    const list = pncoByRank.get(rank)
-    if (!list) continue
-
-    list.push(record)
-  }
-
-  return PNCO_RANK_ORDER.map((rank) => {
-    const rankRecords = pncoByRank.get(rank) ?? []
-    const brackets = createEmptyRankTenureBrackets()
-    const bracketDetails: Partial<Record<string, RankTenurePersonDetail[]>> = {}
-
-    for (const record of rankRecords) {
-      const bracketId =
-        getRankTenureBracketFromPromotionDate(record.lastPromotionDate) ??
-        (!record.lastPromotionDate.trim() ? RANK_TENURE_LESS_THAN_1_ID : null)
-      if (!bracketId) continue
-
-      brackets[bracketId] += 1
-
-      if (isRankTenureDrilldownBracket(bracketId)) {
-        const person = buildRankTenurePersonDetail(record)
-        if (!person) continue
-
-        const list = bracketDetails[bracketId] ?? []
-        list.push(person)
-        bracketDetails[bracketId] = list
-      }
-    }
-
-    for (const bracketId of Object.keys(bracketDetails)) {
-      bracketDetails[bracketId]?.sort((a, b) => {
-        if (b.yearsInRank !== a.yearsInRank) return b.yearsInRank - a.yearsInRank
-        return a.name.localeCompare(b.name, "en", { sensitivity: "base" })
-      })
-    }
-
-    return {
-      rank,
-      brackets,
-      bracketDetails,
-      total: rankRecords.length,
-    }
-  })
-}
-
-function buildAgeDistributionByOffice(records: PersonnelRecord[]): OfficeAgeDistributionRow[] {
-  return OFFICES.map((office) => {
-    const brackets = createEmptyAgeBrackets()
-    const officeRecords = records.filter((record) => record.subUnit === office.subUnit)
-
-    for (const record of officeRecords) {
-      const bracketId = getAgeBracketFromBirthDate(record.birthDate)
-      if (!bracketId) continue
-      brackets[bracketId] += 1
-    }
-
-    return {
-      subUnit: office.subUnit,
-      label: office.label,
-      brackets,
-      total: officeRecords.length,
-    }
-  })
-}
-
-function buildUnitRows(records: PersonnelRecord[]): UnitRow[] {
-  const total = records.length
-  const grouped = new Map<string, PersonnelRecord[]>()
-
-  for (const record of records) {
-    const unit = record.subUnit || record.unit || "Unknown"
-    const list = grouped.get(unit) ?? []
-    list.push(record)
-    grouped.set(unit, list)
-  }
-
-  const knownUnits = OFFICES.map((office) => {
-    const members = grouped.get(office.subUnit) ?? []
-    const active = members.filter((r) =>
-      r.pStatus.toUpperCase().includes("ON DUTY") || r.pStatus.toUpperCase() === "ACTIVE",
-    ).length
-
-    return {
-      unit: office.subUnit,
-      label: office.label,
-      count: members.length,
-      percentage: total > 0 ? Math.round((members.length / total) * 1000) / 10 : 0,
-      active,
-    }
-  })
-
-  const otherUnits = [...grouped.entries()]
-    .filter(([unit]) => !OFFICES.some((office) => office.subUnit === unit))
-    .map(([unit, members]) => {
-      const active = members.filter((r) =>
-        r.pStatus.toUpperCase().includes("ON DUTY") || r.pStatus.toUpperCase() === "ACTIVE",
-      ).length
-
-      return {
-        unit,
-        label: unit,
-        count: members.length,
-        percentage: total > 0 ? Math.round((members.length / total) * 1000) / 10 : 0,
-        active,
-      }
-    })
-    .sort((a, b) => b.count - a.count)
-
-  return [...knownUnits, ...otherUnits]
-}
-
-function formatLeadershipName(record: PersonnelRecord) {
-  const middle = record.middleName ? ` ${record.middleName.charAt(0)}.` : ""
-  return `${record.lastName}, ${record.firstName}${middle}`
-}
-
-function buildLeadershipSlotRows(
-  records: PersonnelRecord[],
-  slots: LeadershipSlot[],
-): LeadershipRow[] {
-  return slots.map((slot) => {
-    const pool = slot.subUnit
-      ? records.filter((record) => record.subUnit === slot.subUnit)
-      : records.filter((record) => record.subUnit === "REGIONAL HEADQUARTERS")
-
-    const person = pool.find((record) => slot.match(record.designation))
-
-    if (!person) {
-      return {
-        id: slot.id,
-        rank: "",
-        name: "Vacant",
-        designation: slot.label,
-        vacant: true,
-      }
-    }
-
-    return {
-      id: person.badgeNumber || slot.id,
-      rank: person.rank,
-      name: formatLeadershipName(person),
-      designation: slot.label,
-      vacant: false,
-    }
-  })
-}
-
-function buildLeadership(records: PersonnelRecord[]): LeadershipGroups {
-  return {
-    regionalCommandGroup: buildLeadershipSlotRows(records, REGIONAL_COMMAND_GROUP_SLOTS),
-    rStaff: buildLeadershipSlotRows(records, R_STAFF_SLOTS),
-    provincialDirectors: buildLeadershipSlotRows(records, PROVINCIAL_DIRECTOR_SLOTS),
+    lastUpdated: new Date().toISOString(),
+    ...analytics,
   }
 }
 
 async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
-  const csv = await fetchPersonnelSheetCsv()
-  const rows = parseCsv(csv)
-  const records = rows.map(mapRow).filter((r) => r.lastName || r.firstName)
-  const total = records.length
+  try {
+    const recapCsv = await fetchPersonnelRecapCsv()
+    const recapRows = parseCsv(recapCsv)
+    const fromRecap = parsePersonnelRecap(recapRows)
 
-  const statusStats = toCountItems(countBy(records, (r) => r.pStatus), total).slice(0, 6)
-  const genderStats = toCountItems(countBy(records, (r) => r.gender), total)
-  const rankDistribution = buildRankDistribution(records)
-  const ageDistributionByOffice = buildAgeDistributionByOffice(records)
-  const rankTenureDistribution = buildRankTenureDistribution(records)
+    if (fromRecap) {
+      return fromRecap
+    }
+  } catch {
+    // Fall back to full roster when recap tab is missing or unreachable.
+  }
 
-  return {
-    lastUpdated: new Date().toISOString(),
-    kpis: buildKpis(records),
-    workforce: buildWorkforceSummary(records),
-    officeBreakdown: buildOfficeBreakdown(records),
-    rankDistribution,
-    ageDistributionByOffice,
-    rankTenureDistribution,
-    genderStats,
-    statusStats,
-    unitRows: buildUnitRows(records),
-    leadership: buildLeadership(records),
+  try {
+    return await loadPersonnelAnalyticsFromRoster()
+  } catch {
+    return emptyAnalytics()
   }
 }
 
 const getCachedPersonnelAnalytics = unstable_cache(
   loadPersonnelAnalytics,
-  ["personnel-analytics"],
+  ["personnel-analytics-recap-v1"],
   { revalidate: 600 },
 )
 

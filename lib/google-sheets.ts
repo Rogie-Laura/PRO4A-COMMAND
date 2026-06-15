@@ -1,6 +1,7 @@
 import { getRictmdBmiCsvUrl, RICTMD_BMI_SHEET } from "@/lib/rictmd-bmi-sheet"
+import { PERSONNEL_RECAP_SHEET } from "@/lib/personnel-recap-sheet"
 
-export { RICTMD_BMI_SHEET }
+export { RICTMD_BMI_SHEET, PERSONNEL_RECAP_SHEET }
 
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
 const DEFAULT_MOBILITY_TAB = "Mobility"
@@ -97,6 +98,18 @@ export function getMobilitySheetCsvUrl(options?: {
 
 export async function fetchPersonnelSheetCsv(sheetId?: string): Promise<string> {
   return fetchCsv(getPersonnelSheetCsvUrl(sheetId), SHEET_CACHE_SECONDS)
+}
+
+export function getPersonnelRecapCsvUrl(sheetId?: string) {
+  const id = sheetId ?? process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
+  return buildSheetCsvUrl(id, {
+    sheetTab: PERSONNEL_RECAP_SHEET.tabName,
+    query: "SELECT *",
+  })
+}
+
+export async function fetchPersonnelRecapCsv(sheetId?: string): Promise<string> {
+  return fetchCsv(getPersonnelRecapCsvUrl(sheetId), SHEET_CACHE_SECONDS)
 }
 
 /** @deprecated Use fetchPersonnelSheetCsv instead. */
