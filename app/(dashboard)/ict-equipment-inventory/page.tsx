@@ -1,5 +1,14 @@
-import { SectionPlaceholder } from "@/components/section-placeholder"
+import { Suspense } from "react"
+
+import {
+  IctEquipmentContent,
+  IctEquipmentLoading,
+} from "@/components/dashboard/ict-equipment-content"
 
 export default function IctEquipmentInventoryPage() {
-  return <SectionPlaceholder title="Inventory of ICT Equipment" />
+  return (
+    <Suspense fallback={<IctEquipmentLoading />}>
+      <IctEquipmentContent />
+    </Suspense>
+  )
 }

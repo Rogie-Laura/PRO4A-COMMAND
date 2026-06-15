@@ -1,7 +1,8 @@
+import { getIctEquipmentCsvUrl, ICT_EQUIPMENT_SHEET } from "@/lib/ict-equipment-sheet"
 import { getRictmdBmiCsvUrl, RICTMD_BMI_SHEET } from "@/lib/rictmd-bmi-sheet"
 import { PERSONNEL_RECAP_SHEET } from "@/lib/personnel-recap-sheet"
 
-export { RICTMD_BMI_SHEET, PERSONNEL_RECAP_SHEET }
+export { ICT_EQUIPMENT_SHEET, RICTMD_BMI_SHEET, PERSONNEL_RECAP_SHEET }
 
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
 const DEFAULT_MOBILITY_TAB = "Mobility"
@@ -139,6 +140,10 @@ export function getHealthSheetCsvUrl() {
 
 export async function fetchRictmdBmiSheetCsv(): Promise<string> {
   return fetchCsv(getRictmdBmiCsvUrl(), SHEET_CACHE_SECONDS)
+}
+
+export async function fetchIctEquipmentSheetCsv(): Promise<string> {
+  return fetchCsv(getIctEquipmentCsvUrl(), SHEET_CACHE_SECONDS)
 }
 
 /** @deprecated Use fetchRictmdBmiSheetCsv instead. */
