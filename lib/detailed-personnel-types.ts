@@ -1,5 +1,3 @@
-import type { CountItem } from "@/lib/personnel-types"
-
 export type DetailedPersonnelRecord = {
   no: number
   rank: string
@@ -23,7 +21,6 @@ export type DetailedPersonnelAnalytics = {
   dataSource: string
   title: string
   total: number
-  unitFromStats: CountItem[]
   records: DetailedPersonnelRecord[]
 }
 

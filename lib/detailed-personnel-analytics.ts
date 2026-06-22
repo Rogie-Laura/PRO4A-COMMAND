@@ -7,7 +7,6 @@ import type {
   DetailedPersonnelTabKey,
 } from "@/lib/detailed-personnel-types"
 import { fetchDetailedPersonnelSheetCsv, parseCsvRows } from "@/lib/google-sheets"
-import type { CountItem } from "@/lib/personnel-types"
 
 function emptyAnalytics(title: string): DetailedPersonnelAnalytics {
   return {
@@ -16,7 +15,6 @@ function emptyAnalytics(title: string): DetailedPersonnelAnalytics {
     dataSource: title,
     title,
     total: 0,
-    unitFromStats: [],
     records: [],
   }
 }
@@ -50,24 +48,6 @@ function mapDetailedPersonnelRow(cols: string[]): DetailedPersonnelRecord {
   }
 }
 
-function buildUnitFromStats(records: DetailedPersonnelRecord[]): CountItem[] {
-  const counts = new Map<string, number>()
-
-  for (const record of records) {
-    counts.set(record.unitFrom, (counts.get(record.unitFrom) ?? 0) + 1)
-  }
-
-  const total = records.length || 1
-
-  return [...counts.entries()]
-    .map(([name, count]) => ({
-      name,
-      count,
-      percentage: Math.round((count / total) * 1000) / 10,
-    }))
-    .sort((a, b) => b.count - a.count)
-}
-
 export function parseDetailedPersonnelCsv(text: string): DetailedPersonnelRecord[] {
   const rows = parseCsvRows(text)
   return rows.filter(isDetailedPersonnelDataRow).map(mapDetailedPersonnelRow)
@@ -92,7 +72,6 @@ async function loadDetailedPersonnelAnalytics(
       dataSource: label,
       title: label,
       total: records.length,
-      unitFromStats: buildUnitFromStats(records),
       records,
     }
   } catch {
