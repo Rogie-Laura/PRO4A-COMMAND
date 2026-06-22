@@ -59,8 +59,7 @@ export function OfficeCards({ offices }: OfficeCardsProps) {
                 colorClass={office.colorClass}
               />
               <div className="min-w-0">
-                <p className="truncate font-medium">{office.shortLabel}</p>
-                <p className="truncate text-xs text-muted-foreground">{office.label}</p>
+                <p className="truncate text-sm font-medium">{office.label}</p>
               </div>
             </div>
             <span className="shrink-0 text-lg font-bold tabular-nums">

@@ -123,10 +123,10 @@ export async function fetchPersonnelSheetCsv(sheetId?: string): Promise<string> 
 
 export function getPersonnelRecapCsvUrl(sheetId?: string) {
   const id = sheetId ?? process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
-  return buildSheetCsvUrl(id, {
-    sheetTab: PERSONNEL_RECAP_SHEET.tabName,
-    query: "SELECT *",
-  })
+  // Use raw /export?format=csv URL — gviz/tq type-infers the Value column as
+  // numeric (first rows are numbers) and drops all string values like the
+  // pipe-delimited "rank|name|0" leadership entries.
+  return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${PERSONNEL_RECAP_SHEET.gid}`
 }
 
 export async function fetchPersonnelRecapCsv(sheetId?: string): Promise<string> {

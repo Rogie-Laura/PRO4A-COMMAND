@@ -2,6 +2,10 @@
 export const PERSONNEL_RECAP_SHEET = {
   sheetId: "1B0-dkbSxcdmEygDVxz_0tthLz9vFBqax9Fq8WUtoPQk",
   tabName: "PRO4A-COMMAND",
+  // GID is stable because the Apps Script uses clearContents() not deleteSheet().
+  // Required for the raw /export?format=csv URL which preserves pipe-delimited values
+  // (gviz/tq type-infers the Value column as numeric and drops string values).
+  gid: "1904840024",
   label: "PRO4A-COMMAND recap",
 } as const
 
