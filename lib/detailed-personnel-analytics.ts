@@ -71,24 +71,20 @@ async function loadDetailedPersonnelAnalytics(
 ): Promise<DetailedPersonnelAnalytics> {
   const { label } = DETAILED_PERSONNEL_SHEET.tabs[tab]
 
-  try {
-    const csv = await fetchDetailedPersonnelSheetCsv(tab)
-    const records = parseDetailedPersonnelCsv(csv)
+  const csv = await fetchDetailedPersonnelSheetCsv(tab)
+  const records = parseDetailedPersonnelCsv(csv)
 
-    if (records.length === 0) {
-      return emptyAnalytics(label)
-    }
-
-    return {
-      lastUpdated: new Date().toISOString(),
-      dataReady: true,
-      dataSource: label,
-      title: label,
-      total: records.length,
-      records,
-    }
-  } catch {
+  if (records.length === 0) {
     return emptyAnalytics(label)
+  }
+
+  return {
+    lastUpdated: new Date().toISOString(),
+    dataReady: true,
+    dataSource: label,
+    title: label,
+    total: records.length,
+    records,
   }
 }
 

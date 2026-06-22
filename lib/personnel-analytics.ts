@@ -61,14 +61,12 @@ async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
       return fromRecap
     }
   } catch {
-    // Fall back to full roster when recap tab is missing or unreachable.
+    // recap tab missing or unreachable — fall through to roster
   }
 
-  try {
-    return await loadPersonnelAnalyticsFromRoster()
-  } catch {
-    return emptyAnalytics()
-  }
+  // Let errors propagate so unstable_cache does NOT cache failures.
+  // The loader's try/catch handles UI gracefully; retrying on next page load.
+  return loadPersonnelAnalyticsFromRoster()
 }
 
 export const PERSONNEL_ANALYTICS_CACHE_TAG = "personnel-analytics-recap-v1"

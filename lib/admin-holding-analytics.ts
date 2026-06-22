@@ -88,24 +88,22 @@ function parseAdminHoldingCsv(text: string): AdminHoldingRecord[] {
 }
 
 async function loadAdminHoldingAnalytics(): Promise<AdminHoldingAnalytics> {
-  try {
-    const csv = await fetchAdminHoldingSheetCsv()
-    const records = parseAdminHoldingCsv(csv)
+  // Let fetch errors propagate — unstable_cache will not cache failures,
+  // so the next page load retries. Only return empty for genuinely empty sheets.
+  const csv = await fetchAdminHoldingSheetCsv()
+  const records = parseAdminHoldingCsv(csv)
 
-    if (records.length === 0) {
-      return emptyAnalytics()
-    }
-
-    return {
-      lastUpdated: new Date().toISOString(),
-      dataReady: true,
-      dataSource: ADMIN_HOLDING_SHEET.label,
-      total: records.length,
-      statusStats: buildStatusStats(records),
-      records,
-    }
-  } catch {
+  if (records.length === 0) {
     return emptyAnalytics()
+  }
+
+  return {
+    lastUpdated: new Date().toISOString(),
+    dataReady: true,
+    dataSource: ADMIN_HOLDING_SHEET.label,
+    total: records.length,
+    statusStats: buildStatusStats(records),
+    records,
   }
 }
 

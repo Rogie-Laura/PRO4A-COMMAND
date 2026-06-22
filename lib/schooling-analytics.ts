@@ -113,50 +113,42 @@ export function parseSchoolingCsv(text: string): SchoolingRecord[] {
 }
 
 async function loadSchoolingMandatoryAnalytics(): Promise<SchoolingAnalytics> {
-  try {
-    const csv = await fetchSchoolingMandatorySheetCsv()
-    const records = parseSchoolingCsv(csv)
+  const csv = await fetchSchoolingMandatorySheetCsv()
+  const records = parseSchoolingCsv(csv)
 
-    if (records.length === 0) {
-      return emptyAnalytics(SCHOOLING_SHEET.mandatoryLabel, SCHOOLING_SHEET.mandatoryLabel)
-    }
-
-    return {
-      lastUpdated: new Date().toISOString(),
-      dataReady: true,
-      dataSource: SCHOOLING_SHEET.mandatoryLabel,
-      title: SCHOOLING_SHEET.mandatoryLabel,
-      total: records.length,
-      subUnitStats: buildSubUnitStats(records),
-      courseStats: buildCourseStats(records),
-      records,
-    }
-  } catch {
+  if (records.length === 0) {
     return emptyAnalytics(SCHOOLING_SHEET.mandatoryLabel, SCHOOLING_SHEET.mandatoryLabel)
+  }
+
+  return {
+    lastUpdated: new Date().toISOString(),
+    dataReady: true,
+    dataSource: SCHOOLING_SHEET.mandatoryLabel,
+    title: SCHOOLING_SHEET.mandatoryLabel,
+    total: records.length,
+    subUnitStats: buildSubUnitStats(records),
+    courseStats: buildCourseStats(records),
+    records,
   }
 }
 
 async function loadSchoolingSpecializedAnalytics(): Promise<SchoolingAnalytics> {
-  try {
-    const csv = await fetchSchoolingSpecializedSheetCsv()
-    const records = parseSchoolingCsv(csv)
+  const csv = await fetchSchoolingSpecializedSheetCsv()
+  const records = parseSchoolingCsv(csv)
 
-    if (records.length === 0) {
-      return emptyAnalytics(SCHOOLING_SHEET.specializedLabel, SCHOOLING_SHEET.specializedLabel)
-    }
-
-    return {
-      lastUpdated: new Date().toISOString(),
-      dataReady: true,
-      dataSource: SCHOOLING_SHEET.specializedLabel,
-      title: SCHOOLING_SHEET.specializedLabel,
-      total: records.length,
-      subUnitStats: buildSubUnitStats(records),
-      courseStats: buildCourseStats(records),
-      records,
-    }
-  } catch {
+  if (records.length === 0) {
     return emptyAnalytics(SCHOOLING_SHEET.specializedLabel, SCHOOLING_SHEET.specializedLabel)
+  }
+
+  return {
+    lastUpdated: new Date().toISOString(),
+    dataReady: true,
+    dataSource: SCHOOLING_SHEET.specializedLabel,
+    title: SCHOOLING_SHEET.specializedLabel,
+    total: records.length,
+    subUnitStats: buildSubUnitStats(records),
+    courseStats: buildCourseStats(records),
+    records,
   }
 }
 
