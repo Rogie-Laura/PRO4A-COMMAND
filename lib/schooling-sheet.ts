@@ -1,6 +1,6 @@
 /** Personnel workbook — Schooling tabs. */
 export const SCHOOLING_SHEET = {
-  sheetId: "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG",
+  sheetId: "1B0-dkbSxcdmEygDVxz_0tthLz9vFBqax9Fq8WUtoPQk",
   mandatoryGid: "418850451",
   specializedGid: "70235906",
   mandatoryLabel: "Schooling Mandatory",

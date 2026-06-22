@@ -1,6 +1,6 @@
 /** Hybrid recap tab on the main personnel Google Sheet. */
 export const PERSONNEL_RECAP_SHEET = {
-  sheetId: "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG",
+  sheetId: "1B0-dkbSxcdmEygDVxz_0tthLz9vFBqax9Fq8WUtoPQk",
   tabName: "PRO4A-COMMAND",
   label: "PRO4A-COMMAND recap",
 } as const
