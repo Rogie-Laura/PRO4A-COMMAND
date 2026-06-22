@@ -43,7 +43,7 @@ async function loadPersonnelAnalyticsFromRoster(): Promise<PersonnelAnalytics> {
   const csv = await fetchPersonnelSheetCsv()
   const rows = parseCsv(csv)
   const records = rows.map(mapPersonnelRow).filter((r) => r.lastName || r.firstName)
-  const analytics = buildPersonnelAnalyticsFromRecords(records)
+  const analytics = buildPersonnelAnalyticsFromRecords(records, { includeRankTenureDetails: false })
 
   return {
     lastUpdated: new Date().toISOString(),

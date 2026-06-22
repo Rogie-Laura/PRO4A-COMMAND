@@ -211,9 +211,39 @@ function buildRankTenurePersonDetail(record: PersonnelRecord): RankTenurePersonD
   }
 }
 
+export function buildRankTenurePersonnelForBracket(
+  records: PersonnelRecord[],
+  rank: string,
+  bracketId: string,
+): RankTenurePersonDetail[] {
+  const people: RankTenurePersonDetail[] = []
+
+  for (const record of records) {
+    if (!isPnco(record.rank) || record.rank.trim() !== rank) continue
+
+    const recordBracketId =
+      getRankTenureBracketFromPromotionDate(record.lastPromotionDate) ??
+      (!record.lastPromotionDate.trim() ? RANK_TENURE_LESS_THAN_1_ID : null)
+
+    if (recordBracketId !== bracketId || !isRankTenureDrilldownBracket(bracketId)) continue
+
+    const person = buildRankTenurePersonDetail(record)
+    if (person) people.push(person)
+  }
+
+  people.sort((a, b) => {
+    if (b.yearsInRank !== a.yearsInRank) return b.yearsInRank - a.yearsInRank
+    return a.name.localeCompare(b.name, "en", { sensitivity: "base" })
+  })
+
+  return people
+}
+
 export function buildRankTenureDistribution(
   records: PersonnelRecord[],
+  options?: { includeDetails?: boolean },
 ): RankTenureDistributionRow[] {
+  const includeDetails = options?.includeDetails ?? true
   const pncoByRank = new Map<string, PersonnelRecord[]>()
 
   for (const rank of PNCO_RANK_ORDER) {
@@ -243,7 +273,7 @@ export function buildRankTenureDistribution(
 
       brackets[bracketId] += 1
 
-      if (isRankTenureDrilldownBracket(bracketId)) {
+      if (includeDetails && isRankTenureDrilldownBracket(bracketId)) {
         const person = buildRankTenurePersonDetail(record)
         if (!person) continue
 
@@ -253,11 +283,13 @@ export function buildRankTenureDistribution(
       }
     }
 
-    for (const bracketId of Object.keys(bracketDetails)) {
-      bracketDetails[bracketId]?.sort((a, b) => {
-        if (b.yearsInRank !== a.yearsInRank) return b.yearsInRank - a.yearsInRank
-        return a.name.localeCompare(b.name, "en", { sensitivity: "base" })
-      })
+    if (includeDetails) {
+      for (const bracketId of Object.keys(bracketDetails)) {
+        bracketDetails[bracketId]?.sort((a, b) => {
+          if (b.yearsInRank !== a.yearsInRank) return b.yearsInRank - a.yearsInRank
+          return a.name.localeCompare(b.name, "en", { sensitivity: "base" })
+        })
+      }
     }
 
     return {
@@ -389,14 +421,19 @@ export function buildGenderStats(records: PersonnelRecord[]): CountItem[] {
   return toCountItems(countBy(records, (r) => r.gender), records.length)
 }
 
-export function buildPersonnelAnalyticsFromRecords(records: PersonnelRecord[]) {
+export function buildPersonnelAnalyticsFromRecords(
+  records: PersonnelRecord[],
+  options?: { includeRankTenureDetails?: boolean },
+) {
   return {
     kpis: buildKpis(records),
     workforce: buildWorkforceSummary(records),
     officeBreakdown: buildOfficeBreakdown(records),
     rankDistribution: buildRankDistribution(records),
     ageDistributionByOffice: buildAgeDistributionByOffice(records),
-    rankTenureDistribution: buildRankTenureDistribution(records),
+    rankTenureDistribution: buildRankTenureDistribution(records, {
+      includeDetails: options?.includeRankTenureDetails ?? true,
+    }),
     genderStats: buildGenderStats(records),
     statusStats: buildStatusStats(records),
     unitRows: buildUnitRows(records),

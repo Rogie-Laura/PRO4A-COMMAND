@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState, useTransition } from "react"
 
+import { fetchAdminHoldingRecords } from "@/app/(dashboard)/actions"
 import { AdminHoldingDetailSheet } from "@/components/dashboard/admin-holding-detail-sheet"
 import {
   Card,
@@ -17,7 +18,6 @@ import { cn } from "@/lib/utils"
 
 type AdminHoldingStatusBreakdownProps = {
   items: CountItem[]
-  records: AdminHoldingRecord[]
 }
 
 type SelectedStatus = {
@@ -25,36 +25,24 @@ type SelectedStatus = {
   records: AdminHoldingRecord[]
 }
 
-export function AdminHoldingStatusBreakdown({
-  items,
-  records,
-}: AdminHoldingStatusBreakdownProps) {
+export function AdminHoldingStatusBreakdown({ items }: AdminHoldingStatusBreakdownProps) {
   const [selectedStatus, setSelectedStatus] = useState<SelectedStatus | null>(null)
   const [open, setOpen] = useState(false)
-
-  const recordsByStatus = useMemo(() => {
-    const map = new Map<string, AdminHoldingRecord[]>()
-
-    for (const record of records) {
-      const list = map.get(record.status) ?? []
-      list.push(record)
-      map.set(record.status, list)
-    }
-
-    return map
-  }, [records])
+  const [isPending, startTransition] = useTransition()
 
   function handleStatusClick(item: CountItem) {
-    if (item.count === 0) return
+    if (item.count === 0 || isPending) return
 
-    const statusRecords = recordsByStatus.get(item.name) ?? []
-    if (statusRecords.length === 0) return
+    startTransition(async () => {
+      const records = await fetchAdminHoldingRecords(item.name)
+      if (records.length === 0) return
 
-    setSelectedStatus({
-      label: item.name,
-      records: statusRecords,
+      setSelectedStatus({
+        label: item.name,
+        records,
+      })
+      setOpen(true)
     })
-    setOpen(true)
   }
 
   function handleOpenChange(nextOpen: boolean) {
@@ -79,13 +67,14 @@ export function AdminHoldingStatusBreakdown({
               <button
                 key={item.name}
                 type="button"
-                disabled={!isClickable}
+                disabled={!isClickable || isPending}
                 onClick={() => handleStatusClick(item)}
                 className={cn(
                   "w-full space-y-2 rounded-lg text-left transition-colors",
                   isClickable &&
                     "cursor-pointer hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   !isClickable && "cursor-default opacity-60",
+                  isPending && isClickable && "opacity-70",
                 )}
               >
                 <div className="flex items-center justify-between gap-2 px-1 text-sm">

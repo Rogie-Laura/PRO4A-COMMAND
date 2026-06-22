@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache"
 
 import { ADMIN_HOLDING_SHEET } from "@/lib/admin-holding-sheet"
-import type { AdminHoldingAnalytics, AdminHoldingRecord } from "@/lib/admin-holding-types"
+import type { AdminHoldingAnalytics, AdminHoldingRecord, AdminHoldingSummary } from "@/lib/admin-holding-types"
 import { fetchAdminHoldingSheetCsv, parseCsvRows } from "@/lib/google-sheets"
 import type { CountItem } from "@/lib/personnel-types"
 
@@ -120,4 +120,9 @@ const getCachedAdminHoldingAnalytics = unstable_cache(
 
 export async function getAdminHoldingAnalytics(): Promise<AdminHoldingAnalytics> {
   return getCachedAdminHoldingAnalytics()
+}
+
+export function toAdminHoldingSummary(data: AdminHoldingAnalytics): AdminHoldingSummary {
+  const { records: _records, ...summary } = data
+  return summary
 }

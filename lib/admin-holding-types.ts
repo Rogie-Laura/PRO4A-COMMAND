@@ -21,3 +21,5 @@ export type AdminHoldingAnalytics = {
   statusStats: CountItem[]
   records: AdminHoldingRecord[]
 }
+
+export type AdminHoldingSummary = Omit<AdminHoldingAnalytics, "records">

@@ -8,10 +8,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { AdminHoldingAnalytics } from "@/lib/admin-holding-types"
+import type { AdminHoldingSummary } from "@/lib/admin-holding-types"
 
 type AdminHoldingSectionProps = {
-  data: AdminHoldingAnalytics
+  data: AdminHoldingSummary
 }
 
 export function AdminHoldingSection({ data }: AdminHoldingSectionProps) {
@@ -39,7 +39,7 @@ export function AdminHoldingSection({ data }: AdminHoldingSectionProps) {
         </Card>
 
         {data.statusStats.length > 0 ? (
-          <AdminHoldingStatusBreakdown items={data.statusStats} records={data.records} />
+          <AdminHoldingStatusBreakdown items={data.statusStats} />
         ) : null}
       </div>
 

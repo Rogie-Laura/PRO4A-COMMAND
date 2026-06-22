@@ -1,105 +1,30 @@
-import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
-import { AdminHoldingSection } from "@/components/dashboard/admin-holding-section"
-import { AgeDistributionTable } from "@/components/dashboard/age-distribution-table"
-import { RankTenureTable } from "@/components/dashboard/rank-tenure-table"
-import { LeadershipSection } from "@/components/dashboard/leadership-section"
-import { PersonnelStatsRefreshButton } from "@/components/dashboard/personnel-stats-refresh-button"
-import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
-import { DetailedPersonnelSections } from "@/components/dashboard/detailed-personnel-sections"
-import { SchoolingSections } from "@/components/dashboard/schooling-sections"
-import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
-import { UnitTable } from "@/components/dashboard/unit-table"
-import { getAdminHoldingAnalytics } from "@/lib/admin-holding-analytics"
-import {
-  getDetailedNhqAnalytics,
-  getDetailedNosusAnalytics,
-  getDetailedRhqPpoAnalytics,
-  getDetailedRsuAnalytics,
-  toDetailedPersonnelSummary,
-} from "@/lib/detailed-personnel-analytics"
-import { buildDetailedPersonnelStatusCounts } from "@/lib/detailed-personnel-status"
-import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
-import {
-  toOfficeBreakdownCards,
-  toRankTenureTableRows,
-} from "@/lib/personnel-client-payload"
-import {
-  getSchoolingMandatoryAnalytics,
-  getSchoolingSpecializedAnalytics,
-  toSchoolingSummary,
-} from "@/lib/schooling-analytics"
+import { Suspense } from "react"
 
-export async function PersonnelStatsContent() {
-  const [
-    data,
-    adminHolding,
-    schoolingMandatory,
-    schoolingSpecialized,
-    detailedNhq,
-    detailedNosus,
-    detailedRsu,
-    detailedRhqPpo,
-  ] = await Promise.all([
-    getPersonnelAnalytics(),
-    getAdminHoldingAnalytics(),
-    getSchoolingMandatoryAnalytics(),
-    getSchoolingSpecializedAnalytics(),
-    getDetailedNhqAnalytics(),
-    getDetailedNosusAnalytics(),
-    getDetailedRsuAnalytics(),
-    getDetailedRhqPpoAnalytics(),
-  ])
-  const totalKpi = data.kpis.find((k) => k.id === "total")
-  const detailedStatus = buildDetailedPersonnelStatusCounts(
-    detailedNhq,
-    detailedNosus,
-    detailedRsu,
-    detailedRhqPpo,
-  )
+import { AdminHoldingSectionLoader } from "@/components/dashboard/admin-holding-section-loader"
+import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
+import { DetailedPersonnelSectionsLoader } from "@/components/dashboard/detailed-personnel-sections-loader"
+import { PersonnelStatsPrimary } from "@/components/dashboard/personnel-stats-primary"
+import { SchoolingSectionsLoader } from "@/components/dashboard/schooling-sections-loader"
+import { SectionLoading } from "@/components/dashboard/section-loading"
 
+export function PersonnelStatsContent() {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <DataSyncBanner
-          lastUpdated={data.lastUpdated}
-          sourceLabel="Personnel tab"
-          syncDescription="synced from Google Sheet (cached until you refresh)"
-        />
-        <PersonnelStatsRefreshButton />
-      </div>
+      <Suspense fallback={<DashboardLoading />}>
+        <PersonnelStatsPrimary />
+      </Suspense>
 
-      {totalKpi && (
-        <TotalPersonnelSection
-          total={totalKpi}
-          offices={toOfficeBreakdownCards(data.officeBreakdown)}
-          workforce={data.workforce}
-        />
-      )}
+      <Suspense fallback={<SectionLoading label="Admin Holding" />}>
+        <AdminHoldingSectionLoader />
+      </Suspense>
 
-      <RankDistributionSection distribution={data.rankDistribution} />
+      <Suspense fallback={<SectionLoading label="Schooling" />}>
+        <SchoolingSectionsLoader />
+      </Suspense>
 
-      <LeadershipSection leadership={data.leadership} />
-
-      <AgeDistributionTable rows={data.ageDistributionByOffice} />
-
-      <RankTenureTable rows={toRankTenureTableRows(data.rankTenureDistribution)} />
-
-      <UnitTable rows={data.unitRows} />
-
-      <AdminHoldingSection data={adminHolding} />
-
-      <SchoolingSections
-        mandatory={toSchoolingSummary(schoolingMandatory)}
-        specialized={toSchoolingSummary(schoolingSpecialized)}
-      />
-
-      <DetailedPersonnelSections
-        nhq={toDetailedPersonnelSummary(detailedNhq)}
-        nosus={toDetailedPersonnelSummary(detailedNosus)}
-        rsu={toDetailedPersonnelSummary(detailedRsu)}
-        rhqPpo={toDetailedPersonnelSummary(detailedRhqPpo)}
-        status={detailedStatus}
-      />
+      <Suspense fallback={<SectionLoading label="Detailed Personnel" />}>
+        <DetailedPersonnelSectionsLoader />
+      </Suspense>
     </div>
   )
 }
