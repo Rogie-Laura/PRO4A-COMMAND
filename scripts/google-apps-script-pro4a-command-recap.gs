@@ -10,7 +10,7 @@
  */
 
 const RECAP_TAB_NAME = "PRO4A-COMMAND"
-const SOURCE_SHEET_INDEX = 0
+const SOURCE_SHEET_NAME = "AlphalistReport_CompleteGenInfo"
 
 const PCO_RANKS = ["PBGEN", "PCOL", "PLTCOL", "PMAJ", "PCPT", "PLT", "PSINSP"]
 const PNCO_RANKS = ["Pat", "PCpl", "PSSg", "PMSg", "PSMS", "PCMS", "PEMS"]
@@ -27,7 +27,10 @@ const OFFICES = [
 
 function buildPro4aCommandRecap() {
   const ss = SpreadsheetApp.getActiveSpreadsheet()
-  const source = ss.getSheets()[SOURCE_SHEET_INDEX]
+  const source = ss.getSheetByName(SOURCE_SHEET_NAME) || findPersonnelSheet_(ss)
+  if (!source) {
+    throw new Error("Personnel source sheet not found.")
+  }
   const values = source.getDataRange().getValues()
   if (values.length < 2) {
     throw new Error("Source sheet has no personnel rows.")
@@ -45,8 +48,8 @@ function buildPro4aCommandRecap() {
       firstName: String(row[index("First Name")] || "").trim(),
       middleName: String(row[index("Middle Name")] || "").trim(),
       badgeNumber: String(row[index("Badge Number")] || "").trim(),
-      birthDate: String(row[index("BirthDate")] || "").trim(),
-      lastPromotionDate: String(row[index("Last Promotion Date")] || "").trim(),
+      birthDate: row[index("BirthDate")] || "",
+      lastPromotionDate: row[index("Last Promotion Date")] || "",
       designation: String(row[index("Designation")] || "").trim(),
       pStatus: String(row[index("PStatus")] || "").trim(),
       gender: String(row[index("Gender")] || "").trim(),
@@ -74,6 +77,13 @@ function buildPro4aCommandRecap() {
   SpreadsheetApp.getUi().alert(
     "PRO4A-COMMAND recap updated with " + records.length + " personnel records.",
   )
+}
+
+function findPersonnelSheet_(ss) {
+  return ss.getSheets().find((sheet) => {
+    const firstCell = String(sheet.getRange(1, 1).getValue() || "").trim()
+    return firstCell === "Rank"
+  }) || null
 }
 
 function buildRecapRows_(records) {
@@ -281,6 +291,10 @@ function getTenureBracket_(promotionDate) {
 }
 
 function parseDate_(value) {
+  // getValues() returns Date objects for date-formatted cells — use directly
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value
+  }
   const parts = String(value || "").trim().split("/")
   if (parts.length !== 3) return null
   const month = Number(parts[0]) - 1
