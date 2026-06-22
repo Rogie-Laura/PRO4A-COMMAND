@@ -9,6 +9,7 @@ import {
   getDetailedNosusAnalytics,
   getDetailedRhqPpoAnalytics,
   getDetailedRsuAnalytics,
+  getDetailedPersonnelDashboard,
   DETAILED_PERSONNEL_CACHE_TAGS,
 } from "@/lib/detailed-personnel-analytics"
 import {
@@ -21,7 +22,9 @@ import { fetchPersonnelSheetCsv, parseCsv } from "@/lib/google-sheets"
 import { getPersonnelAnalytics, PERSONNEL_ANALYTICS_CACHE_TAG } from "@/lib/personnel-analytics"
 import {
   getSchoolingMandatoryAnalytics,
+  getSchoolingMandatorySummary,
   getSchoolingSpecializedAnalytics,
+  getSchoolingSpecializedSummary,
   SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG,
   SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG,
 } from "@/lib/schooling-analytics"
@@ -34,6 +37,16 @@ export async function fetchSchoolingBreakdown(tab: SchoolingTabKey): Promise<Sch
   }
 
   return getSchoolingSpecializedAnalytics()
+}
+
+export async function fetchSchoolingDashboardSummaries() {
+  const mandatory = await getSchoolingMandatorySummary()
+  const specialized = await getSchoolingSpecializedSummary()
+  return { mandatory, specialized }
+}
+
+export async function fetchDetailedPersonnelDashboard() {
+  return getDetailedPersonnelDashboard()
 }
 
 export async function fetchDetailedPersonnelTab(

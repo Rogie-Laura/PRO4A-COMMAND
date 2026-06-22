@@ -24,15 +24,11 @@ export function PersonnelStatsContent() {
       </SectionErrorBoundary>
 
       <SectionErrorBoundary label="Schooling">
-        <Suspense fallback={<SectionLoading label="Schooling" />}>
-          <SchoolingSectionsLoader />
-        </Suspense>
+        <SchoolingSectionsLoader />
       </SectionErrorBoundary>
 
       <SectionErrorBoundary label="Detailed Personnel">
-        <Suspense fallback={<SectionLoading label="Detailed Personnel" />}>
-          <DetailedPersonnelSectionsLoader />
-        </Suspense>
+        <DetailedPersonnelSectionsLoader />
       </SectionErrorBoundary>
     </div>
   )

@@ -5,6 +5,7 @@ import { useTransition } from "react"
 import { RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { DASHBOARD_REFRESH_EVENT } from "@/lib/dashboard-refresh"
 
 type DashboardRefreshButtonProps = {
   refreshAction: () => Promise<void>
@@ -28,6 +29,7 @@ export function DashboardRefreshButton({
       onClick={() => {
         startTransition(async () => {
           await refreshAction()
+          window.dispatchEvent(new Event(DASHBOARD_REFRESH_EVENT))
           router.refresh()
         })
       }}
