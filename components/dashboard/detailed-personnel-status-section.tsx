@@ -4,6 +4,7 @@ import { useState } from "react"
 import { AlertTriangle, Clock3 } from "lucide-react"
 
 import { DetailedPersonnelStatusDetailSheet } from "@/components/dashboard/detailed-personnel-status-detail-sheet"
+import { SwipeCarousel } from "@/components/dashboard/swipe-carousel"
 import {
   Card,
   CardContent,
@@ -47,26 +48,53 @@ export function DetailedPersonnelStatusSection({ status }: DetailedPersonnelStat
           }
         : null
 
+  const expiringCard = (
+    <StatusCard
+      icon={Clock3}
+      label={`Expiring Within ${DETAILED_ORDER_EXPIRY_WINDOW_DAYS} Days`}
+      description="Personnel whose detailed order expires in 15 days or less"
+      count={status.expiringCount}
+      accentClassName="border-amber-500/30 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-card text-amber-700 dark:text-amber-300 [&_[data-slot=card-description]]:text-amber-700/90 dark:[&_[data-slot=card-description]]:text-amber-300/90"
+      onClick={() => setActiveView("expiring")}
+    />
+  )
+
+  const terminatedCard = (
+    <StatusCard
+      icon={AlertTriangle}
+      label="Terminated Detailed Orders"
+      description="Personnel whose detailed orders are already terminated"
+      count={status.terminatedCount}
+      accentClassName="border-red-500/30 bg-gradient-to-br from-red-500/15 via-red-500/5 to-card text-red-700 dark:text-red-300 [&_[data-slot=card-description]]:text-red-700/90 dark:[&_[data-slot=card-description]]:text-red-300/90"
+      onClick={() => setActiveView("terminated")}
+    />
+  )
+
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <StatusCard
-          icon={Clock3}
-          label={`Expiring Within ${DETAILED_ORDER_EXPIRY_WINDOW_DAYS} Days`}
-          description="Personnel whose detailed order expires in 15 days or less"
-          count={status.expiringCount}
-          accentClassName="border-amber-500/30 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-card text-amber-700 dark:text-amber-300 [&_[data-slot=card-description]]:text-amber-700/90 dark:[&_[data-slot=card-description]]:text-amber-300/90"
-          onClick={() => setActiveView("expiring")}
-        />
+      <SwipeCarousel
+        className="lg:hidden"
+        swipeHint="Swipe for Expiring · Terminated"
+        ariaLabel="Detailed order status"
+        slides={[
+          {
+            id: "detailed-expiring",
+            label: `Expiring Within ${DETAILED_ORDER_EXPIRY_WINDOW_DAYS} Days`,
+            dotClassName: "bg-amber-500",
+            content: expiringCard,
+          },
+          {
+            id: "detailed-terminated",
+            label: "Terminated Detailed Orders",
+            dotClassName: "bg-red-500",
+            content: terminatedCard,
+          },
+        ]}
+      />
 
-        <StatusCard
-          icon={AlertTriangle}
-          label="Terminated Detailed Orders"
-          description="Personnel whose detailed orders are already terminated"
-          count={status.terminatedCount}
-          accentClassName="border-red-500/30 bg-gradient-to-br from-red-500/15 via-red-500/5 to-card text-red-700 dark:text-red-300 [&_[data-slot=card-description]]:text-red-700/90 dark:[&_[data-slot=card-description]]:text-red-300/90"
-          onClick={() => setActiveView("terminated")}
-        />
+      <div className="hidden gap-4 sm:grid-cols-2 lg:grid">
+        {expiringCard}
+        {terminatedCard}
       </div>
 
       <DetailedPersonnelStatusDetailSheet
