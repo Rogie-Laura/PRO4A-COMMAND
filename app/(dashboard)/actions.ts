@@ -6,9 +6,20 @@ import { ADMIN_HOLDING_ANALYTICS_CACHE_TAG } from "@/lib/admin-holding-analytics
 import { PERSONNEL_ANALYTICS_CACHE_TAG } from "@/lib/personnel-analytics"
 import { DETAILED_PERSONNEL_CACHE_TAGS } from "@/lib/detailed-personnel-analytics"
 import {
+  getSchoolingMandatoryAnalytics,
+  getSchoolingSpecializedAnalytics,
   SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG,
   SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG,
 } from "@/lib/schooling-analytics"
+import type { SchoolingAnalytics, SchoolingTabKey } from "@/lib/schooling-types"
+
+export async function fetchSchoolingBreakdown(tab: SchoolingTabKey): Promise<SchoolingAnalytics> {
+  if (tab === "mandatory") {
+    return getSchoolingMandatoryAnalytics()
+  }
+
+  return getSchoolingSpecializedAnalytics()
+}
 
 export async function refreshPersonnelStatsData() {
   updateTag(PERSONNEL_ANALYTICS_CACHE_TAG)

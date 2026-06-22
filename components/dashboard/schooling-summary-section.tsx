@@ -7,11 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { SchoolingAnalytics } from "@/lib/schooling-types"
+import type { SchoolingSummary } from "@/lib/schooling-types"
 
 type SchoolingSummarySectionProps = {
-  mandatory: SchoolingAnalytics
-  specialized: SchoolingAnalytics
+  mandatory: SchoolingSummary
+  specialized: SchoolingSummary
 }
 
 export function SchoolingSummarySection({

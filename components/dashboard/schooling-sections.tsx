@@ -3,11 +3,11 @@ import { BookOpenCheck, GraduationCap } from "lucide-react"
 import { SchoolingSection } from "@/components/dashboard/schooling-section"
 import { SchoolingSummarySection } from "@/components/dashboard/schooling-summary-section"
 import { SwipeCarousel } from "@/components/dashboard/swipe-carousel"
-import type { SchoolingAnalytics } from "@/lib/schooling-types"
+import type { SchoolingSummary } from "@/lib/schooling-types"
 
 type SchoolingSectionsProps = {
-  mandatory: SchoolingAnalytics
-  specialized: SchoolingAnalytics
+  mandatory: SchoolingSummary
+  specialized: SchoolingSummary
 }
 
 export function SchoolingSections({ mandatory, specialized }: SchoolingSectionsProps) {
@@ -26,7 +26,8 @@ export function SchoolingSections({ mandatory, specialized }: SchoolingSectionsP
             dotClassName: "bg-indigo-500",
             content: (
               <SchoolingSection
-                data={mandatory}
+                tab="mandatory"
+                summary={mandatory}
                 icon={GraduationCap}
                 accentClassName="gap-0 overflow-hidden border-indigo-500/25 bg-gradient-to-br from-indigo-500/15 via-indigo-500/5 to-card text-indigo-700 dark:text-indigo-300 [&_[data-slot=card-description]]:text-indigo-700/90 dark:[&_[data-slot=card-description]]:text-indigo-300/90"
                 coursesDotClassName="bg-indigo-500"
@@ -40,7 +41,8 @@ export function SchoolingSections({ mandatory, specialized }: SchoolingSectionsP
             dotClassName: "bg-teal-500",
             content: (
               <SchoolingSection
-                data={specialized}
+                tab="specialized"
+                summary={specialized}
                 icon={BookOpenCheck}
                 accentClassName="gap-0 overflow-hidden border-teal-500/25 bg-gradient-to-br from-teal-500/15 via-teal-500/5 to-card text-teal-700 dark:text-teal-300 [&_[data-slot=card-description]]:text-teal-700/90 dark:[&_[data-slot=card-description]]:text-teal-300/90"
                 coursesDotClassName="bg-teal-500"
@@ -53,14 +55,16 @@ export function SchoolingSections({ mandatory, specialized }: SchoolingSectionsP
 
       <div className="hidden grid-cols-2 gap-4 lg:grid">
         <SchoolingSection
-          data={mandatory}
+          tab="mandatory"
+          summary={mandatory}
           icon={GraduationCap}
           accentClassName="gap-0 overflow-hidden border-indigo-500/25 bg-gradient-to-br from-indigo-500/15 via-indigo-500/5 to-card text-indigo-700 dark:text-indigo-300 [&_[data-slot=card-description]]:text-indigo-700/90 dark:[&_[data-slot=card-description]]:text-indigo-300/90"
           coursesDotClassName="bg-indigo-500"
           subUnitDotClassName="bg-violet-500"
         />
         <SchoolingSection
-          data={specialized}
+          tab="specialized"
+          summary={specialized}
           icon={BookOpenCheck}
           accentClassName="gap-0 overflow-hidden border-teal-500/25 bg-gradient-to-br from-teal-500/15 via-teal-500/5 to-card text-teal-700 dark:text-teal-300 [&_[data-slot=card-description]]:text-teal-700/90 dark:[&_[data-slot=card-description]]:text-teal-300/90"
           coursesDotClassName="bg-teal-500"

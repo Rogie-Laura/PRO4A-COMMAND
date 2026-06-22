@@ -28,8 +28,8 @@ export function SchoolingBreakdownSheet({
   coursesDotClassName = "bg-indigo-500",
   subUnitDotClassName = "bg-violet-500",
 }: SchoolingBreakdownSheetProps) {
-  const hasCourses = data.courseStats.length > 0
-  const hasSubUnits = data.subUnitStats.length > 0
+  const hasCourses = (data.courseStats?.length ?? 0) > 0
+  const hasSubUnits = (data.subUnitStats?.length ?? 0) > 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -26,3 +26,8 @@ export type SchoolingAnalytics = {
   courseStats: CountItem[]
   records: SchoolingRecord[]
 }
+
+/** Lightweight schooling payload for dashboard cards (no personnel records). */
+export type SchoolingSummary = Omit<SchoolingAnalytics, "records">
+
+export type SchoolingTabKey = "mandatory" | "specialized"

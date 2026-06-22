@@ -20,6 +20,7 @@ import {
 import {
   getSchoolingMandatoryAnalytics,
   getSchoolingSpecializedAnalytics,
+  toSchoolingSummary,
 } from "@/lib/schooling-analytics"
 
 export async function PersonnelStatsContent() {
@@ -75,7 +76,10 @@ export async function PersonnelStatsContent() {
 
       <AdminHoldingSection data={adminHolding} />
 
-      <SchoolingSections mandatory={schoolingMandatory} specialized={schoolingSpecialized} />
+      <SchoolingSections
+        mandatory={toSchoolingSummary(schoolingMandatory)}
+        specialized={toSchoolingSummary(schoolingSpecialized)}
+      />
 
       <DetailedPersonnelSections
         nhq={detailedNhq}

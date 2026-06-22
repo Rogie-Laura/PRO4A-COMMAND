@@ -6,7 +6,7 @@ import {
   parseCsvRows,
 } from "@/lib/google-sheets"
 import { SCHOOLING_SHEET } from "@/lib/schooling-sheet"
-import type { SchoolingAnalytics, SchoolingRecord } from "@/lib/schooling-types"
+import type { SchoolingAnalytics, SchoolingRecord, SchoolingSummary } from "@/lib/schooling-types"
 import type { CountItem } from "@/lib/personnel-types"
 
 function emptyAnalytics(title: string, dataSource: string): SchoolingAnalytics {
@@ -93,6 +93,18 @@ function buildSubUnitStats(records: SchoolingRecord[]): CountItem[] {
       percentage: Math.round((count / total) * 1000) / 10,
     }))
     .sort((a, b) => b.count - a.count)
+}
+
+export function toSchoolingSummary(data: SchoolingAnalytics): SchoolingSummary {
+  return {
+    lastUpdated: data.lastUpdated,
+    dataReady: data.dataReady,
+    dataSource: data.dataSource,
+    title: data.title,
+    total: data.total,
+    subUnitStats: data.subUnitStats ?? [],
+    courseStats: data.courseStats ?? [],
+  }
 }
 
 export function parseSchoolingCsv(text: string): SchoolingRecord[] {
