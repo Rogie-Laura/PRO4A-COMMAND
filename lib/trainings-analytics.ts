@@ -156,7 +156,7 @@ function buildModeStats(records: TrainingRecord[]): CountItem[] {
   const counts = new Map<string, number>()
 
   for (const record of records) {
-    const mode = resolveTrainingMode(record.mode, record.venue, record.facilitator)
+    const mode = resolveTrainingMode(record.mode, record.venue)
     counts.set(mode, (counts.get(mode) ?? 0) + effectiveClassCount(record))
   }
 
@@ -231,7 +231,7 @@ export function parseTrainingsCsv(text: string): TrainingRecord[] {
       proposedSchedule: cellAt(row, columns.proposedSchedule),
       status,
       durationDays: cellAt(row, columns.durationDays),
-      mode: resolveTrainingMode(modeRaw, venue, facilitator),
+      mode: resolveTrainingMode(modeRaw, venue),
       opr: cellAt(row, columns.opr),
       facilitator,
       venue,
@@ -292,7 +292,7 @@ async function loadTrainingsAnalytics(): Promise<TrainingsAnalytics> {
   }
 }
 
-export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v5"
+export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v6"
 
 /** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedTrainingsAnalytics = unstable_cache(

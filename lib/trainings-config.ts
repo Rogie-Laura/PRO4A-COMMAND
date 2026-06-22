@@ -123,14 +123,11 @@ export function formatTrainingMode(mode: string) {
   if (lower.includes("online") || lower.includes("zoom")) return "Online"
   if (lower.includes("hybrid") || lower.includes("blended")) return "Hybrid"
 
-  return trimmed
+  return "Unspecified"
 }
 
-export function resolveTrainingMode(mode: string, venue: string, facilitator = "") {
+export function resolveTrainingMode(mode: string, venue: string) {
   if (mode.trim()) return formatTrainingMode(mode)
 
-  const venueMode = formatTrainingMode(venue)
-  if (venueMode !== "Unspecified") return venueMode
-
-  return formatTrainingMode(facilitator)
+  return formatTrainingMode(venue)
 }
