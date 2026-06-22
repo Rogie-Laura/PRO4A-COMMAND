@@ -2,8 +2,15 @@ import { getAdminHoldingCsvUrl, ADMIN_HOLDING_SHEET } from "@/lib/admin-holding-
 import { getIctEquipmentCsvUrl, ICT_EQUIPMENT_SHEET } from "@/lib/ict-equipment-sheet"
 import { getRictmdBmiCsvUrl, RICTMD_BMI_SHEET } from "@/lib/rictmd-bmi-sheet"
 import { PERSONNEL_RECAP_SHEET } from "@/lib/personnel-recap-sheet"
+import { getTrainingsCsvUrl, TRAININGS_SHEET } from "@/lib/trainings-sheet"
 
-export { ICT_EQUIPMENT_SHEET, RICTMD_BMI_SHEET, PERSONNEL_RECAP_SHEET, ADMIN_HOLDING_SHEET }
+export {
+  ICT_EQUIPMENT_SHEET,
+  RICTMD_BMI_SHEET,
+  PERSONNEL_RECAP_SHEET,
+  ADMIN_HOLDING_SHEET,
+  TRAININGS_SHEET,
+}
 
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
 const DEFAULT_MOBILITY_TAB = "Mobility"
@@ -149,6 +156,10 @@ export async function fetchIctEquipmentSheetCsv(): Promise<string> {
 
 export async function fetchAdminHoldingSheetCsv(): Promise<string> {
   return fetchCsv(getAdminHoldingCsvUrl(), SHEET_CACHE_SECONDS)
+}
+
+export async function fetchTrainingsSheetCsv(): Promise<string> {
+  return fetchCsv(getTrainingsCsvUrl(), SHEET_CACHE_SECONDS)
 }
 
 /** @deprecated Use fetchRictmdBmiSheetCsv instead. */

@@ -1,5 +1,11 @@
-import { SectionPlaceholder } from "@/components/section-placeholder"
+import { Suspense } from "react"
+
+import { TrainingsContent, TrainingsLoading } from "@/components/dashboard/trainings-content"
 
 export default function TrainingsAndEducationPage() {
-  return <SectionPlaceholder title="Trainings and Education" />
+  return (
+    <Suspense fallback={<TrainingsLoading />}>
+      <TrainingsContent />
+    </Suspense>
+  )
 }
