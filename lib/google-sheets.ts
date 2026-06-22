@@ -193,7 +193,7 @@ export async function fetchHealthSheetCsv(): Promise<string> {
   return fetchRictmdBmiSheetCsv()
 }
 
-const FETCH_TIMEOUT_MS = 9000
+const FETCH_TIMEOUT_MS = 25000
 
 async function fetchCsv(url: string, revalidateSeconds = SHEET_CACHE_SECONDS): Promise<string> {
   const controller = new AbortController()

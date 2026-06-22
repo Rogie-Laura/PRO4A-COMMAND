@@ -304,6 +304,14 @@ function parseDate_(value) {
   return isNaN(date.getTime()) ? null : date
 }
 
+function formatDate_(date) {
+  if (!date) return ""
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const dd = String(date.getDate()).padStart(2, "0")
+  const yyyy = date.getFullYear()
+  return mm + "/" + dd + "/" + yyyy
+}
+
 function formatPerson_(record) {
   const date = parseDate_(record.lastPromotionDate)
   if (!date) return null
@@ -312,6 +320,6 @@ function formatPerson_(record) {
   const years = Math.floor((Date.now() - date.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
   return {
     id: record.badgeNumber || record.lastName + "-" + record.firstName,
-    value: [name, record.badgeNumber || "—", record.lastPromotionDate, years, record.unit || "Unassigned", record.subUnit || "Unknown"].join("|"),
+    value: [name, record.badgeNumber || "—", formatDate_(date), years, record.unit || "Unassigned", record.subUnit || "Unknown"].join("|"),
   }
 }

@@ -1,4 +1,5 @@
 import { DetailedPersonnelSections } from "@/components/dashboard/detailed-personnel-sections"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   getDetailedNhqAnalytics,
   getDetailedNosusAnalytics,
@@ -27,6 +28,12 @@ export async function DetailedPersonnelSectionsLoader() {
       />
     )
   } catch {
-    return null
+    return (
+      <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
+        <CardContent className="py-5 text-sm text-muted-foreground">
+          Hindi ma-load ang Detailed Personnel data ngayon. Pindutin ang Refresh data o subukan muli.
+        </CardContent>
+      </Card>
+    )
   }
 }
