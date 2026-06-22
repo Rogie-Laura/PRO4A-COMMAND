@@ -152,8 +152,8 @@ async function loadSchoolingSpecializedAnalytics(): Promise<SchoolingAnalytics> 
   }
 }
 
-export const SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG = "schooling-mandatory-analytics-v2"
-export const SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG = "schooling-specialized-analytics-v2"
+export const SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG = "schooling-mandatory-analytics-v3"
+export const SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG = "schooling-specialized-analytics-v3"
 
 const getCachedSchoolingMandatoryAnalytics = unstable_cache(
   loadSchoolingMandatoryAnalytics,

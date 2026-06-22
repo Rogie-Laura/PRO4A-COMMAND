@@ -88,10 +88,10 @@ async function loadDetailedPersonnelAnalytics(
   }
 }
 
-export const DETAILED_NHQ_ANALYTICS_CACHE_TAG = "detailed-nhq-analytics-v1"
-export const DETAILED_NOSUS_ANALYTICS_CACHE_TAG = "detailed-nosus-analytics-v1"
-export const DETAILED_RSU_ANALYTICS_CACHE_TAG = "detailed-rsu-analytics-v1"
-export const DETAILED_RHQ_PPO_ANALYTICS_CACHE_TAG = "detailed-rhq-ppo-analytics-v1"
+export const DETAILED_NHQ_ANALYTICS_CACHE_TAG = "detailed-nhq-analytics-v2"
+export const DETAILED_NOSUS_ANALYTICS_CACHE_TAG = "detailed-nosus-analytics-v2"
+export const DETAILED_RSU_ANALYTICS_CACHE_TAG = "detailed-rsu-analytics-v2"
+export const DETAILED_RHQ_PPO_ANALYTICS_CACHE_TAG = "detailed-rhq-ppo-analytics-v2"
 
 const CACHE_BY_TAB: Record<
   DetailedPersonnelTabKey,
