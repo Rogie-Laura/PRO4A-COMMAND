@@ -1,7 +1,7 @@
 import fs from "node:fs"
 
 const url =
-  "https://docs.google.com/spreadsheets/d/13AzAAC2P1fZRKON5rFtwuySjIvm9JgDS/export?format=csv"
+  "https://docs.google.com/spreadsheets/d/1hzNo4NcRWQejtBS6DMUWVfkE1DZmpgTb/export?format=csv&gid=1708033472"
 const text = await (await fetch(url)).text()
 
 function parseLine(line) {
