@@ -207,19 +207,54 @@ function parseCsvLine(line: string): string[] {
 }
 
 export function parseCsvRows(text: string): string[][] {
-  return text
-    .split(/\r?\n/)
-    .filter((line) => line.trim().length > 0)
-    .map((line) => parseCsvLine(line).map((value) => value.trim()))
+  const rows: string[][] = []
+  let row: string[] = []
+  let current = ""
+  let inQuotes = false
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i]
+
+    if (char === '"') {
+      if (inQuotes && text[i + 1] === '"') {
+        current += '"'
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+    } else if (char === "," && !inQuotes) {
+      row.push(current.trim())
+      current = ""
+    } else if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && text[i + 1] === "\n") {
+        i++
+      }
+
+      row.push(current.trim())
+      if (row.some((cell) => cell.length > 0)) {
+        rows.push(row)
+      }
+      row = []
+      current = ""
+    } else {
+      current += char
+    }
+  }
+
+  row.push(current.trim())
+  if (row.some((cell) => cell.length > 0)) {
+    rows.push(row)
+  }
+
+  return rows
 }
 
 export function parseCsv(text: string): Record<string, string>[] {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0)
-  if (lines.length < 2) return []
+  const rows = parseCsvRows(text)
+  if (rows.length < 2) return []
 
-  const headers = parseCsvLine(lines[0])
-  return lines.slice(1).map((line) => {
-    const values = parseCsvLine(line)
+  const headers = rows[0]
+  return rows.slice(1).map((values) => {
     const row: Record<string, string> = {}
 
     headers.forEach((header, index) => {

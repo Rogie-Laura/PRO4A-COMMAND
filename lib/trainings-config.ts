@@ -121,7 +121,16 @@ export function formatTrainingMode(mode: string) {
   const lower = trimmed.toLowerCase()
   if (lower.includes("face")) return "Face-to-face"
   if (lower.includes("online") || lower.includes("zoom")) return "Online"
-  if (lower.includes("hybrid")) return "Hybrid"
+  if (lower.includes("hybrid") || lower.includes("blended")) return "Hybrid"
 
   return trimmed
+}
+
+export function resolveTrainingMode(mode: string, venue: string, facilitator = "") {
+  if (mode.trim()) return formatTrainingMode(mode)
+
+  const venueMode = formatTrainingMode(venue)
+  if (venueMode !== "Unspecified") return venueMode
+
+  return formatTrainingMode(facilitator)
 }

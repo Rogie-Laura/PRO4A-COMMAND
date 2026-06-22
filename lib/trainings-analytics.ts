@@ -5,6 +5,7 @@ import { fetchTrainingsSheetCsv, parseCsvRows } from "@/lib/google-sheets"
 import {
   formatMonthLabel,
   formatTrainingMode,
+  resolveTrainingMode,
   resolveTrainingStatus,
   TRAINING_MONTHS,
   TRAINING_STATUS_LABELS,
@@ -53,7 +54,7 @@ function findColumnMap(rows: string[][]): { headerIdx: number; columns: ColumnMa
 
     if (activity < 0 || status < 0) continue
 
-    const indexOf = (pattern: RegExp, fallback: number) => {
+    const indexOf = (pattern: RegExp, fallback = -1) => {
       const idx = row.findIndex((cell) => pattern.test(cell))
       return idx >= 0 ? idx : fallback
     }
@@ -65,14 +66,14 @@ function findColumnMap(rows: string[][]): { headerIdx: number; columns: ColumnMa
         classCount: indexOf(/No\.?\s*of\s*Class/i, activity + 1),
         dateOpening: indexOf(/DATE OF OPENING/i, activity + 2),
         dateClosing: indexOf(/DATE OF CLOSING/i, activity + 3),
-        proposedSchedule: indexOf(/PROPOSED SCHEDULE/i, activity + 4),
+        proposedSchedule: indexOf(/PROPOSED SCHEDULE/i),
         status,
         durationDays: indexOf(/DURATION/i, status + 1),
         mode: indexOf(/MODE OF INSTRUCTION/i, status + 2),
-        opr: indexOf(/^OPR$/i, status + 3),
-        facilitator: indexOf(/^FACI$/i, status + 4),
-        venue: indexOf(/^VENUE$/i, status + 5),
-        totalParticipants: indexOf(/TOTAL PARTICIPANTS/i, status + 10),
+        opr: indexOf(/^OPR$/i),
+        facilitator: indexOf(/^FACI/i),
+        venue: indexOf(/^VENUE$/i),
+        totalParticipants: indexOf(/TOTAL PARTICIPANTS/i),
       },
     }
   }
@@ -83,6 +84,11 @@ function findColumnMap(rows: string[][]): { headerIdx: number; columns: ColumnMa
 function parseNumber(value: string) {
   const parsed = Number.parseInt(value.replace(/[^\d-]/g, ""), 10)
   return Number.isFinite(parsed) ? parsed : 0
+}
+
+function cellAt(row: string[], index: number) {
+  if (index < 0) return ""
+  return row[index]?.trim() ?? ""
 }
 
 function effectiveClassCount(record: TrainingRecord) {
@@ -150,7 +156,7 @@ function buildModeStats(records: TrainingRecord[]): CountItem[] {
   const counts = new Map<string, number>()
 
   for (const record of records) {
-    const mode = formatTrainingMode(record.mode)
+    const mode = resolveTrainingMode(record.mode, record.venue, record.facilitator)
     counts.set(mode, (counts.get(mode) ?? 0) + effectiveClassCount(record))
   }
 
@@ -201,9 +207,12 @@ export function parseTrainingsCsv(text: string): TrainingRecord[] {
 
     if (/^TOTAL$/i.test(activity)) continue
 
-    const classCount = parseNumber(row[columns.classCount] ?? "")
-    const dateOpening = row[columns.dateOpening]?.trim() ?? ""
-    const dateClosing = row[columns.dateClosing]?.trim() ?? ""
+    const classCount = parseNumber(cellAt(row, columns.classCount))
+    const dateOpening = cellAt(row, columns.dateOpening)
+    const dateClosing = cellAt(row, columns.dateClosing)
+    const modeRaw = cellAt(row, columns.mode)
+    const venue = cellAt(row, columns.venue)
+    const facilitator = cellAt(row, columns.facilitator)
 
     const status = resolveTrainingStatus(statusRaw, activity, {
       classCount,
@@ -219,14 +228,14 @@ export function parseTrainingsCsv(text: string): TrainingRecord[] {
       classCount,
       dateOpening,
       dateClosing,
-      proposedSchedule: row[columns.proposedSchedule]?.trim() ?? "",
+      proposedSchedule: cellAt(row, columns.proposedSchedule),
       status,
-      durationDays: row[columns.durationDays]?.trim() ?? "",
-      mode: row[columns.mode]?.trim() ?? "",
-      opr: row[columns.opr]?.trim() ?? "",
-      facilitator: row[columns.facilitator]?.trim() ?? "",
-      venue: row[columns.venue]?.trim() ?? "",
-      totalParticipants: parseNumber(row[columns.totalParticipants] ?? ""),
+      durationDays: cellAt(row, columns.durationDays),
+      mode: resolveTrainingMode(modeRaw, venue, facilitator),
+      opr: cellAt(row, columns.opr),
+      facilitator,
+      venue,
+      totalParticipants: parseNumber(cellAt(row, columns.totalParticipants)),
     })
   }
 
@@ -283,7 +292,7 @@ async function loadTrainingsAnalytics(): Promise<TrainingsAnalytics> {
   }
 }
 
-export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v4"
+export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v5"
 
 /** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedTrainingsAnalytics = unstable_cache(
