@@ -5,26 +5,35 @@ import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
 import { DetailedPersonnelSectionsLoader } from "@/components/dashboard/detailed-personnel-sections-loader"
 import { PersonnelStatsPrimary } from "@/components/dashboard/personnel-stats-primary"
 import { SchoolingSectionsLoader } from "@/components/dashboard/schooling-sections-loader"
+import { SectionErrorBoundary } from "@/components/dashboard/section-error-boundary"
 import { SectionLoading } from "@/components/dashboard/section-loading"
 
 export function PersonnelStatsContent() {
   return (
     <div className="space-y-6">
-      <Suspense fallback={<DashboardLoading />}>
-        <PersonnelStatsPrimary />
-      </Suspense>
+      <SectionErrorBoundary label="Personnel Stats">
+        <Suspense fallback={<DashboardLoading />}>
+          <PersonnelStatsPrimary />
+        </Suspense>
+      </SectionErrorBoundary>
 
-      <Suspense fallback={<SectionLoading label="Admin Holding" />}>
-        <AdminHoldingSectionLoader />
-      </Suspense>
+      <SectionErrorBoundary label="Admin Holding">
+        <Suspense fallback={<SectionLoading label="Admin Holding" />}>
+          <AdminHoldingSectionLoader />
+        </Suspense>
+      </SectionErrorBoundary>
 
-      <Suspense fallback={<SectionLoading label="Schooling" />}>
-        <SchoolingSectionsLoader />
-      </Suspense>
+      <SectionErrorBoundary label="Schooling">
+        <Suspense fallback={<SectionLoading label="Schooling" />}>
+          <SchoolingSectionsLoader />
+        </Suspense>
+      </SectionErrorBoundary>
 
-      <Suspense fallback={<SectionLoading label="Detailed Personnel" />}>
-        <DetailedPersonnelSectionsLoader />
-      </Suspense>
+      <SectionErrorBoundary label="Detailed Personnel">
+        <Suspense fallback={<SectionLoading label="Detailed Personnel" />}>
+          <DetailedPersonnelSectionsLoader />
+        </Suspense>
+      </SectionErrorBoundary>
     </div>
   )
 }

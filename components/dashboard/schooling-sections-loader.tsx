@@ -6,15 +6,19 @@ import {
 } from "@/lib/schooling-analytics"
 
 export async function SchoolingSectionsLoader() {
-  const [mandatory, specialized] = await Promise.all([
-    getSchoolingMandatoryAnalytics(),
-    getSchoolingSpecializedAnalytics(),
-  ])
+  try {
+    const [mandatory, specialized] = await Promise.all([
+      getSchoolingMandatoryAnalytics(),
+      getSchoolingSpecializedAnalytics(),
+    ])
 
-  return (
-    <SchoolingSections
-      mandatory={toSchoolingSummary(mandatory)}
-      specialized={toSchoolingSummary(specialized)}
-    />
-  )
+    return (
+      <SchoolingSections
+        mandatory={toSchoolingSummary(mandatory)}
+        specialized={toSchoolingSummary(specialized)}
+      />
+    )
+  } catch {
+    return null
+  }
 }

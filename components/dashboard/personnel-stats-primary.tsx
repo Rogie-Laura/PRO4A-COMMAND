@@ -13,7 +13,17 @@ import {
 } from "@/lib/personnel-client-payload"
 
 export async function PersonnelStatsPrimary() {
-  const data = await getPersonnelAnalytics()
+  let data
+  try {
+    data = await getPersonnelAnalytics()
+  } catch {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Personnel data unavailable. Try refreshing.
+      </p>
+    )
+  }
+
   const totalKpi = data.kpis.find((k) => k.id === "total")
 
   return (

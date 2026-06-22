@@ -193,16 +193,26 @@ export async function fetchHealthSheetCsv(): Promise<string> {
   return fetchRictmdBmiSheetCsv()
 }
 
+const FETCH_TIMEOUT_MS = 9000
+
 async function fetchCsv(url: string, revalidateSeconds = SHEET_CACHE_SECONDS): Promise<string> {
-  const response = await fetch(url, {
-    next: { revalidate: revalidateSeconds },
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch Google Sheet (${response.status})`)
+  try {
+    const response = await fetch(url, {
+      next: { revalidate: revalidateSeconds },
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Google Sheet (${response.status})`)
+    }
+
+    return await response.text()
+  } finally {
+    clearTimeout(timer)
   }
-
-  return response.text()
 }
 
 function parseCsvLine(line: string): string[] {

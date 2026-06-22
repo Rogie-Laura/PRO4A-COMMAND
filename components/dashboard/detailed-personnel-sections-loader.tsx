@@ -9,20 +9,24 @@ import {
 import { buildDetailedPersonnelStatusCounts } from "@/lib/detailed-personnel-status"
 
 export async function DetailedPersonnelSectionsLoader() {
-  const [nhq, nosus, rsu, rhqPpo] = await Promise.all([
-    getDetailedNhqAnalytics(),
-    getDetailedNosusAnalytics(),
-    getDetailedRsuAnalytics(),
-    getDetailedRhqPpoAnalytics(),
-  ])
+  try {
+    const [nhq, nosus, rsu, rhqPpo] = await Promise.all([
+      getDetailedNhqAnalytics(),
+      getDetailedNosusAnalytics(),
+      getDetailedRsuAnalytics(),
+      getDetailedRhqPpoAnalytics(),
+    ])
 
-  return (
-    <DetailedPersonnelSections
-      nhq={toDetailedPersonnelSummary(nhq)}
-      nosus={toDetailedPersonnelSummary(nosus)}
-      rsu={toDetailedPersonnelSummary(rsu)}
-      rhqPpo={toDetailedPersonnelSummary(rhqPpo)}
-      status={buildDetailedPersonnelStatusCounts(nhq, nosus, rsu, rhqPpo)}
-    />
-  )
+    return (
+      <DetailedPersonnelSections
+        nhq={toDetailedPersonnelSummary(nhq)}
+        nosus={toDetailedPersonnelSummary(nosus)}
+        rsu={toDetailedPersonnelSummary(rsu)}
+        rhqPpo={toDetailedPersonnelSummary(rhqPpo)}
+        status={buildDetailedPersonnelStatusCounts(nhq, nosus, rsu, rhqPpo)}
+      />
+    )
+  } catch {
+    return null
+  }
 }
