@@ -4,6 +4,7 @@ import { DETAILED_PERSONNEL_SHEET } from "@/lib/detailed-personnel-sheet"
 import type {
   DetailedPersonnelAnalytics,
   DetailedPersonnelRecord,
+  DetailedPersonnelSummary,
   DetailedPersonnelTabKey,
 } from "@/lib/detailed-personnel-types"
 import { fetchDetailedPersonnelSheetCsv, parseCsvRows } from "@/lib/google-sheets"
@@ -51,6 +52,18 @@ function mapDetailedPersonnelRow(cols: string[]): DetailedPersonnelRecord {
 export function parseDetailedPersonnelCsv(text: string): DetailedPersonnelRecord[] {
   const rows = parseCsvRows(text)
   return rows.filter(isDetailedPersonnelDataRow).map(mapDetailedPersonnelRow)
+}
+
+export function toDetailedPersonnelSummary(
+  data: DetailedPersonnelAnalytics,
+): DetailedPersonnelSummary {
+  return {
+    lastUpdated: data.lastUpdated,
+    dataReady: data.dataReady,
+    dataSource: data.dataSource,
+    title: data.title,
+    total: data.total,
+  }
 }
 
 async function loadDetailedPersonnelAnalytics(

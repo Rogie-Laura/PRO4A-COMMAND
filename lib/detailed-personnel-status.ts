@@ -10,9 +10,12 @@ export type DetailedPersonnelRecordWithSource = DetailedPersonnelRecord & {
   recordKey: string
 }
 
-export type DetailedPersonnelStatusSummary = {
+export type DetailedPersonnelStatusCounts = {
   terminatedCount: number
   expiringCount: number
+}
+
+export type DetailedPersonnelStatusSummary = DetailedPersonnelStatusCounts & {
   terminatedRecords: DetailedPersonnelRecordWithSource[]
   expiringRecords: DetailedPersonnelRecordWithSource[]
 }
@@ -65,6 +68,16 @@ function compareTerminatedRecords(
   b: DetailedPersonnelRecordWithSource,
 ) {
   return a.endDate.localeCompare(b.endDate) || a.lastName.localeCompare(b.lastName)
+}
+
+export function buildDetailedPersonnelStatusCounts(
+  ...analytics: DetailedPersonnelAnalytics[]
+): DetailedPersonnelStatusCounts {
+  const summary = buildDetailedPersonnelStatusSummary(...analytics)
+  return {
+    terminatedCount: summary.terminatedCount,
+    expiringCount: summary.expiringCount,
+  }
 }
 
 export function buildDetailedPersonnelStatusSummary(

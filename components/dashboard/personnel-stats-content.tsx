@@ -10,13 +10,19 @@ import { SchoolingSections } from "@/components/dashboard/schooling-sections"
 import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
 import { UnitTable } from "@/components/dashboard/unit-table"
 import { getAdminHoldingAnalytics } from "@/lib/admin-holding-analytics"
-import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
 import {
   getDetailedNhqAnalytics,
   getDetailedNosusAnalytics,
   getDetailedRhqPpoAnalytics,
   getDetailedRsuAnalytics,
+  toDetailedPersonnelSummary,
 } from "@/lib/detailed-personnel-analytics"
+import { buildDetailedPersonnelStatusCounts } from "@/lib/detailed-personnel-status"
+import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
+import {
+  toOfficeBreakdownCards,
+  toRankTenureTableRows,
+} from "@/lib/personnel-client-payload"
 import {
   getSchoolingMandatoryAnalytics,
   getSchoolingSpecializedAnalytics,
@@ -44,6 +50,12 @@ export async function PersonnelStatsContent() {
     getDetailedRhqPpoAnalytics(),
   ])
   const totalKpi = data.kpis.find((k) => k.id === "total")
+  const detailedStatus = buildDetailedPersonnelStatusCounts(
+    detailedNhq,
+    detailedNosus,
+    detailedRsu,
+    detailedRhqPpo,
+  )
 
   return (
     <div className="space-y-6">
@@ -59,7 +71,7 @@ export async function PersonnelStatsContent() {
       {totalKpi && (
         <TotalPersonnelSection
           total={totalKpi}
-          offices={data.officeBreakdown}
+          offices={toOfficeBreakdownCards(data.officeBreakdown)}
           workforce={data.workforce}
         />
       )}
@@ -70,7 +82,7 @@ export async function PersonnelStatsContent() {
 
       <AgeDistributionTable rows={data.ageDistributionByOffice} />
 
-      <RankTenureTable rows={data.rankTenureDistribution} />
+      <RankTenureTable rows={toRankTenureTableRows(data.rankTenureDistribution)} />
 
       <UnitTable rows={data.unitRows} />
 
@@ -82,10 +94,11 @@ export async function PersonnelStatsContent() {
       />
 
       <DetailedPersonnelSections
-        nhq={detailedNhq}
-        nosus={detailedNosus}
-        rsu={detailedRsu}
-        rhqPpo={detailedRhqPpo}
+        nhq={toDetailedPersonnelSummary(detailedNhq)}
+        nosus={toDetailedPersonnelSummary(detailedNosus)}
+        rsu={toDetailedPersonnelSummary(detailedRsu)}
+        rhqPpo={toDetailedPersonnelSummary(detailedRhqPpo)}
+        status={detailedStatus}
       />
     </div>
   )

@@ -24,4 +24,7 @@ export type DetailedPersonnelAnalytics = {
   records: DetailedPersonnelRecord[]
 }
 
+/** Lightweight card payload for detailed personnel tabs. */
+export type DetailedPersonnelSummary = Omit<DetailedPersonnelAnalytics, "records">
+
 export type DetailedPersonnelTabKey = "nhq" | "nosus" | "rsu" | "rhqPpo"

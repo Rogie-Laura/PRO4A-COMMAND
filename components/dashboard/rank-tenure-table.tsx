@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 
+import { fetchRankTenurePersonnel } from "@/app/(dashboard)/actions"
 import { RankTenureDetailSheet } from "@/components/dashboard/rank-tenure-detail-sheet"
 import {
   Card,
@@ -14,11 +15,12 @@ import {
   RANK_TENURE_TABLE_COLUMNS,
   isRankTenureDrilldownBracket,
 } from "@/lib/rank-tenure-config"
-import type { RankTenureDistributionRow, RankTenurePersonDetail } from "@/lib/personnel-types"
+import type { RankTenureTableRow } from "@/lib/personnel-client-payload"
+import type { RankTenurePersonDetail } from "@/lib/personnel-types"
 import { cn } from "@/lib/utils"
 
 type RankTenureTableProps = {
-  rows: RankTenureDistributionRow[]
+  rows: RankTenureTableRow[]
 }
 
 type SelectedCell = {
@@ -31,6 +33,8 @@ type SelectedCell = {
 export function RankTenureTable({ rows }: RankTenureTableProps) {
   const [selectedCell, setSelectedCell] = useState<SelectedCell | null>(null)
   const [open, setOpen] = useState(false)
+  const [loadingCell, setLoadingCell] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   const visibleRows = rows.filter((row) => row.total > 0)
   const columnTotals = RANK_TENURE_TABLE_COLUMNS.map((column) =>
@@ -39,23 +43,31 @@ export function RankTenureTable({ rows }: RankTenureTableProps) {
   const grandTotal = visibleRows.reduce((sum, row) => sum + row.total, 0)
 
   function handleCellClick(
-    row: RankTenureDistributionRow,
+    row: RankTenureTableRow,
     bracketId: string,
     bracketLabel: string,
     count: number,
   ) {
-    if (!isRankTenureDrilldownBracket(bracketId) || count === 0) return
+    if (!isRankTenureDrilldownBracket(bracketId) || count === 0 || isPending) return
 
-    const personnel = row.bracketDetails[bracketId] ?? []
-    if (personnel.length === 0) return
+    const cellKey = `${row.rank}-${bracketId}`
+    setLoadingCell(cellKey)
+    startTransition(async () => {
+      try {
+        const personnel = await fetchRankTenurePersonnel(row.rank, bracketId)
+        if (personnel.length === 0) return
 
-    setSelectedCell({
-      rank: row.rank,
-      bracketId,
-      bracketLabel,
-      personnel,
+        setSelectedCell({
+          rank: row.rank,
+          bracketId,
+          bracketLabel,
+          personnel,
+        })
+        setOpen(true)
+      } finally {
+        setLoadingCell(null)
+      }
     })
-    setOpen(true)
   }
 
   function handleOpenChange(nextOpen: boolean) {
@@ -66,11 +78,13 @@ export function RankTenureTable({ rows }: RankTenureTableProps) {
   }
 
   function renderCountCell(
-    row: RankTenureDistributionRow,
+    row: RankTenureTableRow,
     column: (typeof RANK_TENURE_TABLE_COLUMNS)[number],
   ) {
     const count = row.brackets[column.id] ?? 0
     const isDrilldown = isRankTenureDrilldownBracket(column.id) && count > 0
+    const cellKey = `${row.rank}-${column.id}`
+    const isLoading = loadingCell === cellKey
 
     if (!isDrilldown) {
       return (
@@ -81,13 +95,15 @@ export function RankTenureTable({ rows }: RankTenureTableProps) {
     return (
       <button
         type="button"
+        disabled={isPending && isLoading}
         onClick={() => handleCellClick(row, column.id, column.label, count)}
         className={cn(
           "tabular-nums font-medium text-primary underline-offset-4 transition-colors",
           "hover:text-primary/80 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          isPending && isLoading && "opacity-60",
         )}
       >
-        {count.toLocaleString()}
+        {isLoading ? "…" : count.toLocaleString()}
       </button>
     )
   }

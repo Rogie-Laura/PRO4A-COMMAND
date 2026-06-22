@@ -4,14 +4,15 @@ import { DetailedPersonnelSection } from "@/components/dashboard/detailed-person
 import { DetailedPersonnelStatusSection } from "@/components/dashboard/detailed-personnel-status-section"
 import { DetailedPersonnelSummarySection } from "@/components/dashboard/detailed-personnel-summary-section"
 import { SwipeCarousel } from "@/components/dashboard/swipe-carousel"
-import { buildDetailedPersonnelStatusSummary } from "@/lib/detailed-personnel-status"
-import type { DetailedPersonnelAnalytics } from "@/lib/detailed-personnel-types"
+import type { DetailedPersonnelStatusCounts } from "@/lib/detailed-personnel-status"
+import type { DetailedPersonnelSummary } from "@/lib/detailed-personnel-types"
 
 type DetailedPersonnelSectionsProps = {
-  nhq: DetailedPersonnelAnalytics
-  nosus: DetailedPersonnelAnalytics
-  rsu: DetailedPersonnelAnalytics
-  rhqPpo: DetailedPersonnelAnalytics
+  nhq: DetailedPersonnelSummary
+  nosus: DetailedPersonnelSummary
+  rsu: DetailedPersonnelSummary
+  rhqPpo: DetailedPersonnelSummary
+  status: DetailedPersonnelStatusCounts
 }
 
 const SLIDE_CONFIG = [
@@ -20,6 +21,7 @@ const SLIDE_CONFIG = [
     label: "Detailed NHQ",
     dotClassName: "bg-sky-500",
     icon: Building2,
+    tab: "nhq" as const,
     accentClassName:
       "gap-0 overflow-hidden border-sky-500/25 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-card text-sky-700 dark:text-sky-300 [&_[data-slot=card-description]]:text-sky-700/90 dark:[&_[data-slot=card-description]]:text-sky-300/90",
     dataKey: "nhq" as const,
@@ -29,6 +31,7 @@ const SLIDE_CONFIG = [
     label: "Detailed NOSUs",
     dotClassName: "bg-violet-500",
     icon: Network,
+    tab: "nosus" as const,
     accentClassName:
       "gap-0 overflow-hidden border-violet-500/25 bg-gradient-to-br from-violet-500/15 via-violet-500/5 to-card text-violet-700 dark:text-violet-300 [&_[data-slot=card-description]]:text-violet-700/90 dark:[&_[data-slot=card-description]]:text-violet-300/90",
     dataKey: "nosus" as const,
@@ -38,6 +41,7 @@ const SLIDE_CONFIG = [
     label: "Detailed RSU",
     dotClassName: "bg-amber-500",
     icon: Radio,
+    tab: "rsu" as const,
     accentClassName:
       "gap-0 overflow-hidden border-amber-500/25 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-card text-amber-700 dark:text-amber-300 [&_[data-slot=card-description]]:text-amber-700/90 dark:[&_[data-slot=card-description]]:text-amber-300/90",
     dataKey: "rsu" as const,
@@ -47,6 +51,7 @@ const SLIDE_CONFIG = [
     label: "Detailed RHQ & PPO",
     dotClassName: "bg-rose-500",
     icon: ArrowRightLeft,
+    tab: "rhqPpo" as const,
     accentClassName:
       "gap-0 overflow-hidden border-rose-500/25 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-card text-rose-700 dark:text-rose-300 [&_[data-slot=card-description]]:text-rose-700/90 dark:[&_[data-slot=card-description]]:text-rose-300/90",
     dataKey: "rhqPpo" as const,
@@ -58,18 +63,13 @@ export function DetailedPersonnelSections({
   nosus,
   rsu,
   rhqPpo,
+  status,
 }: DetailedPersonnelSectionsProps) {
   const dataByKey = { nhq, nosus, rsu, rhqPpo }
-  const statusSummary = buildDetailedPersonnelStatusSummary(nhq, nosus, rsu, rhqPpo)
 
   return (
     <div className="space-y-4">
-      <DetailedPersonnelSummarySection
-        nhq={nhq}
-        nosus={nosus}
-        rsu={rsu}
-        rhqPpo={rhqPpo}
-      />
+      <DetailedPersonnelSummarySection nhq={nhq} nosus={nosus} rsu={rsu} rhqPpo={rhqPpo} />
 
       <SwipeCarousel
         className="lg:hidden"
@@ -81,7 +81,8 @@ export function DetailedPersonnelSections({
           dotClassName: slide.dotClassName,
           content: (
             <DetailedPersonnelSection
-              data={dataByKey[slide.dataKey]}
+              tab={slide.tab}
+              summary={dataByKey[slide.dataKey]}
               icon={slide.icon}
               accentClassName={slide.accentClassName}
             />
@@ -93,14 +94,15 @@ export function DetailedPersonnelSections({
         {SLIDE_CONFIG.map((slide) => (
           <DetailedPersonnelSection
             key={slide.id}
-            data={dataByKey[slide.dataKey]}
+            tab={slide.tab}
+            summary={dataByKey[slide.dataKey]}
             icon={slide.icon}
             accentClassName={slide.accentClassName}
           />
         ))}
       </div>
 
-      <DetailedPersonnelStatusSection status={statusSummary} />
+      <DetailedPersonnelStatusSection status={status} />
     </div>
   )
 }

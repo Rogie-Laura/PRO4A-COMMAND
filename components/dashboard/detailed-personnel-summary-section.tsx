@@ -7,13 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { DetailedPersonnelAnalytics } from "@/lib/detailed-personnel-types"
+import type { DetailedPersonnelSummary } from "@/lib/detailed-personnel-types"
 
 type DetailedPersonnelSummarySectionProps = {
-  nhq: DetailedPersonnelAnalytics
-  nosus: DetailedPersonnelAnalytics
-  rsu: DetailedPersonnelAnalytics
-  rhqPpo: DetailedPersonnelAnalytics
+  nhq: DetailedPersonnelSummary
+  nosus: DetailedPersonnelSummary
+  rsu: DetailedPersonnelSummary
+  rhqPpo: DetailedPersonnelSummary
 }
 
 export function DetailedPersonnelSummarySection({

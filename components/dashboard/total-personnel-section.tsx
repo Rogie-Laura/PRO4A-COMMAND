@@ -7,11 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { KpiMetric, OfficeBreakdownItem, WorkforceSummary } from "@/lib/personnel-types"
+import type { KpiMetric, WorkforceSummary } from "@/lib/personnel-types"
+import type { OfficeBreakdownCard } from "@/lib/personnel-client-payload"
 
 type TotalPersonnelSectionProps = {
   total: KpiMetric
-  offices: OfficeBreakdownItem[]
+  offices: OfficeBreakdownCard[]
   workforce: WorkforceSummary
 }
 
