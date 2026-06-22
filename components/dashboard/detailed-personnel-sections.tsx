@@ -1,0 +1,93 @@
+import { ArrowRightLeft, Building2, Network, Radio } from "lucide-react"
+
+import { DetailedPersonnelSection } from "@/components/dashboard/detailed-personnel-section"
+import { SwipeCarousel } from "@/components/dashboard/swipe-carousel"
+import type { DetailedPersonnelAnalytics } from "@/lib/detailed-personnel-types"
+
+type DetailedPersonnelSectionsProps = {
+  nhq: DetailedPersonnelAnalytics
+  nosus: DetailedPersonnelAnalytics
+  rsu: DetailedPersonnelAnalytics
+  rhqPpo: DetailedPersonnelAnalytics
+}
+
+const SLIDE_CONFIG = [
+  {
+    id: "detailed-nhq",
+    label: "Detailed NHQ",
+    dotClassName: "bg-sky-500",
+    icon: Building2,
+    accentClassName:
+      "gap-0 overflow-hidden border-sky-500/25 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-card text-sky-700 dark:text-sky-300 [&_[data-slot=card-description]]:text-sky-700/90 dark:[&_[data-slot=card-description]]:text-sky-300/90",
+    dataKey: "nhq" as const,
+  },
+  {
+    id: "detailed-nosus",
+    label: "Detailed NOSUs",
+    dotClassName: "bg-violet-500",
+    icon: Network,
+    accentClassName:
+      "gap-0 overflow-hidden border-violet-500/25 bg-gradient-to-br from-violet-500/15 via-violet-500/5 to-card text-violet-700 dark:text-violet-300 [&_[data-slot=card-description]]:text-violet-700/90 dark:[&_[data-slot=card-description]]:text-violet-300/90",
+    dataKey: "nosus" as const,
+  },
+  {
+    id: "detailed-rsu",
+    label: "Detailed RSU",
+    dotClassName: "bg-amber-500",
+    icon: Radio,
+    accentClassName:
+      "gap-0 overflow-hidden border-amber-500/25 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-card text-amber-700 dark:text-amber-300 [&_[data-slot=card-description]]:text-amber-700/90 dark:[&_[data-slot=card-description]]:text-amber-300/90",
+    dataKey: "rsu" as const,
+  },
+  {
+    id: "detailed-rhq-ppo",
+    label: "Detailed RHQ & PPO",
+    dotClassName: "bg-rose-500",
+    icon: ArrowRightLeft,
+    accentClassName:
+      "gap-0 overflow-hidden border-rose-500/25 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-card text-rose-700 dark:text-rose-300 [&_[data-slot=card-description]]:text-rose-700/90 dark:[&_[data-slot=card-description]]:text-rose-300/90",
+    dataKey: "rhqPpo" as const,
+  },
+] as const
+
+export function DetailedPersonnelSections({
+  nhq,
+  nosus,
+  rsu,
+  rhqPpo,
+}: DetailedPersonnelSectionsProps) {
+  const dataByKey = { nhq, nosus, rsu, rhqPpo }
+
+  return (
+    <>
+      <SwipeCarousel
+        className="lg:hidden"
+        swipeHint="Swipe for Detailed NHQ · NOSUs · RSU · RHQ & PPO"
+        ariaLabel="Detailed personnel sections"
+        slides={SLIDE_CONFIG.map((slide) => ({
+          id: slide.id,
+          label: slide.label,
+          dotClassName: slide.dotClassName,
+          content: (
+            <DetailedPersonnelSection
+              data={dataByKey[slide.dataKey]}
+              icon={slide.icon}
+              accentClassName={slide.accentClassName}
+            />
+          ),
+        }))}
+      />
+
+      <div className="hidden space-y-6 lg:block">
+        {SLIDE_CONFIG.map((slide) => (
+          <DetailedPersonnelSection
+            key={slide.id}
+            data={dataByKey[slide.dataKey]}
+            icon={slide.icon}
+            accentClassName={slide.accentClassName}
+          />
+        ))}
+      </div>
+    </>
+  )
+}

@@ -4,6 +4,11 @@ import { getRictmdBmiCsvUrl, RICTMD_BMI_SHEET } from "@/lib/rictmd-bmi-sheet"
 import { PERSONNEL_RECAP_SHEET } from "@/lib/personnel-recap-sheet"
 import { getTrainingsCsvUrl, TRAININGS_SHEET } from "@/lib/trainings-sheet"
 import {
+  getDetailedPersonnelCsvUrl,
+  DETAILED_PERSONNEL_SHEET,
+} from "@/lib/detailed-personnel-sheet"
+import type { DetailedPersonnelTabKey } from "@/lib/detailed-personnel-types"
+import {
   getSchoolingMandatoryCsvUrl,
   getSchoolingSpecializedCsvUrl,
   SCHOOLING_SHEET,
@@ -16,6 +21,7 @@ export {
   ADMIN_HOLDING_SHEET,
   TRAININGS_SHEET,
   SCHOOLING_SHEET,
+  DETAILED_PERSONNEL_SHEET,
 }
 
 const DEFAULT_SHEET_ID = "1lUUHErp9LEfCQ2D6CDjC8LfH1WeXf8PG"
@@ -174,6 +180,12 @@ export async function fetchSchoolingMandatorySheetCsv(): Promise<string> {
 
 export async function fetchSchoolingSpecializedSheetCsv(): Promise<string> {
   return fetchCsv(getSchoolingSpecializedCsvUrl(), SHEET_CACHE_SECONDS)
+}
+
+export async function fetchDetailedPersonnelSheetCsv(
+  tab: DetailedPersonnelTabKey,
+): Promise<string> {
+  return fetchCsv(getDetailedPersonnelCsvUrl(tab), SHEET_CACHE_SECONDS)
 }
 
 /** @deprecated Use fetchRictmdBmiSheetCsv instead. */
