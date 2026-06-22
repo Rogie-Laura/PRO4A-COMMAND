@@ -5,15 +5,22 @@ import { RankTenureTable } from "@/components/dashboard/rank-tenure-table"
 import { LeadershipSection } from "@/components/dashboard/leadership-section"
 import { PersonnelStatsRefreshButton } from "@/components/dashboard/personnel-stats-refresh-button"
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
+import { SchoolingSections } from "@/components/dashboard/schooling-sections"
 import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
 import { UnitTable } from "@/components/dashboard/unit-table"
 import { getAdminHoldingAnalytics } from "@/lib/admin-holding-analytics"
 import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
+import {
+  getSchoolingMandatoryAnalytics,
+  getSchoolingSpecializedAnalytics,
+} from "@/lib/schooling-analytics"
 
 export async function PersonnelStatsContent() {
-  const [data, adminHolding] = await Promise.all([
+  const [data, adminHolding, schoolingMandatory, schoolingSpecialized] = await Promise.all([
     getPersonnelAnalytics(),
     getAdminHoldingAnalytics(),
+    getSchoolingMandatoryAnalytics(),
+    getSchoolingSpecializedAnalytics(),
   ])
   const totalKpi = data.kpis.find((k) => k.id === "total")
 
@@ -47,6 +54,8 @@ export async function PersonnelStatsContent() {
       <UnitTable rows={data.unitRows} />
 
       <AdminHoldingSection data={adminHolding} />
+
+      <SchoolingSections mandatory={schoolingMandatory} specialized={schoolingSpecialized} />
     </div>
   )
 }
