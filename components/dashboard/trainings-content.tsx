@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TRAINING_STATUS_LABELS } from "@/lib/trainings-config"
+import { TRAINING_STATUS_LABELS, formatMonthLabel, formatTrainingMode, getNextRtapMonthKey } from "@/lib/trainings-config"
 import { getTrainingsAnalytics } from "@/lib/trainings-analytics"
-import type { TrainingsAnalytics } from "@/lib/trainings-types"
+import type { TrainingsAnalytics, TrainingRecord } from "@/lib/trainings-types"
 
 function StatChip({ label, value }: { label: string; value: string | number }) {
   return (
@@ -111,6 +111,32 @@ function ModeDistribution({ data }: { data: TrainingsAnalytics }) {
   )
 }
 
+function UpcomingTrainingCard({ record }: { record: TrainingRecord }) {
+  const mode = formatTrainingMode(record.mode)
+
+  return (
+    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+      <p className="font-semibold leading-snug">{record.activity}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-200">
+          {mode}
+        </span>
+        <span className="text-xs font-medium text-amber-700/90 dark:text-amber-300/90">
+          {record.classCount} {record.classCount === 1 ? "class" : "classes"}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {TRAINING_STATUS_LABELS[record.status]}
+        </span>
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {record.proposedSchedule || record.dateOpening || "Schedule pending"}
+        {record.venue ? ` · ${record.venue}` : ""}
+        {record.opr ? ` · ${record.opr}` : ""}
+      </p>
+    </div>
+  )
+}
+
 function getStatusCount(data: TrainingsAnalytics, status: keyof typeof TRAINING_STATUS_LABELS) {
   const label = TRAINING_STATUS_LABELS[status]
   return data.statusStats.find((item) => item.name === label)?.count ?? 0
@@ -133,6 +159,9 @@ export function TrainingsLoading() {
 
 export async function TrainingsContent() {
   const data = await getTrainingsAnalytics()
+  const nextMonthKey = getNextRtapMonthKey()
+  const nextMonthLabel = formatMonthLabel(nextMonthKey)
+  const upcomingRecords = data.records.filter((record) => record.month === nextMonthKey)
 
   const completed = getStatusCount(data, "COMPLETED")
   const ongoing = getStatusCount(data, "ONGOING")
@@ -260,34 +289,29 @@ export async function TrainingsContent() {
         </Card>
       ) : null}
 
-      {data.records.some((record) => record.status === "TO BE OPENED") ? (
+      {data.dataReady ? (
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <BookOpen className="size-5 text-amber-600 dark:text-amber-400" aria-hidden />
-              <CardTitle>Upcoming Trainings</CardTitle>
+              <CardTitle>Upcoming Trainings — {nextMonthLabel}</CardTitle>
             </div>
-            <CardDescription>To be opened — next in the RTAP pipeline</CardDescription>
+            <CardDescription>
+              All trainings scheduled for {nextMonthLabel} · Philippine Standard Time
+            </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2">
-            {data.records
-              .filter((record) => record.status === "TO BE OPENED")
-              .slice(0, 8)
-              .map((record) => (
-                <div
-                  key={record.id}
-                  className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4"
-                >
-                  <p className="font-semibold leading-snug">{record.activity}</p>
-                  <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300">
-                    {record.classCount} {record.classCount === 1 ? "class" : "classes"}
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {record.proposedSchedule || record.dateOpening || "Schedule pending"}
-                    {record.opr ? ` · ${record.opr}` : ""}
-                  </p>
-                </div>
-              ))}
+          <CardContent>
+            {upcomingRecords.length > 0 ? (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {upcomingRecords.map((record) => (
+                  <UpcomingTrainingCard key={record.id} record={record} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Walang naka-list na training para sa {nextMonthLabel} sa RTAP sheet.
+              </p>
+            )}
           </CardContent>
         </Card>
       ) : null}

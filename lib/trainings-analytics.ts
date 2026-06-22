@@ -4,6 +4,7 @@ import type { CountItem } from "@/lib/personnel-types"
 import { fetchTrainingsSheetCsv, parseCsvRows } from "@/lib/google-sheets"
 import {
   formatMonthLabel,
+  formatTrainingMode,
   normalizeTrainingStatus,
   TRAINING_MONTHS,
   TRAINING_STATUS_LABELS,
@@ -105,18 +106,6 @@ function parsePlannedTotalClasses(rows: string[][], columns: ColumnMap, headerId
   return total
 }
 
-function normalizeMode(mode: string) {
-  const trimmed = mode.trim()
-  if (!trimmed) return "Unspecified"
-
-  const lower = trimmed.toLowerCase()
-  if (lower.includes("face")) return "Face-to-face"
-  if (lower.includes("online") || lower.includes("zoom")) return "Online"
-  if (lower.includes("hybrid")) return "Hybrid"
-
-  return trimmed
-}
-
 function buildCountItems(
   counts: Map<string, number>,
   total: number,
@@ -162,7 +151,7 @@ function buildModeStats(records: TrainingRecord[]): CountItem[] {
   const counts = new Map<string, number>()
 
   for (const record of records) {
-    const mode = normalizeMode(record.mode)
+    const mode = formatTrainingMode(record.mode)
     counts.set(mode, (counts.get(mode) ?? 0) + effectiveClassCount(record))
   }
 
