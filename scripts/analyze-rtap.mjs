@@ -36,6 +36,7 @@ const rows = lines.map(parseLine)
 let headerIdx = -1
 let statusIdx = -1
 let activityIdx = -1
+let classIdx = -1
 
 for (let i = 0; i < Math.min(rows.length, 15); i++) {
   const row = rows[i].map((cell) => cell.replace(/^\uFEFF/, "").trim())
@@ -46,6 +47,7 @@ for (let i = 0; i < Math.min(rows.length, 15); i++) {
     headerIdx = i
     activityIdx = act
     statusIdx = status
+    classIdx = row.findIndex((cell) => /No\.?\s*of\s*Class/i.test(cell))
     break
   }
 }
@@ -72,11 +74,13 @@ function normalizeStatus(value) {
 }
 
 const statusCounts = {}
+const statusClasses = {}
 const trainings = []
 
 for (const row of rows.slice(headerIdx + 1)) {
   const activity = (row[activityIdx] ?? "").trim()
   const status = normalizeStatus(row[statusIdx] ?? "")
+  const classes = Number.parseInt((row[classIdx] ?? "").replace(/[^\d]/g, ""), 10) || 0
 
   if (!activity || !status) continue
   if (MONTHS.has(activity.toUpperCase())) continue
@@ -86,19 +90,27 @@ for (const row of rows.slice(headerIdx + 1)) {
   }
 
   statusCounts[status] = (statusCounts[status] ?? 0) + 1
-  trainings.push({ activity, status })
+  statusClasses[status] = (statusClasses[status] ?? 0) + classes
+  trainings.push({ activity, status, classes })
 }
 
-const total = trainings.length
+let plannedTotal = 0
+for (const row of rows.slice(headerIdx + 1)) {
+  const activity = (row[activityIdx] ?? "").trim()
+  if (!/^TOTAL$/i.test(activity)) continue
+  plannedTotal += Number.parseInt((row[classIdx] ?? "").replace(/[^\d]/g, ""), 10) || 0
+}
+
+const totalClasses = Object.values(statusClasses).reduce((sum, n) => sum + n, 0)
 
 console.log("Header row:", headerIdx + 1)
-console.log("Total trainings:", total)
-console.log("Completed:", statusCounts.COMPLETED ?? 0)
-console.log("Ongoing:", statusCounts.ONGOING ?? 0)
-console.log("To be opened:", statusCounts["TO BE OPENED"] ?? 0)
-if (statusCounts.CANCELLED) console.log("Cancelled:", statusCounts.CANCELLED)
-if (statusCounts.POSTPONED) console.log("Postponed:", statusCounts.POSTPONED)
-console.log("Unique titles:", new Set(trainings.map((t) => t.activity)).size)
+console.log("Planned total classes (TOTAL rows):", plannedTotal)
+console.log("Training rows:", trainings.length)
+console.log("Classes by status:", statusClasses)
+console.log("Sum classified classes:", totalClasses)
+console.log("Completed classes:", statusClasses.COMPLETED ?? 0)
+console.log("Ongoing classes:", statusClasses.ONGOING ?? 0)
+console.log("To be opened classes:", statusClasses["TO BE OPENED"] ?? 0)
 
 console.log("\nOngoing list:")
 for (const t of trainings.filter((x) => x.status === "ONGOING")) {

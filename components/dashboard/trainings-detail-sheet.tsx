@@ -23,6 +23,7 @@ function TrainingCard({ record }: { record: TrainingRecord }) {
     <div className="rounded-lg border bg-card p-4">
       <p className="font-semibold leading-snug">{record.activity}</p>
       <dl className="mt-3 grid gap-2 text-sm">
+        <DetailRow label="No. of Class" value={String(record.classCount || "—")} />
         <DetailRow label="Month" value={formatMonthLabel(record.month)} />
         <DetailRow label="Schedule" value={record.dateOpening || record.proposedSchedule || "—"} />
         <DetailRow label="Venue" value={record.venue || "—"} />
@@ -61,8 +62,9 @@ export function TrainingsDetailSheet({
             <DialogHeader>
               <DialogTitle>{statusLabel}</DialogTitle>
               <DialogDescription>
-                {records.length.toLocaleString()} training
-                {records.length === 1 ? "" : "s"} under this status
+                {records.reduce((sum, record) => sum + (record.classCount || 1), 0).toLocaleString()}{" "}
+                classes · {records.length.toLocaleString()} training
+                {records.length === 1 ? "" : "s"}
               </DialogDescription>
             </DialogHeader>
 
@@ -78,6 +80,7 @@ export function TrainingsDetailSheet({
                   <thead>
                     <tr className="border-b text-left text-muted-foreground">
                       <th className="pb-3 pr-4 font-medium">Training</th>
+                      <th className="pb-3 pr-4 font-medium">Classes</th>
                       <th className="pb-3 pr-4 font-medium">Month</th>
                       <th className="pb-3 pr-4 font-medium">Schedule</th>
                       <th className="pb-3 pr-4 font-medium">Venue</th>
@@ -89,6 +92,7 @@ export function TrainingsDetailSheet({
                     {records.map((record) => (
                       <tr key={record.id} className="border-b border-border/60 last:border-0">
                         <td className="py-3 pr-4 align-top font-medium">{record.activity}</td>
+                        <td className="py-3 pr-4 align-top tabular-nums">{record.classCount || "—"}</td>
                         <td className="py-3 pr-4 align-top">{formatMonthLabel(record.month)}</td>
                         <td className="py-3 pr-4 align-top">
                           {record.dateOpening || record.proposedSchedule || "—"}

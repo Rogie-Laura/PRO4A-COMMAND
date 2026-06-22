@@ -71,8 +71,8 @@ function MonthDistribution({ data }: { data: TrainingsAnalytics }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Trainings by Month</CardTitle>
-        <CardDescription>Distribution across RTAP monthly sections</CardDescription>
+        <CardTitle>Classes by Month</CardTitle>
+        <CardDescription>Number of classes per RTAP monthly section</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {data.monthStats.map((item) => (
@@ -98,7 +98,7 @@ function ModeDistribution({ data }: { data: TrainingsAnalytics }) {
     <Card>
       <CardHeader>
         <CardTitle>Mode of Instruction</CardTitle>
-        <CardDescription>Face-to-face, online, and hybrid delivery</CardDescription>
+        <CardDescription>Face-to-face, online, and hybrid class delivery</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -176,7 +176,7 @@ export async function TrainingsContent() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm font-medium text-foreground">Total Trainings</p>
+            <p className="text-sm font-medium text-foreground">Total Classes</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <StatChip label="Unique Programs" value={data.uniquePrograms} />
               <StatChip label="Total Participants" value={data.totalParticipants} />
@@ -188,7 +188,7 @@ export async function TrainingsContent() {
               </div>
               <Progress value={data.completionRate} className="h-2.5 [&>div]:bg-primary" />
               <p className="text-xs text-muted-foreground">
-                {completed.toLocaleString()} of {data.total.toLocaleString()} trainings completed
+                {completed.toLocaleString()} of {data.total.toLocaleString()} classes completed
               </p>
             </div>
           </CardContent>
@@ -198,21 +198,21 @@ export async function TrainingsContent() {
           <StatusKpiCard
             label="Completed"
             value={completed}
-            description="Trainings with accomplished schedules"
+            description="Classes with accomplished schedules"
             icon={CheckCircle2}
             className="border-emerald-500/25 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-card text-emerald-700 dark:text-emerald-300 [&_[data-slot=card-description]]:text-emerald-700/90 dark:[&_[data-slot=card-description]]:text-emerald-300/90"
           />
           <StatusKpiCard
             label="Ongoing"
             value={ongoing}
-            description="Currently running training classes"
+            description="Classes currently in progress"
             icon={LoaderCircle}
             className="border-sky-500/25 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-card text-sky-700 dark:text-sky-300 [&_[data-slot=card-description]]:text-sky-700/90 dark:[&_[data-slot=card-description]]:text-sky-300/90"
           />
           <StatusKpiCard
             label="To Be Opened"
             value={toBeOpened}
-            description="Scheduled but not yet started"
+            description="Classes scheduled but not yet started"
             icon={CalendarClock}
             className="border-amber-500/25 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-card text-amber-700 dark:text-amber-300 [&_[data-slot=card-description]]:text-amber-700/90 dark:[&_[data-slot=card-description]]:text-amber-300/90"
           />
@@ -247,6 +247,9 @@ export async function TrainingsContent() {
                   className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-4"
                 >
                   <p className="font-semibold leading-snug">{record.activity}</p>
+                  <p className="mt-1 text-xs font-medium text-sky-700 dark:text-sky-300">
+                    {record.classCount} {record.classCount === 1 ? "class" : "classes"}
+                  </p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {record.dateOpening || record.proposedSchedule || "Schedule TBD"}
                     {record.venue ? ` · ${record.venue}` : ""}
@@ -276,6 +279,9 @@ export async function TrainingsContent() {
                   className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4"
                 >
                   <p className="font-semibold leading-snug">{record.activity}</p>
+                  <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    {record.classCount} {record.classCount === 1 ? "class" : "classes"}
+                  </p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {record.proposedSchedule || record.dateOpening || "Schedule pending"}
                     {record.opr ? ` · ${record.opr}` : ""}

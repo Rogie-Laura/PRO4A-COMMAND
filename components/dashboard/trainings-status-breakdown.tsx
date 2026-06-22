@@ -79,7 +79,7 @@ export function TrainingsStatusBreakdown({
       <Card>
         <CardHeader>
           <CardTitle>Training Status Breakdown</CardTitle>
-          <CardDescription>Tap a status to view training details</CardDescription>
+          <CardDescription>Tap a status to view class and training details</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           {items.map((item) => {

@@ -85,6 +85,26 @@ function parseNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
+function effectiveClassCount(record: TrainingRecord) {
+  return record.classCount > 0 ? record.classCount : 1
+}
+
+function sumClassCounts(records: TrainingRecord[]) {
+  return records.reduce((sum, record) => sum + effectiveClassCount(record), 0)
+}
+
+function parsePlannedTotalClasses(rows: string[][], columns: ColumnMap, headerIdx: number) {
+  let total = 0
+
+  for (const row of rows.slice(headerIdx + 1)) {
+    const activity = (row[columns.activity] ?? "").trim()
+    if (!/^TOTAL$/i.test(activity)) continue
+    total += parseNumber(row[columns.classCount] ?? "")
+  }
+
+  return total
+}
+
 function normalizeMode(mode: string) {
   const trimmed = mode.trim()
   if (!trimmed) return "Unspecified"
@@ -116,15 +136,15 @@ function buildCountItems(
   return items
 }
 
-function buildStatusStats(records: TrainingRecord[]): CountItem[] {
+function buildStatusStats(records: TrainingRecord[], totalClasses: number): CountItem[] {
   const counts = new Map<string, number>()
 
   for (const record of records) {
     const label = TRAINING_STATUS_LABELS[record.status]
-    counts.set(label, (counts.get(label) ?? 0) + 1)
+    counts.set(label, (counts.get(label) ?? 0) + effectiveClassCount(record))
   }
 
-  const total = records.length || 1
+  const total = totalClasses || sumClassCounts(records) || 1
 
   return TRAINING_STATUS_ORDER.map((status) => {
     const label = TRAINING_STATUS_LABELS[status]
@@ -143,10 +163,10 @@ function buildModeStats(records: TrainingRecord[]): CountItem[] {
 
   for (const record of records) {
     const mode = normalizeMode(record.mode)
-    counts.set(mode, (counts.get(mode) ?? 0) + 1)
+    counts.set(mode, (counts.get(mode) ?? 0) + effectiveClassCount(record))
   }
 
-  return buildCountItems(counts, records.length)
+  return buildCountItems(counts, sumClassCounts(records))
 }
 
 function buildMonthStats(records: TrainingRecord[]): CountItem[] {
@@ -154,16 +174,17 @@ function buildMonthStats(records: TrainingRecord[]): CountItem[] {
 
   for (const record of records) {
     const month = formatMonthLabel(record.month)
-    counts.set(month, (counts.get(month) ?? 0) + 1)
+    counts.set(month, (counts.get(month) ?? 0) + effectiveClassCount(record))
   }
 
   const monthOrder = [...TRAINING_MONTHS].map((month) => formatMonthLabel(month))
+  const total = sumClassCounts(records) || 1
 
   return [...counts.entries()]
     .map(([name, count]) => ({
       name,
       count,
-      percentage: Math.round((count / (records.length || 1)) * 1000) / 10,
+      percentage: Math.round((count / total) * 1000) / 10,
     }))
     .sort((a, b) => monthOrder.indexOf(a.name) - monthOrder.indexOf(b.name))
 }
@@ -216,16 +237,31 @@ export function parseTrainingsCsv(text: string): TrainingRecord[] {
   return records
 }
 
+export function parseTrainingsCsvWithMeta(text: string) {
+  const rows = parseCsvRows(text)
+  const header = findColumnMap(rows)
+  const records = parseTrainingsCsv(text)
+  const plannedTotalClasses = header
+    ? parsePlannedTotalClasses(rows, header.columns, header.headerIdx)
+    : 0
+
+  return { records, plannedTotalClasses }
+}
+
 async function loadTrainingsAnalytics(): Promise<TrainingsAnalytics> {
   try {
     const csv = await fetchTrainingsSheetCsv()
-    const records = parseTrainingsCsv(csv)
+    const { records, plannedTotalClasses } = parseTrainingsCsvWithMeta(csv)
 
     if (records.length === 0) {
       return emptyAnalytics()
     }
 
-    const completed = records.filter((record) => record.status === "COMPLETED").length
+    const classifiedClasses = sumClassCounts(records)
+    const totalClasses = plannedTotalClasses || classifiedClasses
+    const completedClasses = sumClassCounts(
+      records.filter((record) => record.status === "COMPLETED"),
+    )
     const uniquePrograms = new Set(records.map((record) => record.activity)).size
     const totalParticipants = records.reduce(
       (sum, record) => sum + record.totalParticipants,
@@ -237,11 +273,11 @@ async function loadTrainingsAnalytics(): Promise<TrainingsAnalytics> {
       dataReady: true,
       dataSource: TRAININGS_SHEET.label,
       programYear: TRAININGS_SHEET.programYear,
-      total: records.length,
+      total: totalClasses,
       uniquePrograms,
       totalParticipants,
-      completionRate: Math.round((completed / records.length) * 1000) / 10,
-      statusStats: buildStatusStats(records),
+      completionRate: Math.round((completedClasses / totalClasses) * 1000) / 10,
+      statusStats: buildStatusStats(records, totalClasses),
       modeStats: buildModeStats(records),
       monthStats: buildMonthStats(records),
       records,
@@ -251,7 +287,7 @@ async function loadTrainingsAnalytics(): Promise<TrainingsAnalytics> {
   }
 }
 
-export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v2"
+export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v3"
 
 /** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedTrainingsAnalytics = unstable_cache(
