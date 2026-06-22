@@ -70,7 +70,26 @@ const MONTHS = new Set([
 function normalizeStatus(value) {
   const status = value.replace(/\s+/g, " ").trim().toUpperCase()
   if (status === "ON GOING" || status === "ON-GOING") return "ONGOING"
-  return status
+  const allowed = ["COMPLETED", "ONGOING", "TO BE OPENED", "CANCELLED", "POSTPONED"]
+  return allowed.includes(status) ? status : null
+}
+
+function isScorecardNoiseRow(activity) {
+  const trimmed = activity.trim()
+  if (!trimmed) return true
+  if (/^GRAND TOTAL$/i.test(trimmed)) return true
+  if (/#DIV\/0!|#REF!/i.test(trimmed)) return true
+  if (/^\d{2,3},[\d.%]/.test(trimmed)) return true
+  if (/^\d{4},TO BE OPENED/i.test(trimmed)) return true
+  return false
+}
+
+function resolveStatus(statusRaw, activity, classCount, dateOpening, dateClosing) {
+  const normalized = normalizeStatus(statusRaw)
+  if (normalized) return normalized
+  if (isScorecardNoiseRow(activity)) return null
+  const hasData = classCount > 0 || dateOpening || dateClosing
+  return hasData ? "TO BE OPENED" : null
 }
 
 const statusCounts = {}
@@ -79,12 +98,20 @@ const trainings = []
 
 for (const row of rows.slice(headerIdx + 1)) {
   const activity = (row[activityIdx] ?? "").trim()
-  const status = normalizeStatus(row[statusIdx] ?? "")
   const classes = Number.parseInt((row[classIdx] ?? "").replace(/[^\d]/g, ""), 10) || 0
 
-  if (!activity || !status) continue
+  if (!activity) continue
   if (MONTHS.has(activity.toUpperCase())) continue
   if (/^TOTAL$/i.test(activity)) continue
+
+  const status = resolveStatus(
+    row[statusIdx] ?? "",
+    activity,
+    classes,
+    row[activityIdx + 2] ?? "",
+    row[activityIdx + 3] ?? "",
+  )
+  if (!status) continue
   if (!["COMPLETED", "ONGOING", "TO BE OPENED", "CANCELLED", "POSTPONED"].includes(status)) {
     continue
   }

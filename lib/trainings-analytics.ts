@@ -5,11 +5,10 @@ import { fetchTrainingsSheetCsv, parseCsvRows } from "@/lib/google-sheets"
 import {
   formatMonthLabel,
   formatTrainingMode,
-  normalizeTrainingStatus,
+  resolveTrainingStatus,
   TRAINING_MONTHS,
   TRAINING_STATUS_LABELS,
   TRAINING_STATUS_ORDER,
-  type TrainingStatus,
 } from "@/lib/trainings-config"
 import { TRAININGS_SHEET } from "@/lib/trainings-sheet"
 import type { TrainingRecord, TrainingsAnalytics } from "@/lib/trainings-types"
@@ -202,16 +201,24 @@ export function parseTrainingsCsv(text: string): TrainingRecord[] {
 
     if (/^TOTAL$/i.test(activity)) continue
 
-    const status = normalizeTrainingStatus(statusRaw)
+    const classCount = parseNumber(row[columns.classCount] ?? "")
+    const dateOpening = row[columns.dateOpening]?.trim() ?? ""
+    const dateClosing = row[columns.dateClosing]?.trim() ?? ""
+
+    const status = resolveTrainingStatus(statusRaw, activity, {
+      classCount,
+      dateOpening,
+      dateClosing,
+    })
     if (!status) continue
 
     records.push({
       id: `${rowIndex}-${activity.slice(0, 40)}`,
       activity,
       month: currentMonth,
-      classCount: parseNumber(row[columns.classCount] ?? ""),
-      dateOpening: row[columns.dateOpening]?.trim() ?? "",
-      dateClosing: row[columns.dateClosing]?.trim() ?? "",
+      classCount,
+      dateOpening,
+      dateClosing,
       proposedSchedule: row[columns.proposedSchedule]?.trim() ?? "",
       status,
       durationDays: row[columns.durationDays]?.trim() ?? "",
@@ -276,7 +283,7 @@ async function loadTrainingsAnalytics(): Promise<TrainingsAnalytics> {
   }
 }
 
-export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v3"
+export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v4"
 
 /** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedTrainingsAnalytics = unstable_cache(

@@ -53,6 +53,38 @@ export function normalizeTrainingStatus(value: string): TrainingStatus | null {
   return null
 }
 
+/** RTAP scorecard / misaligned rows that share the activity column. */
+export function isScorecardNoiseRow(activity: string) {
+  const trimmed = activity.trim()
+  if (!trimmed) return true
+  if (/^GRAND TOTAL$/i.test(trimmed)) return true
+  if (/#DIV\/0!|#REF!/i.test(trimmed)) return true
+  if (/^\d{2,3},[\d.%]/.test(trimmed)) return true
+  if (/^\d{4},TO BE OPENED/i.test(trimmed)) return true
+
+  return false
+}
+
+export function resolveTrainingStatus(
+  statusRaw: string,
+  activity: string,
+  options?: { classCount?: number; dateOpening?: string; dateClosing?: string },
+): TrainingStatus | null {
+  const normalized = normalizeTrainingStatus(statusRaw)
+  if (normalized) return normalized
+
+  if (isScorecardNoiseRow(activity)) return null
+
+  const hasTrainingData =
+    (options?.classCount ?? 0) > 0 ||
+    Boolean(options?.dateOpening?.trim()) ||
+    Boolean(options?.dateClosing?.trim())
+
+  if (!hasTrainingData) return null
+
+  return "TO BE OPENED"
+}
+
 export function formatMonthLabel(month: string) {
   if (!month) return "Unspecified"
   return month.charAt(0).toUpperCase() + month.slice(1).toLowerCase()
