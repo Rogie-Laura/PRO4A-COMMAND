@@ -112,6 +112,46 @@ export function parseSchoolingCsv(text: string): SchoolingRecord[] {
   return rows.filter(isSchoolingDataRow).map(mapSchoolingRow)
 }
 
+async function loadSchoolingMandatorySummary(): Promise<SchoolingSummary> {
+  const csv = await fetchSchoolingMandatorySheetCsv()
+  const records = parseSchoolingCsv(csv)
+
+  if (records.length === 0) {
+    const empty = emptyAnalytics(SCHOOLING_SHEET.mandatoryLabel, SCHOOLING_SHEET.mandatoryLabel)
+    return toSchoolingSummary(empty)
+  }
+
+  return {
+    lastUpdated: new Date().toISOString(),
+    dataReady: true,
+    dataSource: SCHOOLING_SHEET.mandatoryLabel,
+    title: SCHOOLING_SHEET.mandatoryLabel,
+    total: records.length,
+    subUnitStats: buildSubUnitStats(records),
+    courseStats: buildCourseStats(records),
+  }
+}
+
+async function loadSchoolingSpecializedSummary(): Promise<SchoolingSummary> {
+  const csv = await fetchSchoolingSpecializedSheetCsv()
+  const records = parseSchoolingCsv(csv)
+
+  if (records.length === 0) {
+    const empty = emptyAnalytics(SCHOOLING_SHEET.specializedLabel, SCHOOLING_SHEET.specializedLabel)
+    return toSchoolingSummary(empty)
+  }
+
+  return {
+    lastUpdated: new Date().toISOString(),
+    dataReady: true,
+    dataSource: SCHOOLING_SHEET.specializedLabel,
+    title: SCHOOLING_SHEET.specializedLabel,
+    total: records.length,
+    subUnitStats: buildSubUnitStats(records),
+    courseStats: buildCourseStats(records),
+  }
+}
+
 async function loadSchoolingMandatoryAnalytics(): Promise<SchoolingAnalytics> {
   const csv = await fetchSchoolingMandatorySheetCsv()
   const records = parseSchoolingCsv(csv)
@@ -152,25 +192,35 @@ async function loadSchoolingSpecializedAnalytics(): Promise<SchoolingAnalytics> 
   }
 }
 
-export const SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG = "schooling-mandatory-analytics-v3"
-export const SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG = "schooling-specialized-analytics-v3"
+export const SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG = "schooling-mandatory-summary-v4"
+export const SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG = "schooling-specialized-summary-v4"
 
-const getCachedSchoolingMandatoryAnalytics = unstable_cache(
-  loadSchoolingMandatoryAnalytics,
+const getCachedSchoolingMandatorySummary = unstable_cache(
+  loadSchoolingMandatorySummary,
   [SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG],
   { revalidate: false, tags: [SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG] },
 )
 
-const getCachedSchoolingSpecializedAnalytics = unstable_cache(
-  loadSchoolingSpecializedAnalytics,
+const getCachedSchoolingSpecializedSummary = unstable_cache(
+  loadSchoolingSpecializedSummary,
   [SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG],
   { revalidate: false, tags: [SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG] },
 )
 
-export async function getSchoolingMandatoryAnalytics(): Promise<SchoolingAnalytics> {
-  return getCachedSchoolingMandatoryAnalytics()
+export async function getSchoolingMandatorySummary(): Promise<SchoolingSummary> {
+  return getCachedSchoolingMandatorySummary()
 }
 
+export async function getSchoolingSpecializedSummary(): Promise<SchoolingSummary> {
+  return getCachedSchoolingSpecializedSummary()
+}
+
+/** Full analytics with records — used by drill-down server action (not cached). */
+export async function getSchoolingMandatoryAnalytics(): Promise<SchoolingAnalytics> {
+  return loadSchoolingMandatoryAnalytics()
+}
+
+/** Full analytics with records — used by drill-down server action (not cached). */
 export async function getSchoolingSpecializedAnalytics(): Promise<SchoolingAnalytics> {
-  return getCachedSchoolingSpecializedAnalytics()
+  return loadSchoolingSpecializedAnalytics()
 }

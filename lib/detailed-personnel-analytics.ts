@@ -1,6 +1,11 @@
 import { unstable_cache } from "next/cache"
 
 import { DETAILED_PERSONNEL_SHEET } from "@/lib/detailed-personnel-sheet"
+import {
+  isExpiringDetailedOrder,
+  isTerminatedDetailedOrder,
+  type DetailedPersonnelStatusCounts,
+} from "@/lib/detailed-personnel-status"
 import type {
   DetailedPersonnelAnalytics,
   DetailedPersonnelRecord,
@@ -8,6 +13,14 @@ import type {
   DetailedPersonnelTabKey,
 } from "@/lib/detailed-personnel-types"
 import { fetchDetailedPersonnelSheetCsv, parseCsvRows } from "@/lib/google-sheets"
+
+export type DetailedPersonnelDashboardData = {
+  nhq: DetailedPersonnelSummary
+  nosus: DetailedPersonnelSummary
+  rsu: DetailedPersonnelSummary
+  rhqPpo: DetailedPersonnelSummary
+  status: DetailedPersonnelStatusCounts
+}
 
 function emptyAnalytics(title: string): DetailedPersonnelAnalytics {
   return {
@@ -66,11 +79,24 @@ export function toDetailedPersonnelSummary(
   }
 }
 
+function buildSummary(label: string, records: DetailedPersonnelRecord[]): DetailedPersonnelSummary {
+  if (records.length === 0) {
+    return toDetailedPersonnelSummary(emptyAnalytics(label))
+  }
+
+  return {
+    lastUpdated: new Date().toISOString(),
+    dataReady: true,
+    dataSource: label,
+    title: label,
+    total: records.length,
+  }
+}
+
 async function loadDetailedPersonnelAnalytics(
   tab: DetailedPersonnelTabKey,
 ): Promise<DetailedPersonnelAnalytics> {
   const { label } = DETAILED_PERSONNEL_SHEET.tabs[tab]
-
   const csv = await fetchDetailedPersonnelSheetCsv(tab)
   const records = parseDetailedPersonnelCsv(csv)
 
@@ -88,63 +114,73 @@ async function loadDetailedPersonnelAnalytics(
   }
 }
 
-export const DETAILED_NHQ_ANALYTICS_CACHE_TAG = "detailed-nhq-analytics-v2"
-export const DETAILED_NOSUS_ANALYTICS_CACHE_TAG = "detailed-nosus-analytics-v2"
-export const DETAILED_RSU_ANALYTICS_CACHE_TAG = "detailed-rsu-analytics-v2"
-export const DETAILED_RHQ_PPO_ANALYTICS_CACHE_TAG = "detailed-rhq-ppo-analytics-v2"
+/** Loads all detailed tabs sequentially to avoid Google CSV export throttling. */
+async function loadDetailedPersonnelDashboard(): Promise<DetailedPersonnelDashboardData> {
+  const tabs: DetailedPersonnelTabKey[] = ["nhq", "nosus", "rsu", "rhqPpo"]
+  const summaries = {} as Record<DetailedPersonnelTabKey, DetailedPersonnelSummary>
+  let terminatedCount = 0
+  let expiringCount = 0
 
-const CACHE_BY_TAB: Record<
-  DetailedPersonnelTabKey,
-  { tag: string; getter: () => Promise<DetailedPersonnelAnalytics> }
-> = {
-  nhq: {
-    tag: DETAILED_NHQ_ANALYTICS_CACHE_TAG,
-    getter: unstable_cache(
-      () => loadDetailedPersonnelAnalytics("nhq"),
-      [DETAILED_NHQ_ANALYTICS_CACHE_TAG],
-      { revalidate: false, tags: [DETAILED_NHQ_ANALYTICS_CACHE_TAG] },
-    ),
-  },
-  nosus: {
-    tag: DETAILED_NOSUS_ANALYTICS_CACHE_TAG,
-    getter: unstable_cache(
-      () => loadDetailedPersonnelAnalytics("nosus"),
-      [DETAILED_NOSUS_ANALYTICS_CACHE_TAG],
-      { revalidate: false, tags: [DETAILED_NOSUS_ANALYTICS_CACHE_TAG] },
-    ),
-  },
-  rsu: {
-    tag: DETAILED_RSU_ANALYTICS_CACHE_TAG,
-    getter: unstable_cache(
-      () => loadDetailedPersonnelAnalytics("rsu"),
-      [DETAILED_RSU_ANALYTICS_CACHE_TAG],
-      { revalidate: false, tags: [DETAILED_RSU_ANALYTICS_CACHE_TAG] },
-    ),
-  },
-  rhqPpo: {
-    tag: DETAILED_RHQ_PPO_ANALYTICS_CACHE_TAG,
-    getter: unstable_cache(
-      () => loadDetailedPersonnelAnalytics("rhqPpo"),
-      [DETAILED_RHQ_PPO_ANALYTICS_CACHE_TAG],
-      { revalidate: false, tags: [DETAILED_RHQ_PPO_ANALYTICS_CACHE_TAG] },
-    ),
-  },
+  for (const tab of tabs) {
+    const { label } = DETAILED_PERSONNEL_SHEET.tabs[tab]
+    const csv = await fetchDetailedPersonnelSheetCsv(tab)
+    const records = parseDetailedPersonnelCsv(csv)
+    summaries[tab] = buildSummary(label, records)
+
+    for (const record of records) {
+      if (isTerminatedDetailedOrder(record)) {
+        terminatedCount += 1
+      } else if (isExpiringDetailedOrder(record)) {
+        expiringCount += 1
+      }
+    }
+  }
+
+  return {
+    nhq: summaries.nhq,
+    nosus: summaries.nosus,
+    rsu: summaries.rsu,
+    rhqPpo: summaries.rhqPpo,
+    status: { terminatedCount, expiringCount },
+  }
 }
 
+export const DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG = "detailed-personnel-dashboard-v3"
+
+/** @deprecated Use DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG */
+export const DETAILED_NHQ_ANALYTICS_CACHE_TAG = DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG
+/** @deprecated Use DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG */
+export const DETAILED_NOSUS_ANALYTICS_CACHE_TAG = DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG
+/** @deprecated Use DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG */
+export const DETAILED_RSU_ANALYTICS_CACHE_TAG = DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG
+/** @deprecated Use DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG */
+export const DETAILED_RHQ_PPO_ANALYTICS_CACHE_TAG = DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG
+
+export const DETAILED_PERSONNEL_CACHE_TAGS = [DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG]
+
+const getCachedDetailedPersonnelDashboard = unstable_cache(
+  loadDetailedPersonnelDashboard,
+  [DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG],
+  { revalidate: false, tags: [DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG] },
+)
+
+export async function getDetailedPersonnelDashboard(): Promise<DetailedPersonnelDashboardData> {
+  return getCachedDetailedPersonnelDashboard()
+}
+
+/** Full tab data with records — used by drill-down server actions (not cached). */
 export async function getDetailedNhqAnalytics() {
-  return CACHE_BY_TAB.nhq.getter()
+  return loadDetailedPersonnelAnalytics("nhq")
 }
 
 export async function getDetailedNosusAnalytics() {
-  return CACHE_BY_TAB.nosus.getter()
+  return loadDetailedPersonnelAnalytics("nosus")
 }
 
 export async function getDetailedRsuAnalytics() {
-  return CACHE_BY_TAB.rsu.getter()
+  return loadDetailedPersonnelAnalytics("rsu")
 }
 
 export async function getDetailedRhqPpoAnalytics() {
-  return CACHE_BY_TAB.rhqPpo.getter()
+  return loadDetailedPersonnelAnalytics("rhqPpo")
 }
-
-export const DETAILED_PERSONNEL_CACHE_TAGS = Object.values(CACHE_BY_TAB).map((entry) => entry.tag)

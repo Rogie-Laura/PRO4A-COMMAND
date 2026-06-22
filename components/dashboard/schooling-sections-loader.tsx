@@ -1,19 +1,17 @@
 import { SchoolingSections } from "@/components/dashboard/schooling-sections"
 import { Card, CardContent } from "@/components/ui/card"
 import {
-  getSchoolingMandatoryAnalytics,
-  getSchoolingSpecializedAnalytics,
-  toSchoolingSummary,
+  getSchoolingMandatorySummary,
+  getSchoolingSpecializedSummary,
 } from "@/lib/schooling-analytics"
 
 export async function SchoolingSectionsLoader() {
   let mandatory
   let specialized
   try {
-    ;[mandatory, specialized] = await Promise.all([
-      getSchoolingMandatoryAnalytics(),
-      getSchoolingSpecializedAnalytics(),
-    ])
+    // Sequential fetches — Google throttles concurrent CSV exports from one origin.
+    mandatory = await getSchoolingMandatorySummary()
+    specialized = await getSchoolingSpecializedSummary()
   } catch {
     return (
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
@@ -24,10 +22,5 @@ export async function SchoolingSectionsLoader() {
     )
   }
 
-  return (
-    <SchoolingSections
-      mandatory={toSchoolingSummary(mandatory)}
-      specialized={toSchoolingSummary(specialized)}
-    />
-  )
+  return <SchoolingSections mandatory={mandatory} specialized={specialized} />
 }

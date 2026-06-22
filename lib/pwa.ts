@@ -22,7 +22,20 @@ export function isIosDevice() {
 export function registerServiceWorker() {
   if (typeof window === "undefined" || !("serviceWorker" in navigator)) return
 
-  navigator.serviceWorker.register("/sw.js").catch(() => {
-    // Install may still work on some browsers without a registered worker.
-  })
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) =>
+      Promise.all(
+        registrations.map((registration) => {
+          if (registration.active?.scriptURL.endsWith("/sw.js")) {
+            return registration.update()
+          }
+          return undefined
+        }),
+      ),
+    )
+    .then(() => navigator.serviceWorker.register("/sw.js"))
+    .catch(() => {
+      // Install may still work on some browsers without a registered worker.
+    })
 }

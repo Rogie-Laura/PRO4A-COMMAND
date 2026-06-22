@@ -1,4 +1,6 @@
-const CACHE_NAME = "pro4a-command-v4"
+// Minimal service worker for PWA install eligibility only.
+// Do NOT intercept fetch — a failed respondWith(fetch) breaks RSC navigation.
+const CACHE_NAME = "pro4a-command-v5"
 
 self.addEventListener("install", () => {
   self.skipWaiting()
@@ -8,17 +10,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key)),
-        ),
-      )
+      .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
       .then(() => self.clients.claim()),
   )
-})
-
-self.addEventListener("fetch", (event) => {
-  event.respondWith(fetch(event.request))
 })

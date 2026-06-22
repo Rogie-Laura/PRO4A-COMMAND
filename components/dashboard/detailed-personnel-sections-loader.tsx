@@ -1,26 +1,11 @@
 import { DetailedPersonnelSections } from "@/components/dashboard/detailed-personnel-sections"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  getDetailedNhqAnalytics,
-  getDetailedNosusAnalytics,
-  getDetailedRhqPpoAnalytics,
-  getDetailedRsuAnalytics,
-  toDetailedPersonnelSummary,
-} from "@/lib/detailed-personnel-analytics"
-import { buildDetailedPersonnelStatusCounts } from "@/lib/detailed-personnel-status"
+import { getDetailedPersonnelDashboard } from "@/lib/detailed-personnel-analytics"
 
 export async function DetailedPersonnelSectionsLoader() {
-  let nhq
-  let nosus
-  let rsu
-  let rhqPpo
+  let data
   try {
-    ;[nhq, nosus, rsu, rhqPpo] = await Promise.all([
-      getDetailedNhqAnalytics(),
-      getDetailedNosusAnalytics(),
-      getDetailedRsuAnalytics(),
-      getDetailedRhqPpoAnalytics(),
-    ])
+    data = await getDetailedPersonnelDashboard()
   } catch {
     return (
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
@@ -33,11 +18,11 @@ export async function DetailedPersonnelSectionsLoader() {
 
   return (
     <DetailedPersonnelSections
-      nhq={toDetailedPersonnelSummary(nhq)}
-      nosus={toDetailedPersonnelSummary(nosus)}
-      rsu={toDetailedPersonnelSummary(rsu)}
-      rhqPpo={toDetailedPersonnelSummary(rhqPpo)}
-      status={buildDetailedPersonnelStatusCounts(nhq, nosus, rsu, rhqPpo)}
+      nhq={data.nhq}
+      nosus={data.nosus}
+      rsu={data.rsu}
+      rhqPpo={data.rhqPpo}
+      status={data.status}
     />
   )
 }
