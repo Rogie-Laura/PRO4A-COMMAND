@@ -1,6 +1,7 @@
 import { BookOpenCheck, GraduationCap } from "lucide-react"
 
 import { SchoolingSection } from "@/components/dashboard/schooling-section"
+import { SchoolingSummarySection } from "@/components/dashboard/schooling-summary-section"
 import { SwipeCarousel } from "@/components/dashboard/swipe-carousel"
 import type { SchoolingAnalytics } from "@/lib/schooling-types"
 
@@ -11,7 +12,9 @@ type SchoolingSectionsProps = {
 
 export function SchoolingSections({ mandatory, specialized }: SchoolingSectionsProps) {
   return (
-    <>
+    <div className="space-y-4">
+      <SchoolingSummarySection mandatory={mandatory} specialized={specialized} />
+
       <SwipeCarousel
         className="lg:hidden"
         swipeHint="Swipe for Schooling Mandatory · Schooling Specialized"
@@ -56,6 +59,6 @@ export function SchoolingSections({ mandatory, specialized }: SchoolingSectionsP
           accentClassName="gap-0 overflow-hidden border-teal-500/25 bg-gradient-to-br from-teal-500/15 via-teal-500/5 to-card text-teal-700 dark:text-teal-300 [&_[data-slot=card-description]]:text-teal-700/90 dark:[&_[data-slot=card-description]]:text-teal-300/90"
         />
       </div>
-    </>
+    </div>
   )
 }

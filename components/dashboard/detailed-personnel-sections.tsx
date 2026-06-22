@@ -1,6 +1,7 @@
 import { ArrowRightLeft, Building2, Network, Radio } from "lucide-react"
 
 import { DetailedPersonnelSection } from "@/components/dashboard/detailed-personnel-section"
+import { DetailedPersonnelSummarySection } from "@/components/dashboard/detailed-personnel-summary-section"
 import { SwipeCarousel } from "@/components/dashboard/swipe-carousel"
 import type { DetailedPersonnelAnalytics } from "@/lib/detailed-personnel-types"
 
@@ -59,7 +60,14 @@ export function DetailedPersonnelSections({
   const dataByKey = { nhq, nosus, rsu, rhqPpo }
 
   return (
-    <>
+    <div className="space-y-4">
+      <DetailedPersonnelSummarySection
+        nhq={nhq}
+        nosus={nosus}
+        rsu={rsu}
+        rhqPpo={rhqPpo}
+      />
+
       <SwipeCarousel
         className="lg:hidden"
         swipeHint="Swipe for Detailed NHQ · NOSUs · RSU · RHQ & PPO"
@@ -88,6 +96,6 @@ export function DetailedPersonnelSections({
           />
         ))}
       </div>
-    </>
+    </div>
   )
 }

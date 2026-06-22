@@ -1,5 +1,6 @@
 import { GraduationCap, type LucideIcon } from "lucide-react"
 
+import { SchoolingCourseBreakdown } from "@/components/dashboard/schooling-course-breakdown"
 import { SchoolingSubUnitBreakdown } from "@/components/dashboard/schooling-subunit-breakdown"
 import {
   Card,
@@ -14,14 +15,12 @@ type SchoolingSectionProps = {
   data: SchoolingAnalytics
   icon?: LucideIcon
   accentClassName?: string
-  breakdownTitle?: string
 }
 
 export function SchoolingSection({
   data,
   icon: Icon = GraduationCap,
   accentClassName = "border-indigo-500/25 bg-gradient-to-br from-indigo-500/15 via-indigo-500/5 to-card text-indigo-700 dark:text-indigo-300 [&_[data-slot=card-description]]:text-indigo-700/90 dark:[&_[data-slot=card-description]]:text-indigo-300/90",
-  breakdownTitle,
 }: SchoolingSectionProps) {
   return (
     <div className="space-y-4">
@@ -44,14 +43,22 @@ export function SchoolingSection({
           </CardContent>
         </Card>
 
-        {data.subUnitStats.length > 0 ? (
-          <SchoolingSubUnitBreakdown
-            items={data.subUnitStats}
+        {data.courseStats.length > 0 ? (
+          <SchoolingCourseBreakdown
+            items={data.courseStats}
             records={data.records}
-            breakdownTitle={breakdownTitle ?? `${data.title} by Sub-Unit`}
+            breakdownTitle={`${data.title} — Courses Enrolled`}
           />
         ) : null}
       </div>
+
+      {data.subUnitStats.length > 0 ? (
+        <SchoolingSubUnitBreakdown
+          items={data.subUnitStats}
+          records={data.records}
+          breakdownTitle={`${data.title} by Sub-Unit`}
+        />
+      ) : null}
 
       {!data.dataReady ? (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15">

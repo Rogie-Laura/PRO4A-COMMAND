@@ -11,6 +11,7 @@ export type SchoolingRecord = {
   subUnit: string
   unitOffice: string
   effectiveDate: string
+  course: string
   courseSchool: string
   authority: string
 }
@@ -22,5 +23,6 @@ export type SchoolingAnalytics = {
   title: string
   total: number
   subUnitStats: CountItem[]
+  courseStats: CountItem[]
   records: SchoolingRecord[]
 }

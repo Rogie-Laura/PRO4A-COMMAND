@@ -17,8 +17,19 @@ function emptyAnalytics(title: string, dataSource: string): SchoolingAnalytics {
     title,
     total: 0,
     subUnitStats: [],
+    courseStats: [],
     records: [],
   }
+}
+
+export function extractSchoolingCourse(courseSchool: string): string {
+  const trimmed = courseSchool.trim()
+  if (!trimmed) return "Unspecified"
+
+  const slashIndex = trimmed.indexOf("/")
+  const label = slashIndex >= 0 ? trimmed.slice(0, slashIndex) : trimmed
+
+  return label.trim() || "Unspecified"
 }
 
 function isSchoolingDataRow(cols: string[]) {
@@ -42,9 +53,28 @@ function mapSchoolingRow(cols: string[]): SchoolingRecord {
     subUnit: cols[7]?.trim() || "Unspecified",
     unitOffice: cols[8]?.trim() ?? "",
     effectiveDate: cols[9]?.trim() ?? "",
+    course: extractSchoolingCourse(cols[10]?.trim() ?? ""),
     courseSchool: cols[10]?.trim() ?? "",
     authority: cols[11]?.trim() ?? "",
   }
+}
+
+function buildCourseStats(records: SchoolingRecord[]): CountItem[] {
+  const counts = new Map<string, number>()
+
+  for (const record of records) {
+    counts.set(record.course, (counts.get(record.course) ?? 0) + 1)
+  }
+
+  const total = records.length || 1
+
+  return [...counts.entries()]
+    .map(([name, count]) => ({
+      name,
+      count,
+      percentage: Math.round((count / total) * 1000) / 10,
+    }))
+    .sort((a, b) => b.count - a.count)
 }
 
 function buildSubUnitStats(records: SchoolingRecord[]): CountItem[] {
@@ -86,6 +116,7 @@ async function loadSchoolingMandatoryAnalytics(): Promise<SchoolingAnalytics> {
       title: SCHOOLING_SHEET.mandatoryLabel,
       total: records.length,
       subUnitStats: buildSubUnitStats(records),
+      courseStats: buildCourseStats(records),
       records,
     }
   } catch {
@@ -109,6 +140,7 @@ async function loadSchoolingSpecializedAnalytics(): Promise<SchoolingAnalytics> 
       title: SCHOOLING_SHEET.specializedLabel,
       total: records.length,
       subUnitStats: buildSubUnitStats(records),
+      courseStats: buildCourseStats(records),
       records,
     }
   } catch {
@@ -116,8 +148,8 @@ async function loadSchoolingSpecializedAnalytics(): Promise<SchoolingAnalytics> 
   }
 }
 
-export const SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG = "schooling-mandatory-analytics-v1"
-export const SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG = "schooling-specialized-analytics-v1"
+export const SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG = "schooling-mandatory-analytics-v2"
+export const SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG = "schooling-specialized-analytics-v2"
 
 const getCachedSchoolingMandatoryAnalytics = unstable_cache(
   loadSchoolingMandatoryAnalytics,
