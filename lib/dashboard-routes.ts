@@ -17,6 +17,10 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
     description: "Year-over-year and period crime volume comparison",
   },
   "/police-intervention": { title: "Police Intervention" },
+  "/trainings-and-education": {
+    title: "Trainings and Education",
+    description: "Regional training programs and education records",
+  },
   "/ict-equipment-inventory": {
     title: "Inventory of ICT Equipment",
     description: "Regional ICT assets and equipment registry",
