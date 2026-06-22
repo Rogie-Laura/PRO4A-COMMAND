@@ -5,7 +5,6 @@ import { LeadershipSection } from "@/components/dashboard/leadership-section"
 import { PersonnelStatsRefreshButton } from "@/components/dashboard/personnel-stats-refresh-button"
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
 import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
-import { UnitTable } from "@/components/dashboard/unit-table"
 import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
 import {
   toOfficeBreakdownCards,
@@ -52,8 +51,6 @@ export async function PersonnelStatsPrimary() {
       <AgeDistributionTable rows={data.ageDistributionByOffice} />
 
       <RankTenureTable rows={toRankTenureTableRows(data.rankTenureDistribution)} />
-
-      <UnitTable rows={data.unitRows} />
     </>
   )
 }
