@@ -194,8 +194,9 @@ export async function fetchHealthSheetCsv(): Promise<string> {
 }
 
 const FETCH_TIMEOUT_MS = 25000
+const FETCH_ATTEMPTS = 2
 
-async function fetchCsv(url: string, revalidateSeconds = SHEET_CACHE_SECONDS): Promise<string> {
+async function fetchCsvOnce(url: string, revalidateSeconds: number): Promise<string> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
 
@@ -213,6 +214,22 @@ async function fetchCsv(url: string, revalidateSeconds = SHEET_CACHE_SECONDS): P
   } finally {
     clearTimeout(timer)
   }
+}
+
+async function fetchCsv(url: string, revalidateSeconds = SHEET_CACHE_SECONDS): Promise<string> {
+  let lastError: unknown
+
+  // Google sometimes throttles concurrent CSV exports from one Vercel function;
+  // retry once before giving up so a single section doesn't disappear.
+  for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
+    try {
+      return await fetchCsvOnce(url, revalidateSeconds)
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw lastError
 }
 
 function parseCsvLine(line: string): string[] {
