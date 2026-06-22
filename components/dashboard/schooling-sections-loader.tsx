@@ -7,18 +7,13 @@ import {
 } from "@/lib/schooling-analytics"
 
 export async function SchoolingSectionsLoader() {
+  let mandatory
+  let specialized
   try {
-    const [mandatory, specialized] = await Promise.all([
+    ;[mandatory, specialized] = await Promise.all([
       getSchoolingMandatoryAnalytics(),
       getSchoolingSpecializedAnalytics(),
     ])
-
-    return (
-      <SchoolingSections
-        mandatory={toSchoolingSummary(mandatory)}
-        specialized={toSchoolingSummary(specialized)}
-      />
-    )
   } catch {
     return (
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
@@ -28,4 +23,11 @@ export async function SchoolingSectionsLoader() {
       </Card>
     )
   }
+
+  return (
+    <SchoolingSections
+      mandatory={toSchoolingSummary(mandatory)}
+      specialized={toSchoolingSummary(specialized)}
+    />
+  )
 }

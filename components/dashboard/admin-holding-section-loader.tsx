@@ -2,10 +2,12 @@ import { AdminHoldingSection } from "@/components/dashboard/admin-holding-sectio
 import { getAdminHoldingAnalytics, toAdminHoldingSummary } from "@/lib/admin-holding-analytics"
 
 export async function AdminHoldingSectionLoader() {
+  let data
   try {
-    const data = await getAdminHoldingAnalytics()
-    return <AdminHoldingSection data={toAdminHoldingSummary(data)} />
+    data = await getAdminHoldingAnalytics()
   } catch {
     return null
   }
+
+  return <AdminHoldingSection data={toAdminHoldingSummary(data)} />
 }

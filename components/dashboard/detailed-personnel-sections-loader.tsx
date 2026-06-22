@@ -10,23 +10,17 @@ import {
 import { buildDetailedPersonnelStatusCounts } from "@/lib/detailed-personnel-status"
 
 export async function DetailedPersonnelSectionsLoader() {
+  let nhq
+  let nosus
+  let rsu
+  let rhqPpo
   try {
-    const [nhq, nosus, rsu, rhqPpo] = await Promise.all([
+    ;[nhq, nosus, rsu, rhqPpo] = await Promise.all([
       getDetailedNhqAnalytics(),
       getDetailedNosusAnalytics(),
       getDetailedRsuAnalytics(),
       getDetailedRhqPpoAnalytics(),
     ])
-
-    return (
-      <DetailedPersonnelSections
-        nhq={toDetailedPersonnelSummary(nhq)}
-        nosus={toDetailedPersonnelSummary(nosus)}
-        rsu={toDetailedPersonnelSummary(rsu)}
-        rhqPpo={toDetailedPersonnelSummary(rhqPpo)}
-        status={buildDetailedPersonnelStatusCounts(nhq, nosus, rsu, rhqPpo)}
-      />
-    )
   } catch {
     return (
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
@@ -36,4 +30,14 @@ export async function DetailedPersonnelSectionsLoader() {
       </Card>
     )
   }
+
+  return (
+    <DetailedPersonnelSections
+      nhq={toDetailedPersonnelSummary(nhq)}
+      nosus={toDetailedPersonnelSummary(nosus)}
+      rsu={toDetailedPersonnelSummary(rsu)}
+      rhqPpo={toDetailedPersonnelSummary(rhqPpo)}
+      status={buildDetailedPersonnelStatusCounts(nhq, nosus, rsu, rhqPpo)}
+    />
+  )
 }
