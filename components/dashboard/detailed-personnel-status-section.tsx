@@ -91,7 +91,7 @@ export function DetailedPersonnelStatusSection({ status }: DetailedPersonnelStat
       description="Personnel whose detailed orders are already terminated"
       count={status.terminatedCount}
       loading={loadingType === "terminated"}
-      accentClassName="border-red-500/30 bg-gradient-to-br from-red-500/15 via-red-500/5 to-card text-red-700 dark:text-red-300 [&_[data-slot=card-description]]:text-red-700/90 dark:[&_[data-slot=card-description]]:text-red-300/90"
+      accentClassName="border-yellow-500/30 bg-gradient-to-br from-yellow-500/15 via-yellow-500/5 to-card text-yellow-700 dark:text-yellow-300 [&_[data-slot=card-description]]:text-yellow-700/90 dark:[&_[data-slot=card-description]]:text-yellow-300/90"
       onClick={() => handleStatusClick("terminated")}
     />
   )
@@ -114,7 +114,7 @@ export function DetailedPersonnelStatusSection({ status }: DetailedPersonnelStat
           {
             id: "detailed-terminated",
             label: "Terminated Detailed Orders",
-            dotClassName: "bg-red-500",
+            dotClassName: "bg-yellow-500",
             content: terminatedCard,
           },
         ]}

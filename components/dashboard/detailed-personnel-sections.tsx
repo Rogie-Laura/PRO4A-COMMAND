@@ -49,11 +49,11 @@ const SLIDE_CONFIG = [
   {
     id: "detailed-rhq-ppo",
     label: "Detailed RHQ & PPO",
-    dotClassName: "bg-rose-500",
+    dotClassName: "bg-emerald-500",
     icon: ArrowRightLeft,
     tab: "rhqPpo" as const,
     accentClassName:
-      "gap-0 overflow-hidden border-rose-500/25 bg-gradient-to-br from-rose-500/15 via-rose-500/5 to-card text-rose-700 dark:text-rose-300 [&_[data-slot=card-description]]:text-rose-700/90 dark:[&_[data-slot=card-description]]:text-rose-300/90",
+      "gap-0 overflow-hidden border-emerald-500/25 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-card text-emerald-700 dark:text-emerald-300 [&_[data-slot=card-description]]:text-emerald-700/90 dark:[&_[data-slot=card-description]]:text-emerald-300/90",
     dataKey: "rhqPpo" as const,
   },
 ] as const
