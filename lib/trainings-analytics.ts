@@ -192,16 +192,16 @@ export function parseTrainingsCsv(text: string): TrainingRecord[] {
   const { headerIdx, columns } = header
   const records: TrainingRecord[] = []
   let currentMonth = ""
+  let lastActivity = ""
 
   for (let rowIndex = headerIdx + 1; rowIndex < rows.length; rowIndex++) {
     const row = rows[rowIndex]
-    const activity = (row[columns.activity] ?? "").trim()
+    let activity = (row[columns.activity] ?? "").trim()
     const statusRaw = row[columns.status] ?? ""
-
-    if (!activity) continue
 
     if (TRAINING_MONTHS.has(activity.toUpperCase())) {
       currentMonth = activity.toUpperCase()
+      lastActivity = ""
       continue
     }
 
@@ -210,6 +210,14 @@ export function parseTrainingsCsv(text: string): TrainingRecord[] {
     const classCount = parseNumber(cellAt(row, columns.classCount))
     const dateOpening = cellAt(row, columns.dateOpening)
     const dateClosing = cellAt(row, columns.dateClosing)
+
+    if (!activity) {
+      if (!lastActivity) continue
+      activity = lastActivity
+    } else {
+      lastActivity = activity
+    }
+
     const modeRaw = cellAt(row, columns.mode)
     const venue = cellAt(row, columns.venue)
     const facilitator = cellAt(row, columns.facilitator)
@@ -292,7 +300,7 @@ async function loadTrainingsAnalytics(): Promise<TrainingsAnalytics> {
   }
 }
 
-export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v6"
+export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v7"
 
 /** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedTrainingsAnalytics = unstable_cache(
