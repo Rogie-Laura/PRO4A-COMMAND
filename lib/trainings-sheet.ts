@@ -8,9 +8,6 @@ export const TRAININGS_SHEET = {
 export function getTrainingsCsvUrl() {
   const sheetId = process.env.GOOGLE_TRAININGS_SHEET_ID ?? TRAININGS_SHEET.sheetId
 
-  const params = new URLSearchParams({
-    tqx: "out:csv",
-  })
-
-  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?${params.toString()}`
+  // Use native CSV export — gviz/tq reshapes this workbook and breaks column parsing.
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`
 }
