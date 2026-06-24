@@ -14,7 +14,6 @@ import {
   Search,
   Settings,
   Shield,
-  Siren,
   UserCog,
   Users,
 } from "lucide-react"
@@ -44,12 +43,7 @@ export type NavEntry = NavLinkEntry | NavGroup
 export const MAIN_NAV: NavEntry[] = [
   { type: "link", title: "RPRMD", href: "/", icon: BarChart3 },
   { type: "link", title: "RID", href: "/rid", icon: Search },
-  {
-    type: "group",
-    title: "ROD",
-    icon: Scale,
-    items: [{ title: "Police Intervention", href: "/police-intervention", icon: Siren }],
-  },
+  { type: "link", title: "ROD", href: "/police-intervention", icon: Scale },
   {
     type: "group",
     title: "RLRDD",
