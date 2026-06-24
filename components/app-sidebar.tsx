@@ -1,26 +1,21 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-  BarChart3,
-  Building2,
-  Car,
-  Crosshair,
-  GitCompareArrows,
-  GraduationCap,
-  HeartPulse,
-  MapPinned,
-  Monitor,
-  Settings,
-  Shield,
-  Siren,
-} from "lucide-react"
+import { ChevronRight, type LucideIcon } from "lucide-react"
 
 import { LogoutButton } from "@/components/auth/logout-button"
 import { AppBrandMark } from "@/components/dashboard/app-brand-mark"
 import type { AccessKeyRole } from "@/lib/auth/roles"
+import {
+  getOpenNavGroups,
+  isNavGroupActive,
+  isNavLinkActive,
+  MAIN_NAV,
+  type NavEntry,
+} from "@/lib/navigation-config"
+import { cn } from "@/lib/utils"
 import {
   Sidebar,
   SidebarContent,
@@ -32,45 +27,148 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-
-const allNavItems = [
-  { title: "Personnel Stats", href: "/", icon: BarChart3 },
-  { title: "Mobility", href: "/mobility", icon: Car },
-  { title: "Firearms", href: "/firearms", icon: Crosshair },
-  { title: "Camps and Offices", href: "/camps-offices", icon: Building2 },
-  { title: "Crime Statistics", href: "/crime-statistics", icon: Shield },
-  {
-    title: "Comparative Crime Stats",
-    href: "/comparative-crime-stats",
-    icon: GitCompareArrows,
-  },
-  { title: "Police Intervention", href: "/police-intervention", icon: Siren },
-  {
-    title: "Trainings and Education",
-    href: "/trainings-and-education",
-    icon: GraduationCap,
-  },
-  { title: "Inventory of ICT Equipment", href: "/ict-equipment-inventory", icon: Monitor },
-  { title: "Health and BMI", href: "/health-and-bmi", icon: HeartPulse },
-  { title: "Station Profiles", href: "/station-profiles", icon: MapPinned },
-  { title: "Settings", href: "/settings", icon: Settings },
-]
 
 type AppSidebarProps = {
   role: AccessKeyRole
 }
 
+function NavLinkItem({
+  title,
+  href,
+  icon: Icon,
+  pathname,
+  isMobile,
+  showNavTooltip,
+}: {
+  title: string
+  href: string
+  icon: LucideIcon
+  pathname: string
+  isMobile: boolean
+  showNavTooltip: boolean
+}) {
+  const { setOpenMobile } = useSidebar()
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        isActive={isNavLinkActive(pathname, href)}
+        tooltip={showNavTooltip ? title : undefined}
+        render={(props) => (
+          <Link
+            {...props}
+            href={href}
+            onClick={(event) => {
+              props.onClick?.(event)
+              if (isMobile) {
+                setOpenMobile(false)
+              }
+            }}
+          />
+        )}
+      >
+        <Icon />
+        <span>{title}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
+
+function NavGroupItem({
+  entry,
+  pathname,
+  isMobile,
+  showNavTooltip,
+  isOpen,
+  onToggle,
+}: {
+  entry: Extract<NavEntry, { type: "group" }>
+  pathname: string
+  isMobile: boolean
+  showNavTooltip: boolean
+  isOpen: boolean
+  onToggle: () => void
+}) {
+  const { setOpenMobile } = useSidebar()
+  const groupActive = isNavGroupActive(pathname, entry.items)
+  const Icon = entry.icon
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        isActive={groupActive}
+        tooltip={showNavTooltip ? entry.title : undefined}
+        onClick={onToggle}
+      >
+        <Icon />
+        <span>{entry.title}</span>
+        <ChevronRight
+          className={cn(
+            "ml-auto size-4 shrink-0 transition-transform",
+            isOpen && "rotate-90",
+          )}
+        />
+      </SidebarMenuButton>
+      {isOpen ? (
+        <SidebarMenuSub>
+          {entry.items.map((item) => (
+            <SidebarMenuSubItem key={item.href}>
+              <SidebarMenuSubButton
+                isActive={isNavLinkActive(pathname, item.href)}
+                render={(props) => (
+                  <Link
+                    {...props}
+                    href={item.href}
+                    onClick={(event) => {
+                      props.onClick?.(event)
+                      if (isMobile) {
+                        setOpenMobile(false)
+                      }
+                    }}
+                  />
+                )}
+              >
+                <item.icon />
+                <span>{item.title}</span>
+              </SidebarMenuSubButton>
+            </SidebarMenuSubItem>
+          ))}
+        </SidebarMenuSub>
+      ) : null}
+    </SidebarMenuItem>
+  )
+}
+
 export function AppSidebar({ role: _role }: AppSidebarProps) {
   const pathname = usePathname()
   const { isMobile, setOpenMobile, state } = useSidebar()
-  const navItems = allNavItems
   const showNavTooltip = !isMobile && state === "collapsed"
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
+    getOpenNavGroups(pathname),
+  )
 
   useEffect(() => {
     setOpenMobile(false)
   }, [pathname, setOpenMobile])
+
+  useEffect(() => {
+    setOpenGroups((current) => ({
+      ...current,
+      ...getOpenNavGroups(pathname),
+    }))
+  }, [pathname])
+
+  function toggleGroup(title: string) {
+    setOpenGroups((current) => ({
+      ...current,
+      [title]: !current[title],
+    }))
+  }
 
   return (
     <Sidebar>
@@ -93,29 +191,29 @@ export function AppSidebar({ role: _role }: AppSidebarProps) {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    isActive={pathname === item.href}
-                    tooltip={showNavTooltip ? item.title : undefined}
-                    render={(props) => (
-                      <Link
-                        {...props}
-                        href={item.href}
-                        onClick={(event) => {
-                          props.onClick?.(event)
-                          if (isMobile) {
-                            setOpenMobile(false)
-                          }
-                        }}
-                      />
-                    )}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {MAIN_NAV.map((entry) =>
+                entry.type === "link" ? (
+                  <NavLinkItem
+                    key={entry.href}
+                    title={entry.title}
+                    href={entry.href}
+                    icon={entry.icon}
+                    pathname={pathname}
+                    isMobile={isMobile}
+                    showNavTooltip={showNavTooltip}
+                  />
+                ) : (
+                  <NavGroupItem
+                    key={entry.title}
+                    entry={entry}
+                    pathname={pathname}
+                    isMobile={isMobile}
+                    showNavTooltip={showNavTooltip}
+                    isOpen={Boolean(openGroups[entry.title])}
+                    onToggle={() => toggleGroup(entry.title)}
+                  />
+                ),
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -4,7 +4,11 @@ export type DashboardRouteMeta = {
 }
 
 export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
-  "/": { title: "Personnel Stats" },
+  "/": { title: "RPRMD" },
+  "/rid": { title: "RID" },
+  "/rcadd": { title: "RCADD" },
+  "/rcd": { title: "RCD" },
+  "/rpsmd": { title: "RPSMD" },
   "/mobility": {
     title: "Mobility",
     description: "Regional fleet registry and vehicle distribution",

@@ -11,7 +11,7 @@ import { SectionLoading } from "@/components/dashboard/section-loading"
 export function PersonnelStatsContent() {
   return (
     <div className="space-y-6">
-      <SectionErrorBoundary label="Personnel Stats">
+      <SectionErrorBoundary label="RPRMD">
         <Suspense fallback={<DashboardLoading />}>
           <PersonnelStatsPrimary />
         </Suspense>
