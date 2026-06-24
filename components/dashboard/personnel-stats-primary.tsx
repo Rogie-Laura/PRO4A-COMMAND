@@ -30,7 +30,7 @@ export async function PersonnelStatsPrimary() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <DataSyncBanner
           lastUpdated={data.lastUpdated}
-          sourceLabel="Personnel tab"
+          sourceLabel="PRO4A-COMMAND recap tab"
           syncDescription="synced from Google Sheet (cached until you refresh)"
         />
         <PersonnelStatsRefreshButton />

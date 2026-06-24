@@ -18,7 +18,7 @@ import {
 } from "@/lib/detailed-personnel-status"
 import type { DetailedPersonnelRecord, DetailedPersonnelTabKey } from "@/lib/detailed-personnel-types"
 import { buildRankTenurePersonnelForBracket, mapPersonnelRow } from "@/lib/personnel-aggregations"
-import { fetchPersonnelSheetCsv, parseCsv } from "@/lib/google-sheets"
+import { fetchPersonnelSheetCsv, parseCsv, PERSONNEL_RECAP_CSV_CACHE_TAG } from "@/lib/google-sheets"
 import { getPersonnelAnalytics, PERSONNEL_ANALYTICS_CACHE_TAG } from "@/lib/personnel-analytics"
 import {
   getSchoolingMandatoryAnalytics,
@@ -103,6 +103,7 @@ export async function fetchRankTenurePersonnel(
 }
 
 export async function refreshPersonnelStatsData() {
+  updateTag(PERSONNEL_RECAP_CSV_CACHE_TAG)
   updateTag(PERSONNEL_ANALYTICS_CACHE_TAG)
   updateTag(ADMIN_HOLDING_ANALYTICS_CACHE_TAG)
   updateTag(SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG)

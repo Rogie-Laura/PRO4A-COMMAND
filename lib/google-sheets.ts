@@ -130,7 +130,9 @@ export function getPersonnelRecapCsvUrl(sheetId?: string) {
 }
 
 export async function fetchPersonnelRecapCsv(sheetId?: string): Promise<string> {
-  return fetchCsv(getPersonnelRecapCsvUrl(sheetId), SHEET_CACHE_SECONDS)
+  return fetchCsv(getPersonnelRecapCsvUrl(sheetId), SHEET_CACHE_SECONDS, [
+    PERSONNEL_RECAP_CSV_CACHE_TAG,
+  ])
 }
 
 /** @deprecated Use fetchPersonnelSheetCsv instead. */
@@ -196,13 +198,22 @@ export async function fetchHealthSheetCsv(): Promise<string> {
 const FETCH_TIMEOUT_MS = 25000
 const FETCH_ATTEMPTS = 2
 
-async function fetchCsvOnce(url: string, revalidateSeconds: number): Promise<string> {
+export const PERSONNEL_RECAP_CSV_CACHE_TAG = "personnel-recap-csv-v1"
+
+async function fetchCsvOnce(
+  url: string,
+  revalidateSeconds: number,
+  tags?: string[],
+): Promise<string> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
 
   try {
     const response = await fetch(url, {
-      next: { revalidate: revalidateSeconds },
+      next: {
+        revalidate: revalidateSeconds,
+        ...(tags?.length ? { tags } : {}),
+      },
       signal: controller.signal,
     })
 
@@ -216,14 +227,18 @@ async function fetchCsvOnce(url: string, revalidateSeconds: number): Promise<str
   }
 }
 
-async function fetchCsv(url: string, revalidateSeconds = SHEET_CACHE_SECONDS): Promise<string> {
+async function fetchCsv(
+  url: string,
+  revalidateSeconds = SHEET_CACHE_SECONDS,
+  tags?: string[],
+): Promise<string> {
   let lastError: unknown
 
   // Google sometimes throttles concurrent CSV exports from one Vercel function;
   // retry once before giving up so a single section doesn't disappear.
   for (let attempt = 1; attempt <= FETCH_ATTEMPTS; attempt++) {
     try {
-      return await fetchCsvOnce(url, revalidateSeconds)
+      return await fetchCsvOnce(url, revalidateSeconds, tags)
     } catch (error) {
       lastError = error
     }

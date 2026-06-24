@@ -52,13 +52,18 @@ async function loadPersonnelAnalyticsFromRoster(): Promise<PersonnelAnalytics> {
 }
 
 async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
+  const syncedAt = new Date().toISOString()
+
   try {
     const recapCsv = await fetchPersonnelRecapCsv()
     const recapRows = parseCsv(recapCsv)
     const fromRecap = parsePersonnelRecap(recapRows)
 
     if (fromRecap) {
-      return fromRecap
+      return {
+        ...fromRecap,
+        lastUpdated: syncedAt,
+      }
     }
   } catch {
     // recap tab missing or unreachable — fall through to roster
@@ -66,10 +71,14 @@ async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
 
   // Let errors propagate so unstable_cache does NOT cache failures.
   // The loader's try/catch handles UI gracefully; retrying on next page load.
-  return loadPersonnelAnalyticsFromRoster()
+  const fromRoster = await loadPersonnelAnalyticsFromRoster()
+  return {
+    ...fromRoster,
+    lastUpdated: syncedAt,
+  }
 }
 
-export const PERSONNEL_ANALYTICS_CACHE_TAG = "personnel-analytics-recap-v1"
+export const PERSONNEL_ANALYTICS_CACHE_TAG = "personnel-analytics-recap-v2"
 
 /** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedPersonnelAnalytics = unstable_cache(
