@@ -1,21 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronRight, type LucideIcon } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 
 import { LogoutButton } from "@/components/auth/logout-button"
 import { AppBrandMark } from "@/components/dashboard/app-brand-mark"
 import type { AccessKeyRole } from "@/lib/auth/roles"
-import {
-  getOpenNavGroups,
-  isNavGroupActive,
-  isNavLinkActive,
-  MAIN_NAV,
-  type NavEntry,
-} from "@/lib/navigation-config"
-import { cn } from "@/lib/utils"
+import { isNavLinkActive, MAIN_NAV, type NavLink } from "@/lib/navigation-config"
 import {
   Sidebar,
   SidebarContent,
@@ -27,9 +20,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
 
@@ -38,31 +28,28 @@ type AppSidebarProps = {
 }
 
 function NavLinkItem({
-  title,
-  href,
-  icon: Icon,
+  link,
   pathname,
   isMobile,
   showNavTooltip,
 }: {
-  title: string
-  href: string
-  icon: LucideIcon
+  link: NavLink
   pathname: string
   isMobile: boolean
   showNavTooltip: boolean
 }) {
   const { setOpenMobile } = useSidebar()
+  const Icon: LucideIcon = link.icon
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
-        isActive={isNavLinkActive(pathname, href)}
-        tooltip={showNavTooltip ? title : undefined}
+        isActive={isNavLinkActive(pathname, link)}
+        tooltip={showNavTooltip ? link.title : undefined}
         render={(props) => (
           <Link
             {...props}
-            href={href}
+            href={link.href}
             onClick={(event) => {
               props.onClick?.(event)
               if (isMobile) {
@@ -73,73 +60,8 @@ function NavLinkItem({
         )}
       >
         <Icon />
-        <span>{title}</span>
+        <span>{link.title}</span>
       </SidebarMenuButton>
-    </SidebarMenuItem>
-  )
-}
-
-function NavGroupItem({
-  entry,
-  pathname,
-  isMobile,
-  showNavTooltip,
-  isOpen,
-  onToggle,
-}: {
-  entry: Extract<NavEntry, { type: "group" }>
-  pathname: string
-  isMobile: boolean
-  showNavTooltip: boolean
-  isOpen: boolean
-  onToggle: () => void
-}) {
-  const { setOpenMobile } = useSidebar()
-  const groupActive = isNavGroupActive(pathname, entry.items)
-  const Icon = entry.icon
-
-  return (
-    <SidebarMenuItem>
-      <SidebarMenuButton
-        isActive={groupActive}
-        tooltip={showNavTooltip ? entry.title : undefined}
-        onClick={onToggle}
-      >
-        <Icon />
-        <span>{entry.title}</span>
-        <ChevronRight
-          className={cn(
-            "ml-auto size-4 shrink-0 transition-transform",
-            isOpen && "rotate-90",
-          )}
-        />
-      </SidebarMenuButton>
-      {isOpen ? (
-        <SidebarMenuSub>
-          {entry.items.map((item) => (
-            <SidebarMenuSubItem key={item.href}>
-              <SidebarMenuSubButton
-                isActive={isNavLinkActive(pathname, item.href)}
-                render={(props) => (
-                  <Link
-                    {...props}
-                    href={item.href}
-                    onClick={(event) => {
-                      props.onClick?.(event)
-                      if (isMobile) {
-                        setOpenMobile(false)
-                      }
-                    }}
-                  />
-                )}
-              >
-                <item.icon />
-                <span>{item.title}</span>
-              </SidebarMenuSubButton>
-            </SidebarMenuSubItem>
-          ))}
-        </SidebarMenuSub>
-      ) : null}
     </SidebarMenuItem>
   )
 }
@@ -148,27 +70,10 @@ export function AppSidebar({ role: _role }: AppSidebarProps) {
   const pathname = usePathname()
   const { isMobile, setOpenMobile, state } = useSidebar()
   const showNavTooltip = !isMobile && state === "collapsed"
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
-    getOpenNavGroups(pathname),
-  )
 
   useEffect(() => {
     setOpenMobile(false)
   }, [pathname, setOpenMobile])
-
-  useEffect(() => {
-    setOpenGroups((current) => ({
-      ...current,
-      ...getOpenNavGroups(pathname),
-    }))
-  }, [pathname])
-
-  function toggleGroup(title: string) {
-    setOpenGroups((current) => ({
-      ...current,
-      [title]: !current[title],
-    }))
-  }
 
   return (
     <Sidebar>
@@ -191,29 +96,15 @@ export function AppSidebar({ role: _role }: AppSidebarProps) {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {MAIN_NAV.map((entry) =>
-                entry.type === "link" ? (
-                  <NavLinkItem
-                    key={entry.href}
-                    title={entry.title}
-                    href={entry.href}
-                    icon={entry.icon}
-                    pathname={pathname}
-                    isMobile={isMobile}
-                    showNavTooltip={showNavTooltip}
-                  />
-                ) : (
-                  <NavGroupItem
-                    key={entry.title}
-                    entry={entry}
-                    pathname={pathname}
-                    isMobile={isMobile}
-                    showNavTooltip={showNavTooltip}
-                    isOpen={Boolean(openGroups[entry.title])}
-                    onToggle={() => toggleGroup(entry.title)}
-                  />
-                ),
-              )}
+              {MAIN_NAV.map((link) => (
+                <NavLinkItem
+                  key={link.href}
+                  link={link}
+                  pathname={pathname}
+                  isMobile={isMobile}
+                  showNavTooltip={showNavTooltip}
+                />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

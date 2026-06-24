@@ -9,6 +9,14 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
   "/rcadd": { title: "RCADD" },
   "/rcd": { title: "RCD" },
   "/rpsmd": { title: "RPSMD" },
+  "/rlrdd": {
+    title: "RLRDD",
+    description: "Regional Logistics, Research and Development Division",
+  },
+  "/ridmd": {
+    title: "RIDMD",
+    description: "Regional Intelligence and Investigation Management Division",
+  },
   "/mobility": {
     title: "Mobility",
     description: "Regional fleet registry and vehicle distribution",
