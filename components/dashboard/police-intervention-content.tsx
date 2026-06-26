@@ -1,8 +1,8 @@
-import Image from "next/image"
 import Link from "next/link"
 import { ExternalLink, Siren } from "lucide-react"
 
 import { PoliceInterventionRefreshButton } from "@/components/dashboard/police-intervention-refresh-button"
+import { PatrolUnitCards } from "@/components/dashboard/patrol-unit-cards"
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,10 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  getPatrollersMonitorUrl,
-  PATROL_INTERVENTION_TYPES,
-} from "@/lib/patrol-intervention-config"
+import { getPatrollersMonitorUrl } from "@/lib/patrol-intervention-config"
 import { getPatrolInterventionAnalytics } from "@/lib/patrol-intervention-analytics"
 
 export async function PoliceInterventionContent() {
@@ -90,44 +87,12 @@ export async function PoliceInterventionContent() {
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {PATROL_INTERVENTION_TYPES.map((type) => (
-          <Card key={type.id} className="gap-0 overflow-hidden">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-3">
-                <div className="flex size-12 items-center justify-center rounded-lg bg-muted/60">
-                  <Image
-                    src={type.image}
-                    alt=""
-                    width={36}
-                    height={36}
-                    className="size-9 object-contain"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <CardDescription>{type.label}</CardDescription>
-                  <CardTitle className="text-3xl tabular-nums">
-                    {data.ok ? (data.counts[type.id] ?? 0) : "—"}
-                  </CardTitle>
-                  {data.ok && (
-                    <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">
-                      <span className="font-semibold text-foreground">
-                        {data.duty_counts[type.id] ?? 0}
-                      </span>{" "}
-                      on duty
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">
-                Active units on map · personnel marked on duty in the mobile app.
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <PatrolUnitCards
+        dataOk={data.ok}
+        counts={data.counts}
+        dutyCounts={data.duty_counts}
+        officeBreakdown={data.office_breakdown}
+      />
     </div>
   )
 }

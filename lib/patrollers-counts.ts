@@ -4,12 +4,19 @@ import {
   type PatrolUnitTypeId,
 } from "@/lib/patrol-intervention-config"
 
+export type PatrolOfficeBreakdownRow = {
+  office: string
+  counts: PatrolUnitCounts
+  duty_counts: PatrolUnitCounts
+}
+
 export type PatrolCountsPayload = {
   ok: boolean
   counts: PatrolUnitCounts
   duty_counts: PatrolUnitCounts
   total: number
   duty_total: number
+  office_breakdown: PatrolOfficeBreakdownRow[]
   updated_at: string | null
   error?: string
 }
@@ -26,6 +33,29 @@ function normalizeCounts(raw: Record<string, number> | undefined): PatrolUnitCou
   return counts
 }
 
+function normalizeOfficeBreakdown(raw: unknown): PatrolOfficeBreakdownRow[] {
+  if (!Array.isArray(raw)) return []
+
+  return raw
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null
+      const row = entry as {
+        office?: string
+        counts?: Record<string, number>
+        duty_counts?: Record<string, number>
+      }
+      const office = String(row.office ?? "").trim()
+      if (!office) return null
+
+      return {
+        office,
+        counts: normalizeCounts(row.counts),
+        duty_counts: normalizeCounts(row.duty_counts),
+      }
+    })
+    .filter((row): row is PatrolOfficeBreakdownRow => row !== null)
+}
+
 export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCountsPayload> {
   const baseUrl = process.env.PATROLLERS_API_URL?.trim().replace(/\/$/, "")
   const apiKey = process.env.PATROLLERS_COUNTS_API_KEY?.trim()
@@ -37,6 +67,7 @@ export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCount
       duty_counts: EMPTY_PATROL_COUNTS,
       total: 0,
       duty_total: 0,
+      office_breakdown: [],
       updated_at: null,
       error:
         "Patrollers API URL is not configured. Set PATROLLERS_API_URL on PRO4A-COMMAND.",
@@ -58,6 +89,7 @@ export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCount
       ok?: boolean
       counts?: Record<string, number>
       duty_counts?: Record<string, number>
+      office_breakdown?: unknown
       total?: number
       duty_total?: number
       updated_at?: string
@@ -71,6 +103,7 @@ export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCount
         duty_counts: EMPTY_PATROL_COUNTS,
         total: 0,
         duty_total: 0,
+        office_breakdown: [],
         updated_at: null,
         error: data.error ?? `Patrollers API returned ${response.status}.`,
       }
@@ -78,6 +111,7 @@ export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCount
 
     const counts = normalizeCounts(data.counts)
     const duty_counts = normalizeCounts(data.duty_counts)
+    const office_breakdown = normalizeOfficeBreakdown(data.office_breakdown)
     const total =
       typeof data.total === "number"
         ? data.total
@@ -93,6 +127,7 @@ export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCount
       duty_counts,
       total,
       duty_total,
+      office_breakdown,
       updated_at: data.updated_at ?? new Date().toISOString(),
     }
   } catch (err) {
@@ -102,6 +137,7 @@ export async function fetchPatrolUnitCountsFromPatrollers(): Promise<PatrolCount
       duty_counts: EMPTY_PATROL_COUNTS,
       total: 0,
       duty_total: 0,
+      office_breakdown: [],
       updated_at: null,
       error:
         err instanceof Error
