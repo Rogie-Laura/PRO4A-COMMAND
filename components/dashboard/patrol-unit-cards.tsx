@@ -119,6 +119,7 @@ export function PatrolUnitCards({
       <PatrolUnitOfficeModal
         patrolTypeId={selectedTypeId}
         patrolTypeLabel={selectedType?.label ?? null}
+        patrolTypeImage={selectedType?.image ?? null}
         officeBreakdown={officeBreakdown}
         open={open}
         onOpenChange={handleOpenChange}
