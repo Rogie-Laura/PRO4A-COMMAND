@@ -4,10 +4,17 @@ import {
   type PatrolUnitTypeId,
 } from "@/lib/patrol-intervention-config"
 
+export type PatrolUnitBreakdownRow = {
+  unit: string
+  counts: PatrolUnitCounts
+  duty_counts: PatrolUnitCounts
+}
+
 export type PatrolOfficeBreakdownRow = {
   office: string
   counts: PatrolUnitCounts
   duty_counts: PatrolUnitCounts
+  units: PatrolUnitBreakdownRow[]
 }
 
 export type PatrolCountsPayload = {
@@ -33,6 +40,29 @@ function normalizeCounts(raw: Record<string, number> | undefined): PatrolUnitCou
   return counts
 }
 
+function normalizeUnitBreakdown(raw: unknown): PatrolUnitBreakdownRow[] {
+  if (!Array.isArray(raw)) return []
+
+  return raw
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null
+      const row = entry as {
+        unit?: string
+        counts?: Record<string, number>
+        duty_counts?: Record<string, number>
+      }
+      const unit = String(row.unit ?? "").trim()
+      if (!unit) return null
+
+      return {
+        unit,
+        counts: normalizeCounts(row.counts),
+        duty_counts: normalizeCounts(row.duty_counts),
+      }
+    })
+    .filter((row): row is PatrolUnitBreakdownRow => row !== null)
+}
+
 function normalizeOfficeBreakdown(raw: unknown): PatrolOfficeBreakdownRow[] {
   if (!Array.isArray(raw)) return []
 
@@ -43,6 +73,7 @@ function normalizeOfficeBreakdown(raw: unknown): PatrolOfficeBreakdownRow[] {
         office?: string
         counts?: Record<string, number>
         duty_counts?: Record<string, number>
+        units?: unknown
       }
       const office = String(row.office ?? "").trim()
       if (!office) return null
@@ -51,6 +82,7 @@ function normalizeOfficeBreakdown(raw: unknown): PatrolOfficeBreakdownRow[] {
         office,
         counts: normalizeCounts(row.counts),
         duty_counts: normalizeCounts(row.duty_counts),
+        units: normalizeUnitBreakdown(row.units),
       }
     })
     .filter((row): row is PatrolOfficeBreakdownRow => row !== null)
