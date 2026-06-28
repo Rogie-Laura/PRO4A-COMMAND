@@ -3,6 +3,7 @@ import type { CountItem } from "@/lib/personnel-types"
 export type CrimeAnalytics = {
   lastUpdated: string
   fileName: string
+  dataSource: string
   dataReady: boolean
   year: number | null
   totalVolume: number

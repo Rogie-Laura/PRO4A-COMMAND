@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { InstallAppCard } from "@/components/pwa/install-app-card"
 import { AccessTokenCard } from "@/components/settings/access-token-card"
 import { BmiUploadCard } from "@/components/settings/bmi-upload-card"
+import { CrimeUploadCard } from "@/components/settings/crime-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
 import {
   Card,
@@ -15,6 +16,7 @@ import { listAccessTokens, type AccessTokenListItem } from "@/lib/access-tokens"
 import { getSession } from "@/lib/auth/get-session"
 import { isSuperAdmin } from "@/lib/auth/roles"
 import { getLatestBmiUploadBatch, type BmiUploadBatchInfo } from "@/lib/bmi-records"
+import { getLatestCrimeUploadBatch, type CrimeUploadBatchInfo } from "@/lib/crime-records"
 
 export const maxDuration = 300
 
@@ -31,6 +33,8 @@ export default async function SettingsPage() {
   let tokenError: string | null = null
   let latestBmiBatch: BmiUploadBatchInfo | null = null
   let bmiUploadError: string | null = null
+  let latestCrimeBatch: CrimeUploadBatchInfo | null = null
+  let crimeUploadError: string | null = null
 
   if (canManageTokens) {
     try {
@@ -49,6 +53,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load BMI upload status from Supabase."
+    }
+
+    try {
+      latestCrimeBatch = await getLatestCrimeUploadBatch()
+    } catch (error) {
+      crimeUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load crime upload status from Supabase."
     }
   }
 
@@ -72,6 +85,20 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <BmiUploadCard latestBatch={latestBmiBatch} />
+            )}
+
+            {crimeUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Crime Stats</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{crimeUploadError}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <CrimeUploadCard latestBatch={latestCrimeBatch} />
             )}
 
             {tokenError ? (

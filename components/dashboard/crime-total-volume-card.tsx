@@ -41,7 +41,7 @@ export function CrimeTotalVolumeCard({ data }: CrimeTotalVolumeCardProps) {
       </CardHeader>
       <CardContent className="space-y-1">
         <p className="text-sm font-medium text-foreground">Total Crime Volume</p>
-        <p className="text-sm text-muted-foreground">Data from PNP-CIRAS</p>
+        <p className="text-sm text-muted-foreground">{data.dataSource}</p>
         {coveredPeriod ? (
           <p className="text-sm text-muted-foreground">Covered Period {coveredPeriod}</p>
         ) : null}

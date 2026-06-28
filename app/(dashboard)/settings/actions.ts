@@ -12,9 +12,13 @@ import { requireSuperAdminSession } from "@/lib/auth/get-session"
 import type { AccessKeyRole } from "@/lib/auth/roles"
 import { getLatestBmiUploadBatch, replaceBmiRecords } from "@/lib/bmi-records"
 import { parseBmiXlsx } from "@/lib/bmi-xlsx-parser"
+import { CRIME_ANALYTICS_CACHE_TAG } from "@/lib/crime-analytics"
+import { getLatestCrimeUploadBatch, replaceCrimeRecords } from "@/lib/crime-records"
+import { parseCrimeXlsx } from "@/lib/crime-xlsx-parser"
 import { HEALTH_ANALYTICS_CACHE_TAG } from "@/lib/health-analytics"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
+const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
 
 export async function getAccessTokensAction() {
   await requireSuperAdminSession()
@@ -122,5 +126,53 @@ export async function uploadBmiRecordsAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang upload. Subukan ulit o bawasan ang laki ng file.")
+  }
+}
+
+export async function uploadCrimeRecordsAction(formData: FormData) {
+  try {
+    const session = await requireSuperAdminSession()
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_CRIME_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 25 MB ang file. Hatiin o i-compress muna.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const parsed = parseCrimeXlsx(buffer)
+    const result = await replaceCrimeRecords({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      records: parsed.records,
+    })
+
+    updateTag(CRIME_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/crime-statistics")
+
+    return {
+      batch: result.batch,
+      insertedCount: result.insertedCount,
+      skippedRows: parsed.skippedRows,
+      analytics: result.analytics,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang crime stats upload. Subukan ulit.")
   }
 }

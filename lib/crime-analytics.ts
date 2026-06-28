@@ -1,7 +1,13 @@
+import { unstable_cache } from "next/cache"
+
+import { fetchStoredCrimeAnalytics } from "@/lib/crime-records"
 import type { CrimeAnalytics } from "@/lib/crime-types"
 import type { CountItem } from "@/lib/personnel-types"
+import type { ParsedCrimeRecord } from "@/lib/crime-xlsx-parser"
 
-const EXPECTED_HEADERS = [
+export const CRIME_SUPABASE_SOURCE_LABEL = "PRO4A Crime Stats (Supabase)"
+
+const CSV_EXPECTED_HEADERS = [
   "ppo",
   "stn",
   "barangay",
@@ -60,7 +66,7 @@ function normalizeHeader(value: string) {
 
 function isCrimeDataSheet(headers: string[]) {
   const normalized = headers.map(normalizeHeader)
-  return EXPECTED_HEADERS.every((header) => normalized.includes(header))
+  return CSV_EXPECTED_HEADERS.every((header) => normalized.includes(header))
 }
 
 function buildCountItems(counts: Map<string, number>, total: number): CountItem[] {
@@ -70,13 +76,14 @@ function buildCountItems(counts: Map<string, number>, total: number): CountItem[
       count,
       percentage: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
     }))
-    .sort((a, b) => b.count - a.count)
+    .sort((left, right) => right.count - left.count)
 }
 
-function emptyAnalytics(fileName = ""): CrimeAnalytics {
+export function emptyCrimeAnalytics(fileName = ""): CrimeAnalytics {
   return {
     lastUpdated: new Date().toISOString(),
     fileName,
+    dataSource: CRIME_SUPABASE_SOURCE_LABEL,
     dataReady: false,
     year: null,
     totalVolume: 0,
@@ -88,7 +95,7 @@ function emptyAnalytics(fileName = ""): CrimeAnalytics {
   }
 }
 
-function parseCommittedDate(value: string): Date | null {
+function parseSlashDate(value: string): Date | null {
   const trimmed = value.trim()
   if (!trimmed) return null
 
@@ -115,6 +122,18 @@ function parseCommittedDate(value: string): Date | null {
   return date
 }
 
+function parseCommittedDateValue(value: string | null | undefined): Date | null {
+  const trimmed = String(value ?? "").trim()
+  if (!trimmed) return null
+
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoMatch) {
+    return new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]))
+  }
+
+  return parseSlashDate(trimmed)
+}
+
 function formatCrimePeriodDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -134,15 +153,56 @@ function buildCoveredPeriod(year: number | null, latestCommitted: Date | null) {
   return { coveredPeriodStart, coveredPeriodEnd }
 }
 
+export function buildCrimeAnalyticsFromRecords(
+  records: ParsedCrimeRecord[],
+  meta: { fileName: string; lastUpdated: string },
+): CrimeAnalytics {
+  const ppoCounts = new Map<string, number>()
+  const crimeCounts = new Map<string, number>()
+  let year: number | null = null
+  let latestCommitted: Date | null = null
+
+  for (const record of records) {
+    ppoCounts.set(record.ppo, (ppoCounts.get(record.ppo) ?? 0) + 1)
+    crimeCounts.set(record.crime, (crimeCounts.get(record.crime) ?? 0) + 1)
+
+    if (record.year != null) {
+      year ??= record.year
+    }
+
+    const committedDate = parseCommittedDateValue(record.dateCommitted)
+    if (committedDate && (!latestCommitted || committedDate > latestCommitted)) {
+      latestCommitted = committedDate
+    }
+  }
+
+  const totalVolume = records.length
+  const { coveredPeriodStart, coveredPeriodEnd } = buildCoveredPeriod(year, latestCommitted)
+
+  return {
+    lastUpdated: meta.lastUpdated,
+    fileName: meta.fileName,
+    dataSource: CRIME_SUPABASE_SOURCE_LABEL,
+    dataReady: true,
+    year,
+    totalVolume,
+    coveredPeriodStart,
+    coveredPeriodEnd,
+    ppoBreakdown: buildCountItems(ppoCounts, totalVolume),
+    crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
+    statusBreakdown: [],
+  }
+}
+
 export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAnalytics {
   const rows = parseCsvRows(csvText)
   if (rows.length < 2) {
-    return emptyAnalytics(fileName)
+    return emptyCrimeAnalytics(fileName)
   }
 
   const headers = rows[0].map(normalizeHeader)
   if (!isCrimeDataSheet(headers)) {
-    return emptyAnalytics(fileName)
+    return emptyCrimeAnalytics(fileName)
   }
 
   const ppoIndex = headers.indexOf("ppo")
@@ -172,7 +232,7 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
       year ??= yearValue
     }
 
-    const committedDate = parseCommittedDate(row[committedIndex] ?? "")
+    const committedDate = parseSlashDate(row[committedIndex] ?? "")
     if (committedDate && (!latestCommitted || committedDate > latestCommitted)) {
       latestCommitted = committedDate
     }
@@ -186,7 +246,7 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
   }
 
   if (totalVolume === 0) {
-    return emptyAnalytics(fileName)
+    return emptyCrimeAnalytics(fileName)
   }
 
   const { coveredPeriodStart, coveredPeriodEnd } = buildCoveredPeriod(year, latestCommitted)
@@ -194,6 +254,7 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
   return {
     lastUpdated: new Date().toISOString(),
     fileName,
+    dataSource: "PNP-CIRAS CSV",
     dataReady: true,
     year,
     totalVolume,
@@ -203,4 +264,26 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
     crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
     statusBreakdown: buildCountItems(statusCounts, totalVolume),
   }
+}
+
+async function loadCrimeAnalytics(): Promise<CrimeAnalytics> {
+  try {
+    const stored = await fetchStoredCrimeAnalytics()
+    if (stored) return stored
+  } catch {
+    // fall through to empty state
+  }
+
+  return emptyCrimeAnalytics()
+}
+
+export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v1"
+
+const getCachedCrimeAnalytics = unstable_cache(loadCrimeAnalytics, [CRIME_ANALYTICS_CACHE_TAG], {
+  revalidate: false,
+  tags: [CRIME_ANALYTICS_CACHE_TAG],
+})
+
+export async function getCrimeAnalytics(): Promise<CrimeAnalytics> {
+  return getCachedCrimeAnalytics()
 }
