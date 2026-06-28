@@ -17,6 +17,15 @@ export const CRIME_PPO_ORDER = [
   "QUEZON PPO",
 ] as const
 
+/** Compact labels for focus crime profile pie legend. */
+export const CRIME_PPO_PIE_LABELS: Record<(typeof CRIME_PPO_ORDER)[number], string> = {
+  "CAVITE PPO": "CPPO",
+  "LAGUNA PPO": "LPPO",
+  "BATANGAS PPO": "BPPO",
+  "RIZAL PPO": "RPPO",
+  "QUEZON PPO": "QPPO",
+}
+
 export type CrimePpoBreakdownItem = {
   csvName: string
   label: string

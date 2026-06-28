@@ -14,7 +14,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Skeleton } from "@/components/ui/skeleton"
 import { buildCountChangeMetrics, type CrimePeriodRange } from "@/lib/crime-comparative"
 import { INDEX_FOCUS_CRIME_ORDER } from "@/lib/crime-config"
-import { buildCrimePpoBreakdownItems } from "@/lib/crime-ppo-config"
+import { buildCrimePpoBreakdownItems, CRIME_PPO_PIE_LABELS } from "@/lib/crime-ppo-config"
 import type { CrimeFocusProfileData } from "@/lib/crime-profile"
 import { cn } from "@/lib/utils"
 
@@ -102,27 +102,35 @@ function CrimeProfileFrame({
     [profile.typeofPlaceBreakdown, isMobile],
   )
 
-  const ppoPieData = useMemo(
-    () =>
-      buildCrimePpoBreakdownItems(profile.ppoDistribution, profile.comparison.periodB)
-        .filter((item) => item.count > 0)
-        .map((item) => ({
-          name: item.shortLabel,
-          fullName: item.label,
-          count: item.count,
-          percentage: item.percentage,
-        })),
-    [profile.ppoDistribution, profile.comparison.periodB],
-  )
+  const ppoPieData = useMemo(() => {
+    const items = buildCrimePpoBreakdownItems(profile.ppoDistribution, profile.comparison.periodB)
+    return items.map((item, index) => {
+      const pieLabel =
+        CRIME_PPO_PIE_LABELS[item.csvName as keyof typeof CRIME_PPO_PIE_LABELS] ?? item.shortLabel
+
+      return {
+        name: pieLabel,
+        fullName: item.label,
+        count: item.count,
+        percentage: item.percentage,
+        colorIndex: index,
+      }
+    })
+  }, [profile.ppoDistribution, profile.comparison.periodB])
+
+  const ppoPieSlices = useMemo(() => ppoPieData.filter((item) => item.count > 0), [ppoPieData])
 
   const caseStatusData = profile.caseStatusBreakdown
 
   const ppoChartConfig = useMemo(
     () =>
       Object.fromEntries(
-        ppoPieData.map((item, index) => [
+        ppoPieData.map((item) => [
           item.name,
-          { label: item.fullName, color: PIE_COLORS[index % PIE_COLORS.length] },
+          {
+            label: item.fullName,
+            color: PIE_COLORS[item.colorIndex % PIE_COLORS.length],
+          },
         ]),
       ),
     [ppoPieData],
@@ -208,38 +216,57 @@ function CrimeProfileFrame({
       </FrameSection>
 
       <FrameSection title="PPO Distribution" className="col-span-2 row-span-3">
-        {ppoPieData.length === 0 ? (
+        {ppoPieSlices.length === 0 ? (
           <EmptyChartNote />
         ) : (
-          <ChartContainer config={ppoChartConfig} className="h-full min-h-0 w-full">
-            <PieChart>
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    hideLabel
-                    nameKey="name"
-                    formatter={(value, _name, item) => {
-                      const payload = item.payload as { fullName?: string; percentage?: number }
-                      return `${payload.fullName ?? item.name}: ${Number(value).toLocaleString()} (${payload.percentage ?? 0}%)`
-                    }}
+          <div className="flex h-full min-h-0 flex-col">
+            <div className="min-h-0 flex-1">
+              <ChartContainer config={ppoChartConfig} className="h-full min-h-0 w-full">
+                <PieChart>
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        hideLabel
+                        nameKey="name"
+                        formatter={(value, _name, item) => {
+                          const payload = item.payload as { fullName?: string; percentage?: number }
+                          return `${payload.fullName ?? item.name}: ${Number(value).toLocaleString()} (${payload.percentage ?? 0}%)`
+                        }}
+                      />
+                    }
                   />
-                }
-              />
-              <Pie
-                data={ppoPieData}
-                dataKey="count"
-                nameKey="name"
-                innerRadius="42%"
-                outerRadius="78%"
-                paddingAngle={2}
-                strokeWidth={0}
-              >
-                {ppoPieData.map((item, index) => (
-                  <Cell key={item.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ChartContainer>
+                  <Pie
+                    data={ppoPieSlices}
+                    dataKey="count"
+                    nameKey="name"
+                    innerRadius="38%"
+                    outerRadius="72%"
+                    paddingAngle={2}
+                    strokeWidth={0}
+                  >
+                    {ppoPieSlices.map((item) => (
+                      <Cell
+                        key={item.name}
+                        fill={PIE_COLORS[item.colorIndex % PIE_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+            </div>
+            <div className="shrink-0 grid grid-cols-3 gap-x-1 gap-y-0.5 border-t border-border/40 pt-1 text-[8px] leading-tight sm:text-[9px]">
+              {ppoPieData.map((item) => (
+                <div key={item.name} className="flex min-w-0 items-center gap-1">
+                  <span
+                    className="size-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: PIE_COLORS[item.colorIndex % PIE_COLORS.length] }}
+                  />
+                  <span className="shrink-0 font-semibold">{item.name}</span>
+                  <span className="truncate text-muted-foreground tabular-nums">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </FrameSection>
 
@@ -286,7 +313,7 @@ function EmptyChartNote() {
 }
 
 const CRIME_PROFILE_PAGE_CLASS =
-  "h-[calc(100dvh-3.5rem)] snap-start snap-always flex flex-col px-0 py-2 sm:py-3"
+  "box-border flex h-[calc(100svh-3.5rem-2rem)] shrink-0 snap-start snap-always flex-col sm:h-[calc(100svh-3.5rem-3rem)]"
 
 function CrimeProfileFullPage({
   focusCrime,
@@ -388,6 +415,10 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
 
   return (
     <div className="space-y-0">
+      <div
+        className="pointer-events-none h-px shrink-0 snap-start snap-always opacity-0"
+        aria-hidden
+      />
       {INDEX_FOCUS_CRIME_ORDER.map((crime, index) => (
         <CrimeProfileFullPage
           key={crime}
