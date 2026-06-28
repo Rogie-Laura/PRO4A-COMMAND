@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { ArrowDownRight, ArrowUpRight, CalendarRange, Minus, RefreshCw } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, Legend, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, LabelList, Legend, XAxis, YAxis } from "recharts"
 
 import { compareCrimePeriodsAction } from "@/app/(dashboard)/ridmd/actions"
 import { Badge } from "@/components/ui/badge"
@@ -32,8 +32,60 @@ type CrimeComparativePanelProps = {
 }
 
 const chartConfig = {
-  periodA: { label: "Previous period", color: "hsl(346 77% 50%)" },
-  periodB: { label: "Period in review", color: "hsl(199 89% 48%)" },
+  periodA: { label: "Previous period", color: "hsl(33 95% 72%)" },
+  periodB: { label: "Period in review", color: "hsl(205 85% 72%)" },
+}
+
+type PpoChartRow = {
+  label: string
+  periodA: number
+  periodB: number
+  changePct: number | null
+  changeDirection: "up" | "down" | "flat" | null
+}
+
+function PeriodBBarChangeLabel(props: {
+  x?: number | string
+  y?: number | string
+  width?: number | string
+  height?: number | string
+  index?: number
+  chartData: PpoChartRow[]
+}) {
+  const x = typeof props.x === "number" ? props.x : Number(props.x ?? 0)
+  const y = typeof props.y === "number" ? props.y : Number(props.y ?? 0)
+  const width = typeof props.width === "number" ? props.width : Number(props.width ?? 0)
+  const height = typeof props.height === "number" ? props.height : Number(props.height ?? 0)
+  const row = props.chartData[props.index ?? -1]
+
+  if (!row || row.periodB <= 0 || height < 24) return null
+
+  const color =
+    row.changeDirection === "up"
+      ? "#dc2626"
+      : row.changeDirection === "down"
+        ? "#059669"
+        : "#737373"
+
+  const arrow =
+    row.changeDirection === "up" ? "↑" : row.changeDirection === "down" ? "↓" : "—"
+  const label =
+    row.changePct != null ? `${arrow} ${Math.abs(row.changePct)}%` : row.changeDirection ? arrow : null
+
+  if (!label) return null
+
+  return (
+    <text
+      x={x + width / 2}
+      y={y + height - 6}
+      textAnchor="middle"
+      fill={color}
+      fontSize={10}
+      fontWeight={700}
+    >
+      {label}
+    </text>
+  )
 }
 
 function PeriodFields({
@@ -227,11 +279,29 @@ export function CrimeComparativePanel({
       percentage: 0,
     }))
 
-    return buildCrimePpoBreakdownItems(mergedBreakdown, result.periodB.totalVolume).map((office) => ({
-      label: office.label,
-      periodA: countsA.get(normalizePpoName(office.csvName)) ?? 0,
-      periodB: countsB.get(normalizePpoName(office.csvName)) ?? 0,
-    }))
+    return buildCrimePpoBreakdownItems(mergedBreakdown, result.periodB.totalVolume).map((office) => {
+      const periodA = countsA.get(normalizePpoName(office.csvName)) ?? 0
+      const periodB = countsB.get(normalizePpoName(office.csvName)) ?? 0
+      let changePct: number | null = null
+      let changeDirection: PpoChartRow["changeDirection"] = null
+
+      if (periodA > 0) {
+        changePct = Math.round(((periodB - periodA) / periodA) * 1000) / 10
+        if (changePct > 0) changeDirection = "up"
+        else if (changePct < 0) changeDirection = "down"
+        else changeDirection = "flat"
+      } else if (periodB > 0) {
+        changeDirection = "up"
+      }
+
+      return {
+        label: office.label,
+        periodA,
+        periodB,
+        changePct,
+        changeDirection,
+      }
+    })
   }, [result])
 
   if (!dataReady) {
@@ -301,7 +371,7 @@ export function CrimeComparativePanel({
           <div className="grid gap-4 lg:grid-cols-2">
             <PeriodFields
               title="Period A · Previous period"
-              accentClassName="border-rose-500/20 bg-rose-500/5"
+              accentClassName="border-orange-500/20 bg-orange-500/5"
               range={periodA}
               onChange={(next) => {
                 setPresetId("custom")
@@ -346,18 +416,18 @@ export function CrimeComparativePanel({
       {result ? (
         <>
           <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr]">
-            <Card className="gap-0 overflow-hidden border-rose-500/20 bg-rose-500/5 py-0">
+            <Card className="gap-0 overflow-hidden border-orange-500/20 bg-orange-500/5 py-0">
               <CardHeader className="border-b border-border/40 pb-3">
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle className="text-sm">Period A</CardTitle>
-                  <Badge variant="outline" className="border-rose-500/30 text-rose-700 dark:text-rose-300">
+                  <Badge variant="outline" className="border-orange-500/30 text-orange-700 dark:text-orange-300">
                     Previous period
                   </Badge>
                 </div>
                 <CardDescription className="text-xs">{result.periodA.label}</CardDescription>
               </CardHeader>
               <CardContent className="p-4">
-                <p className="text-3xl font-bold tabular-nums text-rose-700 dark:text-rose-300">
+                <p className="text-3xl font-bold tabular-nums text-orange-700 dark:text-orange-300">
                   {result.periodA.totalVolume.toLocaleString()}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">index crimes</p>
@@ -389,9 +459,13 @@ export function CrimeComparativePanel({
             <CardHeader className="border-b pb-4">
               <CardTitle className="text-base">Index Crime by PPO</CardTitle>
               <CardDescription>
-                <span className="text-rose-600 dark:text-rose-400">Rose = Previous period (A)</span>
+                <span className="text-orange-600 dark:text-orange-400">Light orange = Previous period (A)</span>
                 {" · "}
-                <span className="text-sky-600 dark:text-sky-400">Sky = Period in review (B)</span>
+                <span className="text-sky-600 dark:text-sky-400">Light blue = Period in review (B)</span>
+                {" · "}
+                <span className="text-emerald-600 dark:text-emerald-400">green ↓ bumaba</span>
+                {" · "}
+                <span className="text-red-600 dark:text-red-400">red ↑ tumaas</span>
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4">
@@ -414,8 +488,23 @@ export function CrimeComparativePanel({
                     <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar dataKey="periodA" name="Previous period" fill="var(--color-periodA)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="periodB" name="Period in review" fill="var(--color-periodB)" radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey="periodA"
+                      name="Previous period"
+                      fill="var(--color-periodA)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="periodB"
+                      name="Period in review"
+                      fill="var(--color-periodB)"
+                      radius={[4, 4, 0, 0]}
+                    >
+                      <LabelList
+                        dataKey="periodB"
+                        content={(props) => <PeriodBBarChangeLabel {...props} chartData={ppoChartData} />}
+                      />
+                    </Bar>
                   </BarChart>
                 </ChartContainer>
               )}
