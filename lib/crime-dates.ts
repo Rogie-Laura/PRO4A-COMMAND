@@ -73,6 +73,23 @@ export function getEffectiveCrimeDate(
   return reported ? reported.slice(0, 10) : null
 }
 
+export function parseCrimeDisplayDate(value: string | null | undefined): Date | null {
+  const trimmed = String(value ?? "").trim()
+  if (!trimmed) return null
+
+  const iso = parseCrimeRecordDate(trimmed)
+  if (iso) return iso
+
+  const parsed = Date.parse(trimmed)
+  if (Number.isNaN(parsed)) return null
+
+  return startOfDay(new Date(parsed))
+}
+
+export function isValidIsoDateRange(startIso: string, endIso: string) {
+  return Boolean(startIso && endIso && startIso <= endIso)
+}
+
 export function isIsoDateInRange(isoDate: string, startIso: string, endIso: string) {
   return isoDate >= startIso && isoDate <= endIso
 }

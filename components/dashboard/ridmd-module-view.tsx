@@ -10,6 +10,8 @@ export function RidmdModuleView({ data }: RidmdModuleViewProps) {
     <CrimeComparativePanel
       dataReady={data.dataReady}
       monthlyBreakdown={data.indexCrime.monthlyBreakdown}
+      coveredPeriodStart={data.indexCrime.coveredPeriodStart}
+      coveredPeriodEnd={data.indexCrime.coveredPeriodEnd}
     />
   )
 }

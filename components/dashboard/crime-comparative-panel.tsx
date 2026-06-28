@@ -14,12 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   buildPresetRanges,
   COMPARATIVE_PRESETS,
-  getDataDateBounds,
+  getCrimeDataBounds,
   type ComparativePresetId,
   type CrimeComparativeResult,
   type CrimePeriodRange,
 } from "@/lib/crime-comparative"
-import { formatCrimeDateRangeLabel } from "@/lib/crime-dates"
+import { formatCrimeDateRangeLabel, isValidIsoDateRange } from "@/lib/crime-dates"
 import { buildCrimePpoBreakdownItems } from "@/lib/crime-ppo-config"
 import type { CrimeMonthlyCount } from "@/lib/crime-types"
 import { cn } from "@/lib/utils"
@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils"
 type CrimeComparativePanelProps = {
   dataReady: boolean
   monthlyBreakdown: CrimeMonthlyCount[]
+  coveredPeriodStart: string | null
+  coveredPeriodEnd: string | null
 }
 
 const chartConfig = {
@@ -140,8 +142,21 @@ function ChangeBadge({ result }: { result: CrimeComparativeResult }) {
   )
 }
 
-export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComparativePanelProps) {
-  const bounds = useMemo(() => getDataDateBounds(monthlyBreakdown), [monthlyBreakdown])
+export function CrimeComparativePanel({
+  dataReady,
+  monthlyBreakdown,
+  coveredPeriodStart,
+  coveredPeriodEnd,
+}: CrimeComparativePanelProps) {
+  const bounds = useMemo(
+    () =>
+      getCrimeDataBounds({
+        monthlyBreakdown,
+        coveredPeriodStart,
+        coveredPeriodEnd,
+      }),
+    [monthlyBreakdown, coveredPeriodStart, coveredPeriodEnd],
+  )
   const defaultPreset: ComparativePresetId = "month-vs-last-month"
   const initialRanges = useMemo(
     () => buildPresetRanges(defaultPreset, bounds),
@@ -163,6 +178,11 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
   }
 
   function runCompare(nextA = periodA, nextB = periodB) {
+    if (!isValidIsoDateRange(nextA.start, nextA.end) || !isValidIsoDateRange(nextB.start, nextB.end)) {
+      setError("Invalid date range. Siguraduhing nasa loob ng available data ang mga petsa.")
+      return
+    }
+
     setError(null)
     startTransition(async () => {
       try {
@@ -180,10 +200,15 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
   }
 
   useEffect(() => {
-    if (!dataReady) return
-    runCompare(initialRanges.periodA, initialRanges.periodB)
+    if (!dataReady || !bounds) return
+
+    const ranges = buildPresetRanges(defaultPreset, bounds)
+    setPresetId(defaultPreset)
+    setPeriodA(ranges.periodA)
+    setPeriodB(ranges.periodB)
+    runCompare(ranges.periodA, ranges.periodB)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataReady])
+  }, [dataReady, bounds])
 
   const ppoChartData = useMemo(() => {
     if (!result) return []
@@ -230,7 +255,14 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
                 Comparative Date Range
               </CardTitle>
               <CardDescription>
-                Pili ng preset o custom range · index crime lang · based on date committed (or reported)
+                Pili ng preset o custom range · index crime lang · based on date committed (or
+                reported)
+                {bounds ? (
+                  <>
+                    {" · "}
+                    Latest data as of <span className="font-medium text-foreground">{bounds.asOfLabel}</span>
+                  </>
+                ) : null}
               </CardDescription>
             </div>
             <Button type="button" onClick={() => runCompare()} disabled={isPending} className="shrink-0">
@@ -295,7 +327,7 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
 
           {bounds ? (
             <p className="text-xs text-muted-foreground">
-              Available data: {bounds.min} to {bounds.max}
+              Available data: {bounds.min} to {bounds.max} (as of {bounds.asOfLabel})
             </p>
           ) : null}
 

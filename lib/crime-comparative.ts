@@ -1,6 +1,8 @@
 import {
   endOfMonthFromMonthKey,
+  formatCrimeDateLabel,
   formatCrimeDateRangeLabel,
+  parseCrimeDisplayDate,
   startOfDay,
   toIsoDateString,
 } from "@/lib/crime-dates"
@@ -44,8 +46,8 @@ export type ComparativePreset = {
 export const COMPARATIVE_PRESETS: ComparativePreset[] = [
   {
     id: "month-vs-last-month",
-    label: "This month vs last month",
-    description: "Buong buwan ngayon kumpara sa nakaraang buwan",
+    label: "Latest month vs previous month",
+    description: "Huling buwan na may data vs nakaraang buwan",
   },
   {
     id: "last-30-vs-prev-30",
@@ -73,15 +75,19 @@ function clampRange(start: Date, end: Date, bounds?: { min: string; max: string 
   let nextStart = startOfDay(start)
   let nextEnd = startOfDay(end)
 
-  if (nextStart > nextEnd) {
-    ;[nextStart, nextEnd] = [nextEnd, nextStart]
-  }
-
   if (bounds) {
     const minDate = startOfDay(new Date(`${bounds.min}T00:00:00`))
     const maxDate = startOfDay(new Date(`${bounds.max}T00:00:00`))
     if (nextStart < minDate) nextStart = minDate
     if (nextEnd > maxDate) nextEnd = maxDate
+    if (nextStart > maxDate) nextStart = maxDate
+    if (nextEnd < minDate) nextEnd = minDate
+  }
+
+  if (nextStart > nextEnd) {
+    const anchor = nextEnd
+    nextStart = anchor
+    nextEnd = anchor
   }
 
   return {
@@ -100,25 +106,57 @@ function getQuarterEnd(date: Date) {
   return new Date(date.getFullYear(), quarter * 3 + 3, 0)
 }
 
-export function getDataDateBounds(monthlyBreakdown: { monthKey: string }[]) {
-  if (monthlyBreakdown.length === 0) return null
+export type CrimeDataBounds = {
+  min: string
+  max: string
+  asOfLabel: string
+  referenceDate: Date
+}
 
-  const first = monthlyBreakdown[0]?.monthKey
-  const last = monthlyBreakdown[monthlyBreakdown.length - 1]?.monthKey
-  if (!first || !last) return null
+export function getCrimeDataBounds(input: {
+  monthlyBreakdown: { monthKey: string }[]
+  coveredPeriodStart: string | null
+  coveredPeriodEnd: string | null
+}): CrimeDataBounds | null {
+  const firstMonth = input.monthlyBreakdown[0]?.monthKey
+  const lastMonth = input.monthlyBreakdown[input.monthlyBreakdown.length - 1]?.monthKey
+
+  const minFromCover = parseCrimeDisplayDate(input.coveredPeriodStart)
+  const maxFromCover = parseCrimeDisplayDate(input.coveredPeriodEnd)
+
+  const min =
+    (minFromCover ? toIsoDateString(minFromCover) : null) ??
+    (firstMonth ? `${firstMonth}-01` : null)
+  const max =
+    (maxFromCover ? toIsoDateString(maxFromCover) : null) ??
+    (lastMonth ? endOfMonthFromMonthKey(lastMonth) : null)
+
+  if (!min || !max || min > max) return null
+
+  const referenceDate = maxFromCover ?? startOfDay(new Date(`${max}T00:00:00`))
 
   return {
-    min: `${first}-01`,
-    max: endOfMonthFromMonthKey(last),
+    min,
+    max,
+    asOfLabel: formatCrimeDateLabel(max),
+    referenceDate,
   }
+}
+
+/** @deprecated Use getCrimeDataBounds for actual latest-record dates. */
+export function getDataDateBounds(monthlyBreakdown: { monthKey: string }[]) {
+  return getCrimeDataBounds({
+    monthlyBreakdown,
+    coveredPeriodStart: null,
+    coveredPeriodEnd: null,
+  })
 }
 
 export function buildPresetRanges(
   presetId: ComparativePresetId,
-  bounds?: { min: string; max: string } | null,
-  referenceDate = new Date(),
+  bounds?: CrimeDataBounds | null,
 ): { periodA: CrimePeriodRange; periodB: CrimePeriodRange } {
-  const today = startOfDay(referenceDate)
+  const today = startOfDay(bounds?.referenceDate ?? new Date())
 
   if (presetId === "month-vs-last-month") {
     const reviewStart = new Date(today.getFullYear(), today.getMonth(), 1)
