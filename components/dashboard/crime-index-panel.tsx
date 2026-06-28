@@ -23,10 +23,14 @@ export function CrimeIndexPanel({ data }: CrimeIndexPanelProps) {
         <Card className="gap-0 py-0">
           <CardHeader className="border-b pb-4">
             <CardTitle className="text-base">Index Crime by PPO</CardTitle>
-            <CardDescription>Distribution per provincial office</CardDescription>
+            <CardDescription>Click an office to view unit distribution</CardDescription>
           </CardHeader>
           <CardContent className="p-4">
-            <CrimePpoDistribution items={stats.ppoBreakdown} total={stats.totalVolume} />
+            <CrimePpoDistribution
+              items={stats.ppoBreakdown}
+              unitBreakdownByPpo={stats.unitBreakdownByPpo}
+              total={stats.totalVolume}
+            />
           </CardContent>
         </Card>
       </div>

@@ -102,7 +102,9 @@ function hasCurrentAnalyticsShape(analytics: unknown): analytics is CrimeAnalyti
       value.indexCrime &&
       value.nonIndexCrime &&
       Array.isArray(value.indexCrime.ppoBreakdown) &&
-      Array.isArray(value.nonIndexCrime.ppoBreakdown),
+      Array.isArray(value.nonIndexCrime.ppoBreakdown) &&
+      value.indexCrime.unitBreakdownByPpo &&
+      typeof value.indexCrime.unitBreakdownByPpo === "object",
   )
 }
 
@@ -115,8 +117,14 @@ function normalizeStoredAnalytics(
     fileName: analytics.fileName || batch.filename,
     lastUpdated: analytics.lastUpdated || batch.created_at,
     categoryBreakdown: analytics.categoryBreakdown ?? [],
-    indexCrime: analytics.indexCrime,
-    nonIndexCrime: analytics.nonIndexCrime,
+    indexCrime: {
+      ...analytics.indexCrime,
+      unitBreakdownByPpo: analytics.indexCrime.unitBreakdownByPpo ?? {},
+    },
+    nonIndexCrime: {
+      ...analytics.nonIndexCrime,
+      unitBreakdownByPpo: analytics.nonIndexCrime.unitBreakdownByPpo ?? {},
+    },
   }
 }
 

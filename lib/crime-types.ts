@@ -11,6 +11,7 @@ export type CrimeCategoryStats = {
   coveredPeriodStart: string | null
   coveredPeriodEnd: string | null
   ppoBreakdown: CountItem[]
+  unitBreakdownByPpo: Record<string, CountItem[]>
   crimeBreakdown: CountItem[]
   monthlyBreakdown: CrimeMonthlyCount[]
 }

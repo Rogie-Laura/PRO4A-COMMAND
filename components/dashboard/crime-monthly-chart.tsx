@@ -1,16 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import {
-  Bar,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  LabelList,
-  Line,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { Bar, BarChart, Cell, LabelList, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -34,10 +25,6 @@ const chartConfig = {
   count: {
     label: "Index incidents",
     color: "hsl(346 77% 50%)",
-  },
-  trend: {
-    label: "Trend",
-    color: "hsl(35 92% 50%)",
   },
 }
 
@@ -151,8 +138,7 @@ export function CrimeMonthlyChart({ data }: CrimeMonthlyChartProps) {
       </CardHeader>
       <CardContent className="p-4">
         <ChartContainer config={chartConfig} className="aspect-auto h-[320px] w-full">
-          <ComposedChart data={chartData} margin={{ top: 28, right: 12, left: 0, bottom: 8 }}>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+          <BarChart data={chartData} margin={{ top: 28, right: 12, left: 0, bottom: 8 }}>
             <XAxis
               dataKey="label"
               tickLine={false}
@@ -165,10 +151,9 @@ export function CrimeMonthlyChart({ data }: CrimeMonthlyChartProps) {
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  formatter={(value, name) => {
-                    if (name === "trend") return null
-                    return typeof value === "number" ? value.toLocaleString() : String(value)
-                  }}
+                  formatter={(value) =>
+                    typeof value === "number" ? value.toLocaleString() : String(value)
+                  }
                 />
               }
               cursor={{ fill: "color-mix(in oklch, var(--muted) 45%, transparent)" }}
@@ -186,17 +171,7 @@ export function CrimeMonthlyChart({ data }: CrimeMonthlyChartProps) {
                 }
               />
             </Bar>
-            <Line
-              type="monotone"
-              dataKey="count"
-              name="trend"
-              stroke="var(--color-trend)"
-              strokeWidth={2.5}
-              dot={{ r: 3, fill: "var(--color-trend)", strokeWidth: 0 }}
-              activeDot={{ r: 5 }}
-              legendType="none"
-            />
-          </ComposedChart>
+          </BarChart>
         </ChartContainer>
       </CardContent>
     </Card>

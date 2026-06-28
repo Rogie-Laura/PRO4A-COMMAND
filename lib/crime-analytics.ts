@@ -24,6 +24,7 @@ function emptyCategoryStats(): CrimeCategoryStats {
     coveredPeriodStart: null,
     coveredPeriodEnd: null,
     ppoBreakdown: [],
+    unitBreakdownByPpo: {},
     crimeBreakdown: [],
     monthlyBreakdown: [],
   }
@@ -120,6 +121,27 @@ function buildMonthlyBreakdown(
     }))
 }
 
+function buildUnitBreakdownByPpo(records: ParsedCrimeRecord[]): Record<string, CountItem[]> {
+  const unitCountsByPpo = new Map<string, Map<string, number>>()
+
+  for (const record of records) {
+    const ppoKey = record.ppo.trim().toUpperCase()
+    const station = record.stn.trim() || "Unknown"
+    const stations = unitCountsByPpo.get(ppoKey) ?? new Map<string, number>()
+    stations.set(station, (stations.get(station) ?? 0) + 1)
+    unitCountsByPpo.set(ppoKey, stations)
+  }
+
+  const unitBreakdownByPpo: Record<string, CountItem[]> = {}
+
+  for (const [ppoKey, stationCounts] of unitCountsByPpo) {
+    const ppoTotal = [...stationCounts.values()].reduce((sum, count) => sum + count, 0)
+    unitBreakdownByPpo[ppoKey] = buildCountItems(stationCounts, ppoTotal)
+  }
+
+  return unitBreakdownByPpo
+}
+
 function buildCategoryStats(records: ParsedCrimeRecord[], year: number | null): CrimeCategoryStats {
   const ppoCounts = new Map<string, number>()
   const crimeCounts = new Map<string, number>()
@@ -146,6 +168,7 @@ function buildCategoryStats(records: ParsedCrimeRecord[], year: number | null): 
     coveredPeriodStart,
     coveredPeriodEnd,
     ppoBreakdown: buildCountItems(ppoCounts, totalVolume),
+    unitBreakdownByPpo: buildUnitBreakdownByPpo(records),
     crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
     monthlyBreakdown: buildMonthlyBreakdown(records),
   }
@@ -194,7 +217,7 @@ async function loadCrimeAnalytics(): Promise<CrimeAnalytics> {
   return emptyCrimeAnalytics()
 }
 
-export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v4"
+export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v5"
 
 const getCachedCrimeAnalytics = unstable_cache(loadCrimeAnalytics, [CRIME_ANALYTICS_CACHE_TAG], {
   revalidate: false,

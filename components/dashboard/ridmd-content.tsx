@@ -46,14 +46,7 @@ export async function RidmdContent() {
           </CardContent>
         </Card>
       ) : (
-        <>
-          <p className="text-sm text-muted-foreground">
-            Source file: <span className="font-medium text-foreground">{data.fileName}</span>
-            {data.year ? ` · Year ${data.year}` : ""}
-            {" · Index crime only"}
-          </p>
-          <RidmdModuleView data={data} />
-        </>
+        <RidmdModuleView data={data} />
       )}
     </div>
   )
