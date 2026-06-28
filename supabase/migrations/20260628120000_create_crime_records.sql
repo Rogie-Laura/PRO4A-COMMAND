@@ -19,12 +19,14 @@ CREATE TABLE IF NOT EXISTS public.crime_records (
   date_committed date,
   time_committed text NOT NULL DEFAULT '',
   crime text NOT NULL DEFAULT '',
+  category text NOT NULL DEFAULT '',
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS crime_records_batch_id_idx ON public.crime_records (batch_id);
 CREATE INDEX IF NOT EXISTS crime_records_ppo_idx ON public.crime_records (ppo);
 CREATE INDEX IF NOT EXISTS crime_records_crime_idx ON public.crime_records (crime);
+CREATE INDEX IF NOT EXISTS crime_records_category_idx ON public.crime_records (category);
 
 ALTER TABLE public.crime_upload_batches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crime_records ENABLE ROW LEVEL SECURITY;

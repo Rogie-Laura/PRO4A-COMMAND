@@ -53,6 +53,7 @@ function toInsertRow(batchId: string, record: ParsedCrimeRecord) {
     date_committed: record.dateCommitted,
     time_committed: record.timeCommitted,
     crime: record.crime,
+    category: record.category,
   }
 }
 
@@ -98,6 +99,7 @@ export async function fetchStoredCrimeAnalytics(): Promise<CrimeAnalytics | null
     ...analytics,
     fileName: analytics.fileName || data.filename,
     lastUpdated: analytics.lastUpdated || data.created_at,
+    categoryBreakdown: analytics.categoryBreakdown ?? [],
   }
 }
 

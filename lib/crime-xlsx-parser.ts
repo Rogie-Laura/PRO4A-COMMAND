@@ -10,6 +10,7 @@ export const CRIME_UPLOAD_HEADERS = [
   "datecommitted",
   "timecommitted",
   "crime",
+  "category",
 ] as const
 
 export type ParsedCrimeRecord = {
@@ -22,6 +23,7 @@ export type ParsedCrimeRecord = {
   dateCommitted: string | null
   timeCommitted: string
   crime: string
+  category: string
 }
 
 export type ParsedCrimeWorkbook = {
@@ -116,7 +118,7 @@ function validateHeaders(headers: string[]) {
 
   if (missing.length > 0) {
     throw new Error(
-      `Invalid crime Excel format. Missing columns: ${missing.join(", ")}. Kailangan: ppo, stn, barangay, YEAR, typeofPlace, dateReported, dateCommitted, timeCommitted, crime.`,
+      `Invalid crime Excel format. Missing columns: ${missing.join(", ")}. Kailangan: ppo, stn, barangay, YEAR, typeofPlace, dateReported, dateCommitted, timeCommitted, crime, category.`,
     )
   }
 }
@@ -171,6 +173,7 @@ export function parseCrimeXlsx(buffer: ArrayBuffer | Buffer): ParsedCrimeWorkboo
       dateCommitted: parseExcelDate(readCell(row, columnIndex.datecommitted)),
       timeCommitted: parseTimeValue(readCell(row, columnIndex.timecommitted)),
       crime,
+      category: String(readCell(row, columnIndex.category) ?? "").trim(),
     })
   }
 

@@ -11,6 +11,7 @@ export type CrimeAnalytics = {
   coveredPeriodEnd: string | null
   ppoBreakdown: CountItem[]
   crimeBreakdown: CountItem[]
+  categoryBreakdown: CountItem[]
   statusBreakdown: CountItem[]
 }
 

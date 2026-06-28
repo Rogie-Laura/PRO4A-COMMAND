@@ -87,7 +87,7 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
         </CardTitle>
         <CardDescription>
           Super Admin lang. PNP-CIRAS Excel export — kukunin lang ang ppo, stn, barangay, YEAR,
-          typeofPlace, dateReported, dateCommitted, timeCommitted, at crime. Maaaring tumagal ng
+          typeofPlace, dateReported, dateCommitted, timeCommitted, crime, at category. Maaaring tumagal ng
           ilang minuto ang malaking file (~21k rows).
         </CardDescription>
       </CardHeader>

@@ -91,6 +91,7 @@ export function emptyCrimeAnalytics(fileName = ""): CrimeAnalytics {
     coveredPeriodEnd: null,
     ppoBreakdown: [],
     crimeBreakdown: [],
+    categoryBreakdown: [],
     statusBreakdown: [],
   }
 }
@@ -159,12 +160,17 @@ export function buildCrimeAnalyticsFromRecords(
 ): CrimeAnalytics {
   const ppoCounts = new Map<string, number>()
   const crimeCounts = new Map<string, number>()
+  const categoryCounts = new Map<string, number>()
   let year: number | null = null
   let latestCommitted: Date | null = null
 
   for (const record of records) {
     ppoCounts.set(record.ppo, (ppoCounts.get(record.ppo) ?? 0) + 1)
     crimeCounts.set(record.crime, (crimeCounts.get(record.crime) ?? 0) + 1)
+
+    if (record.category) {
+      categoryCounts.set(record.category, (categoryCounts.get(record.category) ?? 0) + 1)
+    }
 
     if (record.year != null) {
       year ??= record.year
@@ -190,6 +196,7 @@ export function buildCrimeAnalyticsFromRecords(
     coveredPeriodEnd,
     ppoBreakdown: buildCountItems(ppoCounts, totalVolume),
     crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
+    categoryBreakdown: buildCountItems(categoryCounts, totalVolume),
     statusBreakdown: [],
   }
 }
@@ -209,10 +216,12 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
   const yearIndex = headers.indexOf("year")
   const committedIndex = headers.indexOf("datecommitted")
   const crimeIndex = headers.indexOf("crime")
+  const categoryIndex = headers.indexOf("category")
   const statusIndex = headers.indexOf("casestatus")
 
   const ppoCounts = new Map<string, number>()
   const crimeCounts = new Map<string, number>()
+  const categoryCounts = new Map<string, number>()
   const statusCounts = new Map<string, number>()
   let year: number | null = null
   let latestCommitted: Date | null = null
@@ -221,6 +230,7 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
   for (const row of rows.slice(1)) {
     const ppo = row[ppoIndex]?.trim()
     const crime = row[crimeIndex]?.trim()
+    const category = row[categoryIndex]?.trim()
     const status = row[statusIndex]?.trim()
 
     if (!ppo || !crime) continue
@@ -239,6 +249,10 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
 
     ppoCounts.set(ppo, (ppoCounts.get(ppo) ?? 0) + 1)
     crimeCounts.set(crime, (crimeCounts.get(crime) ?? 0) + 1)
+
+    if (category) {
+      categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1)
+    }
 
     if (status) {
       statusCounts.set(status, (statusCounts.get(status) ?? 0) + 1)
@@ -262,6 +276,7 @@ export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAna
     coveredPeriodEnd,
     ppoBreakdown: buildCountItems(ppoCounts, totalVolume),
     crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
+    categoryBreakdown: buildCountItems(categoryCounts, totalVolume),
     statusBreakdown: buildCountItems(statusCounts, totalVolume),
   }
 }
@@ -277,7 +292,7 @@ async function loadCrimeAnalytics(): Promise<CrimeAnalytics> {
   return emptyCrimeAnalytics()
 }
 
-export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v1"
+export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v2"
 
 const getCachedCrimeAnalytics = unstable_cache(loadCrimeAnalytics, [CRIME_ANALYTICS_CACHE_TAG], {
   revalidate: false,
