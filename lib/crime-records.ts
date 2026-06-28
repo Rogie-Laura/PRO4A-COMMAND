@@ -284,16 +284,12 @@ async function fetchIndexCrimeRowsForRangeQuery(
       .eq("batch_id", batchId)
 
     if (mode === "committed") {
-      query = query
-        .gte("date_committed", startIso)
-        .lte("date_committed", endIso)
-        .not("date_committed", "eq", "")
+      query = query.gte("date_committed", startIso).lte("date_committed", endIso)
     } else {
       query = query
         .is("date_committed", null)
         .gte("date_reported", startIso)
         .lte("date_reported", endIso)
-        .not("date_reported", "eq", "")
     }
 
     const { data, error } = await query.order("id", { ascending: true }).range(from, from + FETCH_PAGE_SIZE - 1)
