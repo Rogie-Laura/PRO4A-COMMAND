@@ -14,7 +14,7 @@ import {
 } from "@/components/dashboard/crime-comparative-chart-utils"
 import { CrimeComparativePpoSheet } from "@/components/dashboard/crime-comparative-ppo-sheet"
 import { ComparativeFocusCrimeChart } from "@/components/dashboard/crime-comparative-focus-chart"
-import { CrimeProfileSlide } from "@/components/dashboard/crime-profile-slide"
+import { CrimeProfilePages } from "@/components/dashboard/crime-profile-slide"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,7 +31,6 @@ import {
   type CrimePeriodRange,
 } from "@/lib/crime-comparative"
 import { formatCrimeDateRangeLabel, isValidIsoDateRange } from "@/lib/crime-dates"
-import { INDEX_FOCUS_CRIME_ORDER } from "@/lib/crime-config"
 import { buildCrimePpoBreakdownItems, type CrimePpoBreakdownItem } from "@/lib/crime-ppo-config"
 import type { CrimeMonthlyCount } from "@/lib/crime-types"
 import { cn } from "@/lib/utils"
@@ -607,17 +606,7 @@ export function CrimeComparativePanel({
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
-            {INDEX_FOCUS_CRIME_ORDER.map((crime) => (
-              <CrimeProfileSlide
-                key={crime}
-                focusCrime={crime}
-                periodA={periodA}
-                periodB={periodB}
-                isMobile={isMobile}
-              />
-            ))}
-          </div>
+          <CrimeProfilePages periodA={periodA} periodB={periodB} isMobile={isMobile} />
 
           <CrimeComparativePpoSheet
             office={selectedOffice}
