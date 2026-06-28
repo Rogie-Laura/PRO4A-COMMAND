@@ -19,6 +19,8 @@ export type NavLink = {
   title: string
   href: string
   icon: LucideIcon
+  /** Shown in sidebar tooltip when collapsed. */
+  description?: string
   /** Additional routes that should highlight this nav item as active. */
   activePaths?: string[]
 }
@@ -44,6 +46,7 @@ export const MAIN_NAV: NavLink[] = [
     title: "RIDMD",
     href: "/ridmd",
     icon: Shield,
+    description: "Regional Investigation and Detection Management Division",
     activePaths: ["/ridmd", "/crime-statistics", "/comparative-crime-stats"],
   },
   {

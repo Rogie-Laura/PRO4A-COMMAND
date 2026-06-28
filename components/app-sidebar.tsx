@@ -45,7 +45,13 @@ function NavLinkItem({
     <SidebarMenuItem>
       <SidebarMenuButton
         isActive={isNavLinkActive(pathname, link)}
-        tooltip={showNavTooltip ? link.title : undefined}
+        tooltip={
+          showNavTooltip
+            ? link.description
+              ? `${link.title} — ${link.description}`
+              : link.title
+            : undefined
+        }
         render={(props) => (
           <Link
             {...props}

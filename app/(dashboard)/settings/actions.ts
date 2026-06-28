@@ -160,6 +160,7 @@ export async function uploadCrimeRecordsAction(formData: FormData) {
 
     updateTag(CRIME_ANALYTICS_CACHE_TAG)
     revalidatePath("/settings")
+    revalidatePath("/ridmd")
     revalidatePath("/crime-statistics")
 
     return {

@@ -1,6 +1,16 @@
 "use client"
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { useMemo } from "react"
+import {
+  Bar,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  LabelList,
+  Line,
+  XAxis,
+  YAxis,
+} from "recharts"
 
 import {
   Card,
@@ -18,32 +28,107 @@ import type { CrimeMonthlyCount } from "@/lib/crime-types"
 
 type CrimeMonthlyChartProps = {
   data: CrimeMonthlyCount[]
-  variant: "index" | "non-index"
 }
 
-const chartConfigs = {
-  index: {
-    count: {
-      label: "Index incidents",
-      color: "hsl(346 77% 50%)",
-    },
+const chartConfig = {
+  count: {
+    label: "Index incidents",
+    color: "hsl(346 77% 50%)",
   },
-  "non-index": {
-    count: {
-      label: "Non-index incidents",
-      color: "hsl(199 89% 48%)",
-    },
+  trend: {
+    label: "Trend",
+    color: "hsl(35 92% 50%)",
   },
-} as const
+}
 
-export function CrimeMonthlyChart({ data, variant }: CrimeMonthlyChartProps) {
-  const chartConfig = chartConfigs[variant]
+const BAR_COLORS = [
+  "hsl(346 77% 50%)",
+  "hsl(347 70% 58%)",
+  "hsl(15 85% 55%)",
+  "hsl(35 90% 52%)",
+  "hsl(280 65% 55%)",
+  "hsl(199 89% 48%)",
+  "hsl(160 60% 42%)",
+  "hsl(220 70% 55%)",
+  "hsl(330 75% 52%)",
+  "hsl(45 85% 48%)",
+  "hsl(190 75% 45%)",
+  "hsl(260 60% 58%)",
+]
 
-  if (data.length === 0) {
+type ChartRow = CrimeMonthlyCount & {
+  barColor: string
+  changePct: number | null
+  changeDirection: "up" | "down" | "flat" | null
+}
+
+function buildChartRows(data: CrimeMonthlyCount[]): ChartRow[] {
+  return data.map((item, index) => {
+    const previous = index > 0 ? data[index - 1]?.count : null
+    let changePct: number | null = null
+    let changeDirection: ChartRow["changeDirection"] = null
+
+    if (previous != null && previous > 0) {
+      changePct = Math.round(((item.count - previous) / previous) * 1000) / 10
+      if (changePct > 0) changeDirection = "up"
+      else if (changePct < 0) changeDirection = "down"
+      else changeDirection = "flat"
+    }
+
+    return {
+      ...item,
+      barColor: BAR_COLORS[index % BAR_COLORS.length],
+      changePct,
+      changeDirection,
+    }
+  })
+}
+
+function MonthTick(props: {
+  x?: string | number
+  y?: string | number
+  payload?: { value?: string }
+  chartData: ChartRow[]
+}) {
+  const x = typeof props.x === "number" ? props.x : Number(props.x ?? 0)
+  const y = typeof props.y === "number" ? props.y : Number(props.y ?? 0)
+  const row = props.chartData.find((item) => item.label === props.payload?.value)
+  if (!row) return null
+
+  const changeColor =
+    row.changeDirection === "up"
+      ? "#dc2626"
+      : row.changeDirection === "down"
+        ? "#059669"
+        : "#737373"
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text x={0} y={0} dy={12} textAnchor="middle" fill="currentColor" fontSize={12}>
+        {row.label}
+      </text>
+      {row.changePct != null ? (
+        <text x={0} y={0} dy={28} textAnchor="middle" fill={changeColor} fontSize={11} fontWeight={600}>
+          {row.changeDirection === "up" ? "↑" : row.changeDirection === "down" ? "↓" : "—"}{" "}
+          {Math.abs(row.changePct)}%
+        </text>
+      ) : (
+        <text x={0} y={0} dy={28} textAnchor="middle" fill="#737373" fontSize={11}>
+          —
+        </text>
+      )}
+    </g>
+  )
+}
+
+export function CrimeMonthlyChart({ data }: CrimeMonthlyChartProps) {
+  const chartData = useMemo(() => buildChartRows(data), [data])
+
+  if (chartData.length === 0) {
     return (
       <Card className="gap-0 py-0">
         <CardHeader className="border-b pb-4">
-          <CardTitle className="text-base">Monthly Crime Distribution</CardTitle>
+          <CardTitle className="text-base">Monthly Index Crime Distribution</CardTitle>
           <CardDescription>Based on date committed (or date reported)</CardDescription>
         </CardHeader>
         <CardContent className="p-6 text-sm text-muted-foreground">
@@ -56,37 +141,62 @@ export function CrimeMonthlyChart({ data, variant }: CrimeMonthlyChartProps) {
   return (
     <Card className="gap-0 py-0">
       <CardHeader className="border-b pb-4">
-        <CardTitle className="text-base">Monthly Crime Distribution</CardTitle>
-        <CardDescription>Based on date committed (or date reported)</CardDescription>
+        <CardTitle className="text-base">Monthly Index Crime Distribution</CardTitle>
+        <CardDescription>
+          Month-over-month change:{" "}
+          <span className="text-emerald-600 dark:text-emerald-400">green ↓ bumaba</span>
+          {" · "}
+          <span className="text-red-600 dark:text-red-400">red ↑ tumaas</span>
+        </CardDescription>
       </CardHeader>
       <CardContent className="p-4">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[280px] w-full">
-          <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <ChartContainer config={chartConfig} className="aspect-auto h-[320px] w-full">
+          <ComposedChart data={chartData} margin={{ top: 28, right: 12, left: 0, bottom: 8 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
             <XAxis
               dataKey="label"
               tickLine={false}
               axisLine={false}
-              tickMargin={8}
-              fontSize={12}
               interval={0}
-              angle={data.length > 6 ? -35 : 0}
-              textAnchor={data.length > 6 ? "end" : "middle"}
-              height={data.length > 6 ? 56 : 32}
+              height={52}
+              tick={(props) => <MonthTick {...props} chartData={chartData} />}
             />
             <YAxis tickLine={false} axisLine={false} tickMargin={8} fontSize={12} width={44} />
             <ChartTooltip
               content={
                 <ChartTooltipContent
-                  formatter={(value) =>
-                    typeof value === "number" ? value.toLocaleString() : String(value)
-                  }
+                  formatter={(value, name) => {
+                    if (name === "trend") return null
+                    return typeof value === "number" ? value.toLocaleString() : String(value)
+                  }}
                 />
               }
               cursor={{ fill: "color-mix(in oklch, var(--muted) 45%, transparent)" }}
             />
-            <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} maxBarSize={48} />
-          </BarChart>
+            <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={52}>
+              {chartData.map((row) => (
+                <Cell key={row.monthKey} fill={row.barColor} />
+              ))}
+              <LabelList
+                dataKey="count"
+                position="top"
+                className="fill-foreground text-[11px] font-semibold tabular-nums"
+                formatter={(value) =>
+                  typeof value === "number" ? value.toLocaleString() : String(value)
+                }
+              />
+            </Bar>
+            <Line
+              type="monotone"
+              dataKey="count"
+              name="trend"
+              stroke="var(--color-trend)"
+              strokeWidth={2.5}
+              dot={{ r: 3, fill: "var(--color-trend)", strokeWidth: 0 }}
+              activeDot={{ r: 5 }}
+              legendType="none"
+            />
+          </ComposedChart>
         </ChartContainer>
       </CardContent>
     </Card>

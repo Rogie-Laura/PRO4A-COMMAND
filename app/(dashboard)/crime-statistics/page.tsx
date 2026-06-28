@@ -1,14 +1,5 @@
-import { Suspense } from "react"
-
-import {
-  CrimeStatisticsContent,
-  CrimeStatisticsLoading,
-} from "@/components/dashboard/crime-statistics-content"
+import { redirect } from "next/navigation"
 
 export default function CrimeStatisticsPage() {
-  return (
-    <Suspense fallback={<CrimeStatisticsLoading />}>
-      <CrimeStatisticsContent />
-    </Suspense>
-  )
+  redirect("/ridmd")
 }

@@ -1,11 +1,11 @@
 import { CrimeStatisticsRefreshButton } from "@/components/dashboard/crime-statistics-refresh-button"
-import { CrimeStatisticsTabs } from "@/components/dashboard/crime-statistics-tabs"
+import { RidmdModuleView } from "@/components/dashboard/ridmd-module-view"
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getCrimeAnalytics } from "@/lib/crime-analytics"
 
-export function CrimeStatisticsLoading() {
+export function RidmdLoading() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-10 w-full max-w-xl rounded-lg" />
@@ -14,12 +14,12 @@ export function CrimeStatisticsLoading() {
         <Skeleton className="h-48 rounded-xl" />
         <Skeleton className="h-72 rounded-xl" />
       </div>
-      <Skeleton className="h-72 rounded-xl" />
+      <Skeleton className="h-80 rounded-xl" />
     </div>
   )
 }
 
-export async function CrimeStatisticsContent() {
+export async function RidmdContent() {
   const data = await getCrimeAnalytics()
 
   return (
@@ -30,7 +30,7 @@ export async function CrimeStatisticsContent() {
           sourceLabel={data.dataSource}
           syncDescription={
             data.dataReady
-              ? "synced from Supabase upload (cached until you refresh)"
+              ? "index crime only · synced from Supabase upload"
               : "upload crime stats in Settings (Super Admin)"
           }
         />
@@ -50,8 +50,9 @@ export async function CrimeStatisticsContent() {
           <p className="text-sm text-muted-foreground">
             Source file: <span className="font-medium text-foreground">{data.fileName}</span>
             {data.year ? ` · Year ${data.year}` : ""}
+            {" · Index crime only"}
           </p>
-          <CrimeStatisticsTabs data={data} />
+          <RidmdModuleView data={data} />
         </>
       )}
     </div>

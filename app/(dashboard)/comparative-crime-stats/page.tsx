@@ -1,5 +1,5 @@
-import { SectionPlaceholder } from "@/components/section-placeholder"
+import { redirect } from "next/navigation"
 
 export default function ComparativeCrimeStatsPage() {
-  return <SectionPlaceholder title="Comparative Crime Stats" />
+  redirect("/ridmd")
 }

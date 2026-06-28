@@ -15,7 +15,7 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
   },
   "/ridmd": {
     title: "RIDMD",
-    description: "Regional Intelligence and Investigation Management Division",
+    description: "Regional Investigation and Detection Management Division",
   },
   "/mobility": {
     title: "Mobility",
