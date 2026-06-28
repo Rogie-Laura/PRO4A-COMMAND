@@ -5,6 +5,7 @@ import {
   getIndexFocusCrimeCatalog,
   INDEX_FOCUS_CRIME_ORDER,
   isIndexCrimeCategory,
+  normalizeCaseStatus,
   normalizeCrimeName,
   resolveCanonicalFocusCrimeName,
 } from "@/lib/crime-config"
@@ -16,6 +17,7 @@ import {
   type CrimePeriodRange,
   type CrimePeriodSnapshot,
 } from "@/lib/crime-comparative"
+import type { CrimeFocusProfileData } from "@/lib/crime-profile"
 import { getEffectiveCrimeDate, isIsoDateInRange } from "@/lib/crime-dates"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { CrimeAnalytics } from "@/lib/crime-types"
@@ -258,6 +260,8 @@ type IndexCrimeRangeRow = {
   ppo: string
   crime: string
   category: string
+  typeofPlace: string
+  caseStatus: string
   dateCommitted: string | null
   dateReported: string | null
 }
@@ -276,6 +280,8 @@ function mapRangeRow(row: {
   ppo: string
   crime: string
   category: string
+  typeof_place: string | null
+  case_status: string | null
   date_committed: string | null
   date_reported: string | null
 }): IndexCrimeRangeRow {
@@ -283,6 +289,8 @@ function mapRangeRow(row: {
     ppo: row.ppo,
     crime: row.crime,
     category: row.category ?? "",
+    typeofPlace: row.typeof_place?.trim() ?? "",
+    caseStatus: row.case_status?.trim() ?? "",
     dateCommitted: row.date_committed,
     dateReported: row.date_reported,
   }
@@ -306,7 +314,7 @@ async function fetchIndexCrimeRowsForRangeQuery(
   while (true) {
     let query = supabase
       .from("crime_records")
-      .select("ppo, crime, category, date_committed, date_reported")
+      .select("ppo, crime, category, typeof_place, case_status, date_committed, date_reported")
       .eq("batch_id", batchId)
       .ilike("category", "INDEX")
       .or(dateOrFilter)
@@ -621,6 +629,144 @@ export async function compareIndexCrimeByCrimeType(
     periodA.end,
     periodB.start,
     periodB.end,
+  )
+}
+
+function filterFocusCrimeRowsForRange(
+  rows: IndexCrimeRangeRow[],
+  range: CrimePeriodRange,
+  focusCrime: string,
+): IndexCrimeRangeRow[] {
+  return rows.filter((row) => {
+    if (!isIndexCrimeCategory(row.category)) return false
+    if (resolveCanonicalFocusCrimeName(row.crime) !== focusCrime) return false
+
+    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted, row.dateReported)
+    return Boolean(effectiveDate && isIsoDateInRange(effectiveDate, range.start, range.end))
+  })
+}
+
+function summarizeNamedCounts(
+  rows: IndexCrimeRangeRow[],
+  pickName: (row: IndexCrimeRangeRow) => string,
+): CountItem[] {
+  const counts = new Map<string, number>()
+
+  for (const row of rows) {
+    const name = pickName(row) || "Unknown"
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+
+  const total = rows.length
+  return [...counts.entries()]
+    .map(([name, count]) => ({
+      name,
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
+    }))
+    .sort((left, right) => right.count - left.count)
+}
+
+function emptyCrimeFocusProfile(
+  focusCrime: string,
+  periodA: CrimePeriodRange,
+  periodB: CrimePeriodRange,
+): CrimeFocusProfileData {
+  return {
+    crime: focusCrime,
+    periodALabel: periodA.label,
+    periodBLabel: periodB.label,
+    comparison: {
+      periodA: 0,
+      periodB: 0,
+      change: 0,
+      changePct: null,
+      changeDirection: "flat",
+    },
+    typeofPlaceBreakdown: [],
+    ppoDistribution: [],
+    caseStatusBreakdown: [],
+  }
+}
+
+async function loadCrimeFocusProfile(
+  batchId: string,
+  focusCrime: string,
+  periodAStart: string,
+  periodAEnd: string,
+  periodBStart: string,
+  periodBEnd: string,
+  periodALabel: string,
+  periodBLabel: string,
+): Promise<CrimeFocusProfileData> {
+  const periodA: CrimePeriodRange = {
+    start: periodAStart,
+    end: periodAEnd,
+    label: periodALabel,
+  }
+  const periodB: CrimePeriodRange = {
+    start: periodBStart,
+    end: periodBEnd,
+    label: periodBLabel,
+  }
+
+  const [rowsA, rowsB] = await Promise.all([
+    fetchIndexCrimeRowsForRangeQuery(batchId, periodAStart, periodAEnd),
+    fetchIndexCrimeRowsForRangeQuery(batchId, periodBStart, periodBEnd),
+  ])
+
+  const focusRowsA = filterFocusCrimeRowsForRange(rowsA, periodA, focusCrime)
+  const focusRowsB = filterFocusCrimeRowsForRange(rowsB, periodB, focusCrime)
+  const metrics = buildCountChangeMetrics(focusRowsA.length, focusRowsB.length)
+
+  return {
+    crime: focusCrime,
+    periodALabel,
+    periodBLabel,
+    comparison: {
+      periodA: focusRowsA.length,
+      periodB: focusRowsB.length,
+      change: metrics.change,
+      changePct: metrics.changePct,
+      changeDirection: metrics.changeDirection ?? "flat",
+    },
+    typeofPlaceBreakdown: summarizeNamedCounts(focusRowsB, (row) => row.typeofPlace.trim() || "Unknown"),
+    ppoDistribution: summarizeNamedCounts(focusRowsB, (row) => row.ppo.trim() || "Unknown"),
+    caseStatusBreakdown: summarizeNamedCounts(
+      focusRowsB,
+      (row) => normalizeCaseStatus(row.caseStatus) || "Unknown",
+    ),
+  }
+}
+
+const getCachedCrimeFocusProfile = unstable_cache(
+  loadCrimeFocusProfile,
+  ["crime-focus-profile-v1"],
+  {
+    revalidate: false,
+    tags: [CRIME_COMPARE_CACHE_TAG],
+  },
+)
+
+export async function compareCrimeFocusProfile(
+  focusCrime: string,
+  periodA: CrimePeriodRange,
+  periodB: CrimePeriodRange,
+): Promise<CrimeFocusProfileData> {
+  const batch = await getLatestStoredCrimeBatch()
+  if (!batch) {
+    return emptyCrimeFocusProfile(focusCrime, periodA, periodB)
+  }
+
+  return getCachedCrimeFocusProfile(
+    batch.id,
+    focusCrime,
+    periodA.start,
+    periodA.end,
+    periodB.start,
+    periodB.end,
+    periodA.label,
+    periodB.label,
   )
 }
 
