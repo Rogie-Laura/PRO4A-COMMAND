@@ -501,11 +501,18 @@ export function CrimeComparativePanel({
           <Card className="gap-0 py-0">
             <CardHeader className="border-b pb-4">
               <CardTitle className="text-base">Index Crime by PPO</CardTitle>
-              <CardDescription className="max-w-3xl text-pretty leading-relaxed">
-                Inihahambing ng graph na ito ang index crime bawat PPO sa nakaraang period (light orange)
-                at sa period in review (light blue). Ang berdeng arrow pababa ay bumaba ang kaso; ang pulang
-                arrow pataas ay tumaas. I-click ang bar ng PPO para buksan ang focus crime profile nito.
-              </CardDescription>
+              <div className="max-w-3xl space-y-1 text-sm leading-relaxed text-muted-foreground">
+                <p className="font-medium text-foreground">Paliwanag sa bar graph</p>
+                <p>
+                  Light orange ang Period A (nakaraang period); light blue ang Period B (period in review).
+                  Ang numero sa taas ng bar ay bilang ng index crime sa period na iyon.
+                </p>
+                <p>
+                  Sa blue bar, ang arrow ang pagbabago kumpara sa nakaraan — berde pababa kung bumaba ang kaso,
+                  pula pataas kung tumaas.
+                </p>
+                <p>I-click ang bar ng PPO para makita ang focus crime profile nito.</p>
+              </div>
             </CardHeader>
             <CardContent className="p-4">
               {ppoChartData.length === 0 ? (
