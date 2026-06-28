@@ -9,11 +9,7 @@ export function RidmdLoading() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-10 w-full max-w-xl rounded-lg" />
-      <Skeleton className="h-9 w-full max-w-md rounded-lg" />
-      <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-72 rounded-xl" />
-      </div>
+      <Skeleton className="h-48 rounded-xl" />
       <Skeleton className="h-80 rounded-xl" />
     </div>
   )
