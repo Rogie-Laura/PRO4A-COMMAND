@@ -41,8 +41,8 @@ export async function CrimeStatisticsContent() {
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 sm:max-w-xl">
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Walang crime data pa. Mag-upload sa Settings (Super Admin) gamit ang PNP-CIRAS Excel
-            export. Kung na-upload na dati, mag-upload ulit para sa bagong Index / Non-Index tabs at
-            monthly chart.
+            export — kailangan ang ppo, stn, barangay, YEAR, typeofPlace, dateReported,
+            dateCommitted, timeCommitted, crime, at category.
           </CardContent>
         </Card>
       ) : (
