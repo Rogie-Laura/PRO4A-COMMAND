@@ -23,12 +23,50 @@ export const INDEX_FOCUS_CRIME_ORDER = [
 /** Always included in focus crime views even when count is zero in both periods. */
 export const INDEX_FOCUS_CRIME_ALWAYS = INDEX_FOCUS_CRIME_ORDER
 
+const INDEX_FOCUS_CRIME_DB_ALIASES: Record<(typeof INDEX_FOCUS_CRIME_ORDER)[number], readonly string[]> = {
+  Murder: ["MURDER"],
+  Homicide: ["HOMICIDE"],
+  "Physical Injury": ["PHY INJ", "PHYSICAL INJURY", "PHYSICAL INJ"],
+  Rape: ["RAPE"],
+  Theft: ["THEFT"],
+  Robbery: ["ROBBERY"],
+  "Carnapping MC": ["CARNAP MC", "CARNAPPING MC"],
+  "Carnapping MV": ["CARNAP MV", "CARNAPPING MV"],
+  "SP Complex": ["SP COMPLEX", "S.P. COMPLEX"],
+}
+
+const FOCUS_CRIME_ALIAS_MAP = buildFocusCrimeAliasMap()
+
+function buildFocusCrimeAliasMap() {
+  const map = new Map<string, (typeof INDEX_FOCUS_CRIME_ORDER)[number]>()
+
+  for (const canonical of INDEX_FOCUS_CRIME_ORDER) {
+    map.set(normalizeCrimeName(canonical).toUpperCase(), canonical)
+    for (const alias of INDEX_FOCUS_CRIME_DB_ALIASES[canonical]) {
+      map.set(normalizeCrimeName(alias).toUpperCase(), canonical)
+    }
+  }
+
+  return map
+}
+
 export function normalizeCrimeName(value: string) {
   return value.trim().replace(/\s+/g, " ")
 }
 
 export function crimeNamesMatch(left: string, right: string) {
   return normalizeCrimeName(left).toUpperCase() === normalizeCrimeName(right).toUpperCase()
+}
+
+/** Maps raw DB/upload crime labels to a canonical focus crime name. */
+export function resolveCanonicalFocusCrimeName(raw: string): string | null {
+  const key = normalizeCrimeName(raw).toUpperCase()
+  if (!key) return null
+  return FOCUS_CRIME_ALIAS_MAP.get(key) ?? null
+}
+
+export function getIndexFocusCrimeCatalog(): string[] {
+  return [...INDEX_FOCUS_CRIME_ORDER]
 }
 
 function focusCrimeOrderIndex(crime: string) {
@@ -43,34 +81,7 @@ export function compareFocusCrimeOrder(left: string, right: string) {
   return left.localeCompare(right)
 }
 
-/** Builds a catalog with focus crimes first (fixed order), then any extras alphabetically. */
-export function buildFocusCrimeCatalogFromNames(additionalNames: string[]): string[] {
-  const byKey = new Map<string, string>()
-
-  for (const crime of INDEX_FOCUS_CRIME_ORDER) {
-    const normalized = normalizeCrimeName(crime)
-    byKey.set(normalized.toUpperCase(), normalized)
-  }
-
-  for (const name of additionalNames) {
-    const normalized = normalizeCrimeName(name)
-    if (!normalized) continue
-    byKey.set(normalized.toUpperCase(), normalized)
-  }
-
-  const ordered: string[] = []
-  const seen = new Set<string>()
-
-  for (const crime of INDEX_FOCUS_CRIME_ORDER) {
-    const key = normalizeCrimeName(crime).toUpperCase()
-    ordered.push(byKey.get(key) ?? normalizeCrimeName(crime))
-    seen.add(key)
-  }
-
-  const extras = [...byKey.entries()]
-    .filter(([key]) => !seen.has(key))
-    .map(([, label]) => label)
-    .sort((left, right) => left.localeCompare(right))
-
-  return [...ordered, ...extras]
+/** @deprecated Prefer getIndexFocusCrimeCatalog(). Kept for stored analytics compatibility. */
+export function buildFocusCrimeCatalogFromNames(_additionalNames: string[]): string[] {
+  return getIndexFocusCrimeCatalog()
 }

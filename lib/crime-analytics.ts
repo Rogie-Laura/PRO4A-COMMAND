@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache"
 
 import {
-  buildFocusCrimeCatalogFromNames,
+  getIndexFocusCrimeCatalog,
   isIndexCrimeCategory,
   isNonIndexCrimeCategory,
   normalizeCrimeName,
@@ -147,8 +147,8 @@ function buildUnitBreakdownByPpo(records: ParsedCrimeRecord[]): Record<string, C
   return unitBreakdownByPpo
 }
 
-function buildFocusCrimeCatalog(crimeCounts: Map<string, number>): string[] {
-  return buildFocusCrimeCatalogFromNames([...crimeCounts.keys()])
+function buildFocusCrimeCatalog(_crimeCounts: Map<string, number>): string[] {
+  return getIndexFocusCrimeCatalog()
 }
 
 function buildCategoryStats(
@@ -231,7 +231,7 @@ async function loadCrimeAnalytics(): Promise<CrimeAnalytics> {
   return emptyCrimeAnalytics()
 }
 
-export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v6"
+export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v7"
 
 const getCachedCrimeAnalytics = unstable_cache(loadCrimeAnalytics, [CRIME_ANALYTICS_CACHE_TAG], {
   revalidate: false,

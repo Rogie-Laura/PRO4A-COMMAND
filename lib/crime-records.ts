@@ -2,9 +2,11 @@ import { buildCrimeAnalyticsFromRecords } from "@/lib/crime-analytics"
 import {
   buildFocusCrimeCatalogFromNames,
   crimeNamesMatch,
+  getIndexFocusCrimeCatalog,
   INDEX_FOCUS_CRIME_ORDER,
   isIndexCrimeCategory,
   normalizeCrimeName,
+  resolveCanonicalFocusCrimeName,
 } from "@/lib/crime-config"
 import {
   buildComparativeResult,
@@ -23,7 +25,7 @@ import { unstable_cache } from "next/cache"
 
 const INSERT_CHUNK_SIZE = 1000
 const FETCH_PAGE_SIZE = 1000
-const CRIME_COMPARE_CACHE_TAG = "crime-analytics-supabase-v6"
+const CRIME_COMPARE_CACHE_TAG = "crime-analytics-supabase-v7"
 
 export type CrimeUploadBatchInfo = {
   id: string
@@ -370,49 +372,8 @@ export async function fetchIndexCrimePeriodSnapshot(
   return summarizeIndexCrimeRows(rows, range)
 }
 
-async function fetchIndexFocusCrimeCatalogForBatch(batch: StoredCrimeBatchRow): Promise<string[]> {
-  if (hasCurrentAnalyticsShape(batch.analytics)) {
-    const analytics = normalizeStoredAnalytics(batch.analytics, batch)
-    if (analytics.indexCrime.focusCrimeCatalog?.length) {
-      return buildFocusCrimeCatalogFromNames(analytics.indexCrime.focusCrimeCatalog)
-    }
-    return buildFocusCrimeCatalogFromBreakdown(analytics.indexCrime.crimeBreakdown)
-  }
-
-  const crimeNames: string[] = []
-  let from = 0
-  const supabase = createAdminClient()
-
-  while (true) {
-    const { data, error } = await supabase
-      .from("crime_records")
-      .select("crime")
-      .eq("batch_id", batch.id)
-      .ilike("category", "INDEX")
-      .order("id", { ascending: true })
-      .range(from, from + FETCH_PAGE_SIZE - 1)
-
-    if (error) {
-      throw new Error(error.message)
-    }
-
-    if (!data || data.length === 0) {
-      break
-    }
-
-    for (const row of data) {
-      const normalized = normalizeCrimeName(row.crime ?? "")
-      if (normalized) crimeNames.push(normalized)
-    }
-
-    if (data.length < FETCH_PAGE_SIZE) {
-      break
-    }
-
-    from += FETCH_PAGE_SIZE
-  }
-
-  return buildFocusCrimeCatalogFromNames(crimeNames)
+async function fetchIndexFocusCrimeCatalogForBatch(_batch: StoredCrimeBatchRow): Promise<string[]> {
+  return getIndexFocusCrimeCatalog()
 }
 
 function getCrimeCount(counts: Map<string, number>, crimeName: string) {
@@ -455,46 +416,27 @@ function buildFocusCrimeComparisonRows(
     })
 }
 
-function summarizeIndexCrimeCrimeCounts(
+function summarizeFocusCrimeCounts(
   rows: IndexCrimeRangeRow[],
   range: CrimePeriodRange,
+  options?: { ppo?: string },
 ): Map<string, number> {
+  const ppoKey = options?.ppo?.trim().toUpperCase()
   const crimeCounts = new Map<string, number>()
 
   for (const row of rows) {
     if (!isIndexCrimeCategory(row.category)) continue
+    if (ppoKey && row.ppo.trim().toUpperCase() !== ppoKey) continue
 
     const effectiveDate = getEffectiveCrimeDate(row.dateCommitted, row.dateReported)
     if (!effectiveDate || !isIsoDateInRange(effectiveDate, range.start, range.end)) {
       continue
     }
 
-    const crimeName = normalizeCrimeName(row.crime) || "Unknown"
-    crimeCounts.set(crimeName, (crimeCounts.get(crimeName) ?? 0) + 1)
-  }
+    const canonical = resolveCanonicalFocusCrimeName(row.crime)
+    if (!canonical) continue
 
-  return crimeCounts
-}
-
-function summarizeIndexCrimeCrimeCountsForPpo(
-  rows: IndexCrimeRangeRow[],
-  ppoCsvName: string,
-  range: CrimePeriodRange,
-): Map<string, number> {
-  const ppoKey = ppoCsvName.trim().toUpperCase()
-  const crimeCounts = new Map<string, number>()
-
-  for (const row of rows) {
-    if (!isIndexCrimeCategory(row.category)) continue
-    if (row.ppo.trim().toUpperCase() !== ppoKey) continue
-
-    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted, row.dateReported)
-    if (!effectiveDate || !isIsoDateInRange(effectiveDate, range.start, range.end)) {
-      continue
-    }
-
-    const crimeName = normalizeCrimeName(row.crime) || "Unknown"
-    crimeCounts.set(crimeName, (crimeCounts.get(crimeName) ?? 0) + 1)
+    crimeCounts.set(canonical, (crimeCounts.get(canonical) ?? 0) + 1)
   }
 
   return crimeCounts
@@ -509,7 +451,7 @@ async function fetchIndexCrimeCrimeCountsForPpoPeriod(
     ppo: ppoCsvName,
   })
 
-  return summarizeIndexCrimeCrimeCountsForPpo(rows, ppoCsvName, range)
+  return summarizeFocusCrimeCounts(rows, range, { ppo: ppoCsvName })
 }
 
 async function fetchIndexFocusCrimeCatalogByBatchId(batchId: string): Promise<string[]> {
@@ -592,8 +534,8 @@ async function loadRegionalCrimeTypeComparison(
     fetchIndexCrimeRowsForRangeQuery(batchId, periodBStart, periodBEnd),
   ])
 
-  const countsA = summarizeIndexCrimeCrimeCounts(rowsA, periodA)
-  const countsB = summarizeIndexCrimeCrimeCounts(rowsB, periodB)
+  const countsA = summarizeFocusCrimeCounts(rowsA, periodA)
+  const countsB = summarizeFocusCrimeCounts(rowsB, periodB)
 
   return buildFocusCrimeComparisonRows(catalog, countsA, countsB)
 }
