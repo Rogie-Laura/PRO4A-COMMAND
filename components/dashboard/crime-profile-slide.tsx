@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition, type ReactNode } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react"
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, Legend, Pie, PieChart, XAxis, YAxis } from "recharts"
 
 import { fetchCrimeFocusProfileAction } from "@/app/(dashboard)/ridmd/actions"
@@ -10,7 +9,6 @@ import {
   comparativeBarChartConfig,
   createPeriodBChangeLabel,
 } from "@/components/dashboard/crime-comparative-chart-utils"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -129,7 +127,7 @@ function CrimeProfileFrame({
   )
 
   return (
-    <div className="grid min-h-[520px] grid-cols-1 gap-2 sm:gap-3 lg:grid-cols-5 lg:grid-rows-2 lg:gap-3">
+    <div className="grid h-full min-h-[420px] grid-cols-1 gap-2 sm:gap-3 lg:min-h-[480px] lg:grid-cols-5 lg:grid-rows-2 lg:gap-3">
       <FrameSection
         title="Previous vs Period in Review"
         description={profile.crime}
@@ -315,16 +313,49 @@ function CrimeProfileFrame({
   )
 }
 
-export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePagesProps) {
-  const [pageIndex, setPageIndex] = useState(0)
+const CRIME_PROFILE_PAGE_CLASS = "min-h-[calc(100dvh-3.5rem)] snap-start snap-always flex flex-col py-4"
+
+function CrimeProfileFullPage({
+  focusCrime,
+  pageNumber,
+  totalPages,
+  periodA,
+  periodB,
+  isMobile,
+}: {
+  focusCrime: string
+  pageNumber: number
+  totalPages: number
+  periodA: CrimePeriodRange
+  periodB: CrimePeriodRange
+  isMobile: boolean
+}) {
+  const sectionRef = useRef<HTMLElement>(null)
+  const [shouldLoad, setShouldLoad] = useState(false)
   const [profile, setProfile] = useState<CrimeFocusProfileData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  const focusCrime = INDEX_FOCUS_CRIME_ORDER[pageIndex]
-  const totalPages = INDEX_FOCUS_CRIME_ORDER.length
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoad(true)
+        }
+      },
+      { rootMargin: "240px 0px" },
+    )
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
+    if (!shouldLoad) return
+
     startTransition(async () => {
       try {
         const result = await fetchCrimeFocusProfileAction(focusCrime, periodA, periodB)
@@ -339,81 +370,72 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
         )
       }
     })
-  }, [focusCrime, periodA, periodB])
-
-  function goToPage(nextIndex: number) {
-    if (nextIndex < 0 || nextIndex >= totalPages) return
-    setPageIndex(nextIndex)
-  }
+  }, [shouldLoad, focusCrime, periodA, periodB])
 
   return (
-    <Card className="gap-0 overflow-hidden py-0">
-      <CardHeader className="border-b pb-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle className="text-base uppercase tracking-wide">
-              Crime Profile — {focusCrime}
-            </CardTitle>
-            <CardDescription>
-              Isang page bawat focus crime · PPO pie at breakdowns ay period in review lang
-            </CardDescription>
+    <section ref={sectionRef} className={CRIME_PROFILE_PAGE_CLASS} aria-label={`Crime profile ${focusCrime}`}>
+      <Card className="flex min-h-[calc(100dvh-5rem)] flex-1 flex-col gap-0 overflow-hidden py-0">
+        <CardHeader className="shrink-0 border-b pb-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-base uppercase tracking-wide sm:text-lg">
+                Crime Profile — {focusCrime}
+              </CardTitle>
+              <CardDescription>
+                Period in review breakdowns · scroll down for next focus crime
+              </CardDescription>
+            </div>
+            <p className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground sm:text-sm">
+              {pageNumber} / {totalPages}
+            </p>
           </div>
-          <p className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
-            Page {pageIndex + 1} of {totalPages}
-          </p>
-        </div>
+        </CardHeader>
 
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={pageIndex === 0 || isPending}
-            onClick={() => goToPage(pageIndex - 1)}
-          >
-            <ChevronLeft className="size-4" />
-            Previous
-          </Button>
+        <CardContent className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
+          {isPending && !profile ? (
+            <Skeleton className="min-h-0 flex-1 rounded-lg" />
+          ) : error ? (
+            <p className="flex flex-1 items-center justify-center text-sm text-destructive">{error}</p>
+          ) : profile ? (
+            <div className="min-h-0 flex-1">
+              <CrimeProfileFrame profile={profile} isMobile={isMobile} />
+            </div>
+          ) : (
+            <Skeleton className="min-h-0 flex-1 rounded-lg" />
+          )}
+        </CardContent>
+      </Card>
+    </section>
+  )
+}
 
-          <div className="flex flex-wrap items-center justify-center gap-1.5" role="tablist" aria-label="Crime profile pages">
-            {INDEX_FOCUS_CRIME_ORDER.map((crime, index) => (
-              <button
-                key={crime}
-                type="button"
-                role="tab"
-                aria-selected={pageIndex === index}
-                aria-label={crime}
-                onClick={() => goToPage(index)}
-                className={cn(
-                  "h-2 rounded-full transition-all",
-                  pageIndex === index ? "w-6 bg-primary" : "w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50",
-                )}
-              />
-            ))}
-          </div>
+export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePagesProps) {
+  useEffect(() => {
+    const main = document.querySelector("main")
+    if (!main) return
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={pageIndex >= totalPages - 1 || isPending}
-            onClick={() => goToPage(pageIndex + 1)}
-          >
-            Next
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-      </CardHeader>
+    main.classList.add("snap-y", "snap-mandatory", "scroll-smooth")
+    return () => {
+      main.classList.remove("snap-y", "snap-mandatory", "scroll-smooth")
+    }
+  }, [])
 
-      <CardContent className="p-3 sm:p-4">
-        {isPending && !profile ? (
-          <Skeleton className="min-h-[520px] w-full rounded-lg" />
-        ) : error ? (
-          <p className="py-12 text-center text-sm text-destructive">{error}</p>
-        ) : profile ? (
-          <CrimeProfileFrame profile={profile} isMobile={isMobile} />
-        ) : null}
-      </CardContent>
-    </Card>
+  return (
+    <div className="space-y-0">
+      <p className="pb-2 text-center text-xs text-muted-foreground">
+        Scroll down — isang buong page bawat focus crime profile
+      </p>
+      {INDEX_FOCUS_CRIME_ORDER.map((crime, index) => (
+        <CrimeProfileFullPage
+          key={crime}
+          focusCrime={crime}
+          pageNumber={index + 1}
+          totalPages={INDEX_FOCUS_CRIME_ORDER.length}
+          periodA={periodA}
+          periodB={periodB}
+          isMobile={isMobile}
+        />
+      ))}
+    </div>
   )
 }
