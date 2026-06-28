@@ -1,10 +1,35 @@
+export const CRIME_UPLOAD_CATEGORIES = ["INDEX", "NON INDEX"] as const
+
+export type CrimeUploadCategory = (typeof CRIME_UPLOAD_CATEGORIES)[number]
+
+export function normalizeUploadCategory(value: string): CrimeUploadCategory | null {
+  const normalized = value.trim().toUpperCase().replace(/\s+/g, " ")
+
+  if (normalized === "INDEX") {
+    return "INDEX"
+  }
+
+  if (normalized === "NON INDEX" || normalized === "NON-INDEX" || normalized === "NONINDEX") {
+    return "NON INDEX"
+  }
+
+  return null
+}
+
+export function isAllowedUploadCategory(value: string) {
+  return normalizeUploadCategory(value) !== null
+}
+
 export function isIndexCrimeCategory(category: string) {
-  return category.trim().toUpperCase() === "INDEX"
+  return normalizeUploadCategory(category) === "INDEX"
 }
 
 export function isNonIndexCrimeCategory(category: string) {
-  const normalized = category.trim().toUpperCase()
-  return normalized.length > 0 && normalized !== "INDEX"
+  return normalizeUploadCategory(category) === "NON INDEX"
+}
+
+export function normalizeCaseStatus(value: string) {
+  return value.trim().replace(/\s+/g, " ")
 }
 
 /** Display order for focus crime charts and PPO crime profiles. */

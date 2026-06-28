@@ -167,6 +167,7 @@ export async function uploadCrimeRecordsAction(formData: FormData) {
       batch: result.batch,
       insertedCount: result.insertedCount,
       skippedRows: parsed.skippedRows,
+      skippedInvalidCategoryRows: parsed.skippedInvalidCategoryRows,
       analytics: result.analytics,
     }
   } catch (error) {

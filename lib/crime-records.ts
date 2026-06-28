@@ -85,6 +85,7 @@ function toInsertRow(batchId: string, record: ParsedCrimeRecord) {
     time_committed: record.timeCommitted,
     crime: record.crime,
     category: record.category,
+    case_status: record.caseStatus,
   }
 }
 
@@ -99,6 +100,7 @@ function mapStoredRecord(row: {
   time_committed: string
   crime: string
   category: string
+  case_status: string
 }): ParsedCrimeRecord {
   return {
     ppo: row.ppo,
@@ -111,6 +113,7 @@ function mapStoredRecord(row: {
     timeCommitted: row.time_committed,
     crime: row.crime,
     category: row.category ?? "",
+    caseStatus: row.case_status ?? "",
   }
 }
 
@@ -177,7 +180,7 @@ async function fetchCrimeRecordsForBatch(batchId: string): Promise<ParsedCrimeRe
     const { data, error } = await supabase
       .from("crime_records")
       .select(
-        "ppo, stn, barangay, year, typeof_place, date_reported, date_committed, time_committed, crime, category",
+        "ppo, stn, barangay, year, typeof_place, date_reported, date_committed, time_committed, crime, category, case_status",
       )
       .eq("batch_id", batchId)
       .order("id", { ascending: true })

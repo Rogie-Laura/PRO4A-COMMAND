@@ -23,6 +23,7 @@ type CrimeUploadCardProps = {
 type UploadSummary = {
   insertedCount: number
   skippedRows: number
+  skippedInvalidCategoryRows: number
   indexVolume: number
   nonIndexVolume: number
   year: number | null
@@ -62,6 +63,7 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
         setSummary({
           insertedCount: result.insertedCount,
           skippedRows: result.skippedRows,
+          skippedInvalidCategoryRows: result.skippedInvalidCategoryRows,
           indexVolume: result.analytics.indexCrime.totalVolume,
           nonIndexVolume: result.analytics.nonIndexCrime.totalVolume,
           year: result.analytics.year,
@@ -88,9 +90,10 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
           Upload Crime Stats
         </CardTitle>
         <CardDescription>
-          Super Admin lang. PNP-CIRAS Excel export — kukunin lang ang ppo, stn, barangay, YEAR,
-          typeofPlace, dateReported, dateCommitted, timeCommitted, crime, at category. Maaaring tumagal ng
-          ilang minuto ang malaking file (~21k rows).
+          Super Admin lang. PNP-CIRAS Excel export — kukunin ang ppo, stn, barangay, YEAR,
+          typeofPlace, dateReported, dateCommitted, timeCommitted, crime, category (INDEX o NON INDEX
+          lang), at casestatus. I-skip ang ibang category (hal. PSI). Maaaring tumagal ng ilang minuto
+          ang malaking file.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -139,7 +142,10 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
             <p className="mt-1 text-muted-foreground">
               {summary.insertedCount.toLocaleString()} valid rows
               {summary.skippedRows > 0
-                ? ` · ${summary.skippedRows.toLocaleString()} skipped (blank ppo o crime)`
+                ? ` · ${summary.skippedRows.toLocaleString()} skipped`
+                : ""}
+              {summary.skippedInvalidCategoryRows > 0
+                ? ` (${summary.skippedInvalidCategoryRows.toLocaleString()} invalid category)`
                 : ""}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">

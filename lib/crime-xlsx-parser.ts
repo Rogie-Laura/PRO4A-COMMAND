@@ -1,5 +1,10 @@
 import * as XLSX from "xlsx"
 
+import {
+  normalizeCaseStatus,
+  normalizeUploadCategory,
+} from "@/lib/crime-config"
+
 export const CRIME_UPLOAD_HEADERS = [
   "ppo",
   "stn",
@@ -11,6 +16,7 @@ export const CRIME_UPLOAD_HEADERS = [
   "timecommitted",
   "crime",
   "category",
+  "casestatus",
 ] as const
 
 export type ParsedCrimeRecord = {
@@ -24,11 +30,13 @@ export type ParsedCrimeRecord = {
   timeCommitted: string
   crime: string
   category: string
+  caseStatus: string
 }
 
 export type ParsedCrimeWorkbook = {
   records: ParsedCrimeRecord[]
   skippedRows: number
+  skippedInvalidCategoryRows: number
 }
 
 function normalizeHeader(value: unknown) {
@@ -118,7 +126,7 @@ function validateHeaders(headers: string[]) {
 
   if (missing.length > 0) {
     throw new Error(
-      `Invalid crime Excel format. Missing columns: ${missing.join(", ")}. Kailangan: ppo, stn, barangay, YEAR, typeofPlace, dateReported, dateCommitted, timeCommitted, crime, category.`,
+      `Invalid crime Excel format. Missing columns: ${missing.join(", ")}. Kailangan: ppo, stn, barangay, YEAR, typeofPlace, dateReported, dateCommitted, timeCommitted, crime, category, casestatus.`,
     )
   }
 }
@@ -148,6 +156,7 @@ export function parseCrimeXlsx(buffer: ArrayBuffer | Buffer): ParsedCrimeWorkboo
   const columnIndex = Object.fromEntries(headers.map((header, index) => [header, index]))
   const records: ParsedCrimeRecord[] = []
   let skippedRows = 0
+  let skippedInvalidCategoryRows = 0
 
   for (const row of rows.slice(1)) {
     if (!Array.isArray(row)) {
@@ -157,9 +166,16 @@ export function parseCrimeXlsx(buffer: ArrayBuffer | Buffer): ParsedCrimeWorkboo
 
     const ppo = String(readCell(row, columnIndex.ppo) ?? "").trim()
     const crime = String(readCell(row, columnIndex.crime) ?? "").trim()
+    const category = normalizeUploadCategory(String(readCell(row, columnIndex.category) ?? ""))
 
     if (!ppo || !crime) {
       skippedRows += 1
+      continue
+    }
+
+    if (!category) {
+      skippedRows += 1
+      skippedInvalidCategoryRows += 1
       continue
     }
 
@@ -173,13 +189,16 @@ export function parseCrimeXlsx(buffer: ArrayBuffer | Buffer): ParsedCrimeWorkboo
       dateCommitted: parseExcelDate(readCell(row, columnIndex.datecommitted)),
       timeCommitted: parseTimeValue(readCell(row, columnIndex.timecommitted)),
       crime,
-      category: String(readCell(row, columnIndex.category) ?? "").trim(),
+      category,
+      caseStatus: normalizeCaseStatus(String(readCell(row, columnIndex.casestatus) ?? "")),
     })
   }
 
   if (records.length === 0) {
-    throw new Error("No valid crime records were found in the uploaded file.")
+    throw new Error(
+      "No valid crime records were found in the uploaded file. Dapat may INDEX o NON INDEX na category ang bawat row.",
+    )
   }
 
-  return { records, skippedRows }
+  return { records, skippedRows, skippedInvalidCategoryRows }
 }
