@@ -229,8 +229,9 @@ export function CrimeComparativePpoSheet({
               )}
 
               {!isPending && rows.length > 0 ? (
-                <p className={cn("mt-3 text-xs text-muted-foreground")}>
-                  Light orange = previous period · light blue = period in review · green ↓ bumaba · red ↑ tumaas
+                <p className={cn("mt-3 max-w-3xl text-pretty text-xs leading-relaxed text-muted-foreground")}>
+                  Light orange ang nakaraang period; light blue ang period in review. Berdeng arrow pababa
+                  kung bumaba ang kaso, pulang arrow pataas kung tumaas.
                 </p>
               ) : null}
             </DialogBody>
