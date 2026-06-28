@@ -17,6 +17,13 @@ export type ComparativeBarRow = {
   changeDirection: CrimeFocusComparativeRow["changeDirection"]
 }
 
+const PERIOD_B_LABEL = {
+  totalAboveBar: 8,
+  pctAboveTotal: 16,
+  countAbovePct: 15,
+  countAboveTotalNoPct: 18,
+} as const
+
 export function getComparativeChangeParts(row: ComparativeBarRow) {
   const color =
     row.changeDirection === "up"
@@ -43,6 +50,13 @@ export function formatComparativeChangeLabel(row: ComparativeBarRow) {
   const pctPart = pct ? ` · ${pct}` : ""
 
   return { color, text: `${arrow} ${changeCount}${pctPart}` }
+}
+
+export function getPeriodBLabelStackHeight(row: ComparativeBarRow) {
+  if (!row.changeDirection) return 20
+
+  const hasPct = row.changePct != null || row.changeDirection === "flat"
+  return hasPct ? 56 : 38
 }
 
 export function ComparativeBarTotalLabel(props: {
@@ -74,30 +88,66 @@ export function ComparativeBarTotalLabel(props: {
   )
 }
 
-function renderStackedChangeLabel(
+function renderPeriodBReviewLabelStack(
   centerX: number,
-  topY: number,
+  barTopY: number,
   row: ComparativeBarRow,
   compact?: boolean,
 ) {
-  if (!row.changeDirection) return null
-
-  const { color, arrow, changeCount, pct } = getComparativeChangeParts(row)
+  const totalY = barTopY - PERIOD_B_LABEL.totalAboveBar
   const countSize = compact ? 11 : 12
   const pctSize = compact ? 10 : 11
-  const lineGap = compact ? 13 : 14
+  const totalSize = compact ? 10 : 11
+
+  const totalLabel = (
+    <text
+      x={centerX}
+      y={totalY}
+      textAnchor="middle"
+      className="fill-foreground"
+      fontSize={totalSize}
+      fontWeight={700}
+    >
+      {row.periodB.toLocaleString()}
+    </text>
+  )
+
+  if (!row.changeDirection) {
+    return totalLabel
+  }
+
+  const { color, arrow, changeCount, pct } = getComparativeChangeParts(row)
+  const countY = pct
+    ? totalY - PERIOD_B_LABEL.pctAboveTotal - PERIOD_B_LABEL.countAbovePct
+    : totalY - PERIOD_B_LABEL.countAboveTotalNoPct
+  const pctY = totalY - PERIOD_B_LABEL.pctAboveTotal
 
   return (
-    <text x={centerX} y={topY} textAnchor="middle" fill={color}>
-      <tspan x={centerX} dy={0} fontSize={countSize} fontWeight={800}>
+    <g>
+      <text
+        x={centerX}
+        y={countY}
+        textAnchor="middle"
+        fill={color}
+        fontSize={countSize}
+        fontWeight={800}
+      >
         {arrow} {changeCount}
-      </tspan>
+      </text>
       {pct ? (
-        <tspan x={centerX} dy={lineGap} fontSize={pctSize} fontWeight={700}>
+        <text
+          x={centerX}
+          y={pctY}
+          textAnchor="middle"
+          fill={color}
+          fontSize={pctSize}
+          fontWeight={700}
+        >
           {pct}
-        </tspan>
+        </text>
       ) : null}
-    </text>
+      {totalLabel}
+    </g>
   )
 }
 
@@ -105,7 +155,7 @@ export type PeriodBLabelPlacement = "insideBottom" | "aboveTotal"
 
 export function createPeriodBBarLabels(
   chartData: ComparativeBarRow[],
-  placement: PeriodBLabelPlacement = "insideBottom",
+  placement: PeriodBLabelPlacement = "aboveTotal",
 ) {
   return function PeriodBBarLabels(props: {
     x?: number | string
@@ -115,51 +165,34 @@ export function createPeriodBBarLabels(
     index?: number
   }) {
     const row = chartData[props.index ?? -1]
-    if (!row || !row.changeDirection) return null
+    if (!row) return null
 
     const x = typeof props.x === "number" ? props.x : Number(props.x ?? 0)
     const y = typeof props.y === "number" ? props.y : Number(props.y ?? 0)
     const width = typeof props.width === "number" ? props.width : Number(props.width ?? 0)
-    const height = typeof props.height === "number" ? props.height : Number(props.height ?? 0)
     const centerX = x + width / 2
 
     // Zero-height bars are rendered on the axis tick instead.
     if (row.periodB === 0) return null
 
     if (placement === "aboveTotal") {
-      const totalOffset = 8
-      const changeTopOffset = row.changePct != null || row.changeDirection === "flat" ? 40 : 24
-
-      return (
-        <g>
-          {renderStackedChangeLabel(centerX, y - changeTopOffset, row)}
-          <text
-            x={centerX}
-            y={y - totalOffset}
-            textAnchor="middle"
-            className="fill-foreground"
-            fontSize={11}
-            fontWeight={700}
-          >
-            {row.periodB.toLocaleString()}
-          </text>
-        </g>
-      )
+      return renderPeriodBReviewLabelStack(centerX, y, row)
     }
 
-    const stackedHeight = row.changePct != null || row.changeDirection === "flat" ? 28 : 16
-    const insideY =
-      height >= stackedHeight + 8
-        ? y + height - stackedHeight
-        : y + height + (row.changePct != null || row.changeDirection === "flat" ? 18 : 12)
+    if (!row.changeDirection) return null
 
-    return renderStackedChangeLabel(centerX, insideY, row, height < 40)
+    const height = typeof props.height === "number" ? props.height : Number(props.height ?? 0)
+    const stackHeight = getPeriodBLabelStackHeight(row)
+    const barTopY =
+      height >= stackHeight + 10 ? y + height - stackHeight : y + height + stackHeight - 10
+
+    return renderPeriodBReviewLabelStack(centerX, barTopY, row, height < 48)
   }
 }
 
 /** @deprecated Use createPeriodBBarLabels instead. */
 export function createPeriodBChangeLabel(chartData: ComparativeBarRow[]) {
-  return createPeriodBBarLabels(chartData, "insideBottom")
+  return createPeriodBBarLabels(chartData, "aboveTotal")
 }
 
 export function ComparativeChangeTickLabel({
@@ -171,15 +204,37 @@ export function ComparativeChangeTickLabel({
   dy: number
   layout?: "inline" | "stacked"
 }) {
-  if (!row.changeDirection) return null
+  if (!row.changeDirection) {
+    return (
+      <text
+        x={0}
+        y={dy + 24}
+        textAnchor="middle"
+        className="fill-foreground"
+        fontSize={10}
+        fontWeight={700}
+      >
+        {row.periodB.toLocaleString()}
+      </text>
+    )
+  }
+
+  const { color, arrow, changeCount, pct } = getComparativeChangeParts(row)
+  const countY = dy
+  const pctY = dy + 15
+  const totalY = pct ? dy + 31 : dy + 18
 
   if (layout === "stacked") {
-    const pctLineCount = row.changePct != null || row.changeDirection === "flat" ? 1 : 0
-    const totalY = dy + 16 + pctLineCount * 14
-
     return (
       <g>
-        {renderStackedChangeLabel(0, dy, row, true)}
+        <text x={0} y={countY} textAnchor="middle" fill={color} fontSize={11} fontWeight={800}>
+          {arrow} {changeCount}
+        </text>
+        {pct ? (
+          <text x={0} y={pctY} textAnchor="middle" fill={color} fontSize={10} fontWeight={700}>
+            {pct}
+          </text>
+        ) : null}
         <text
           x={0}
           y={totalY}
@@ -194,5 +249,9 @@ export function ComparativeChangeTickLabel({
     )
   }
 
-  return renderStackedChangeLabel(0, dy, row, true)
+  return (
+    <text x={0} y={countY} textAnchor="middle" fill={color} fontSize={11} fontWeight={800}>
+      {arrow} {changeCount}
+    </text>
+  )
 }

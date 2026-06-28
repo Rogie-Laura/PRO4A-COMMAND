@@ -514,19 +514,19 @@ export function CrimeComparativePanel({
                 <div className="w-full overflow-x-auto overscroll-x-contain">
                   <ChartContainer
                     config={chartConfig}
-                    className="aspect-auto h-[360px]"
+                    className="aspect-auto h-[400px]"
                     style={{
                       minWidth: chartMinWidth ?? "100%",
                       width: chartMinWidth ?? "100%",
                     }}
                     initialDimension={{
                       width: chartMinWidth ?? (isMobile ? 360 : 640),
-                      height: 360,
+                      height: 400,
                     }}
                   >
                     <BarChart
                       data={ppoChartData}
-                      margin={{ top: 28, right: isMobile ? 12 : 8, left: 0, bottom: 4 }}
+                      margin={{ top: 72, right: isMobile ? 12 : 8, left: 0, bottom: 4 }}
                       barCategoryGap={isMobile ? "24%" : "20%"}
                       barGap={isMobile ? 3 : 6}
                     >
@@ -536,7 +536,7 @@ export function CrimeComparativePanel({
                         tickLine={false}
                         axisLine={false}
                         interval={0}
-                        height={isMobile ? 82 : 68}
+                        height={isMobile ? 108 : 92}
                         tick={(props) => (
                           <PpoAxisTick {...props} chartData={ppoChartData} compact={isMobile} />
                         )}
@@ -564,7 +564,6 @@ export function CrimeComparativePanel({
                         className="cursor-pointer"
                         onClick={handlePpoBarClick}
                       >
-                        <LabelList dataKey="periodB" content={<ComparativeBarTotalLabel />} />
                         <LabelList dataKey="periodB" content={periodBChangeLabel} />
                       </Bar>
                     </BarChart>

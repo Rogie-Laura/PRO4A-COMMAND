@@ -71,7 +71,7 @@ function CrimeAxisTick({
   if (!row) return null
 
   const text = truncateCrimeLabel(row.label, compact)
-  const changeLineOffset = 26
+  const changeLineOffset = 28
 
   return (
     <g transform={`translate(${x},${y})`}>
@@ -136,7 +136,7 @@ export function CrimeComparativePpoSheet({
   }, [isMobile, rows.length])
 
   const chartHeight = useMemo(() => {
-    return isMobile ? 360 : 420
+    return isMobile ? 400 : 460
   }, [isMobile])
 
   const periodBBarLabels = useMemo(
@@ -188,7 +188,7 @@ export function CrimeComparativePpoSheet({
                   >
                     <BarChart
                       data={rows}
-                      margin={{ top: 56, right: isMobile ? 12 : 8, left: 0, bottom: 8 }}
+                      margin={{ top: 72, right: isMobile ? 12 : 8, left: 0, bottom: 8 }}
                       barCategoryGap={isMobile ? "24%" : "20%"}
                       barGap={isMobile ? 3 : 6}
                     >
@@ -198,7 +198,7 @@ export function CrimeComparativePpoSheet({
                         tickLine={false}
                         axisLine={false}
                         interval={0}
-                        height={isMobile ? 104 : 88}
+                        height={isMobile ? 112 : 96}
                         tick={(props) => (
                           <CrimeAxisTick {...props} chartData={rows} compact={isMobile} />
                         )}
