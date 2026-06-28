@@ -8,7 +8,7 @@ import {
   ComparativeBarTotalLabel,
   ComparativeChangeTickLabel,
   comparativeBarChartConfig,
-  createPeriodBChangeLabel,
+  createPeriodBBarLabels,
   type ComparativeBarRow,
 } from "@/components/dashboard/crime-comparative-chart-utils"
 import { OfficeLogo } from "@/components/dashboard/office-logo"
@@ -78,12 +78,9 @@ function CrimeAxisTick({
         <title>{row.label}</title>
         {text}
       </text>
-      {row.periodA === 0 && row.periodB === 0 ? (
-        <text x={0} y={0} dy={26} textAnchor="middle" fill="currentColor" fontSize={10} fontWeight={600}>
-          0 · 0
-        </text>
+      {row.periodB === 0 ? (
+        <ComparativeChangeTickLabel row={row} dy={26} layout="stacked" />
       ) : null}
-      {row.periodB === 0 ? <ComparativeChangeTickLabel row={row} dy={row.periodA === 0 && row.periodB === 0 ? 40 : 28} /> : null}
     </g>
   )
 }
@@ -141,7 +138,10 @@ export function CrimeComparativePpoSheet({
     return isMobile ? 360 : 420
   }, [isMobile])
 
-  const periodBChangeLabel = useMemo(() => createPeriodBChangeLabel(rows), [rows])
+  const periodBBarLabels = useMemo(
+    () => createPeriodBBarLabels(rows, "aboveTotal"),
+    [rows],
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -187,7 +187,7 @@ export function CrimeComparativePpoSheet({
                   >
                     <BarChart
                       data={rows}
-                      margin={{ top: 28, right: isMobile ? 12 : 8, left: 0, bottom: 8 }}
+                      margin={{ top: 48, right: isMobile ? 12 : 8, left: 0, bottom: 8 }}
                       barCategoryGap={isMobile ? "24%" : "20%"}
                       barGap={isMobile ? 3 : 6}
                     >
@@ -221,8 +221,7 @@ export function CrimeComparativePpoSheet({
                         radius={[4, 4, 0, 0]}
                         maxBarSize={isMobile ? 34 : 48}
                       >
-                        <LabelList dataKey="periodB" content={<ComparativeBarTotalLabel />} />
-                        <LabelList dataKey="periodB" content={periodBChangeLabel} />
+                        <LabelList dataKey="periodB" content={periodBBarLabels} />
                       </Bar>
                     </BarChart>
                   </ChartContainer>
