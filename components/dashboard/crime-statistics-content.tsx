@@ -1,5 +1,5 @@
 import { CrimeStatisticsRefreshButton } from "@/components/dashboard/crime-statistics-refresh-button"
-import { CrimeVolumeSection } from "@/components/dashboard/crime-volume-section"
+import { CrimeStatisticsTabs } from "@/components/dashboard/crime-statistics-tabs"
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -9,10 +9,12 @@ export function CrimeStatisticsLoading() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-10 w-full max-w-xl rounded-lg" />
+      <Skeleton className="h-9 w-full max-w-md rounded-lg" />
       <div className="grid gap-4 lg:grid-cols-[minmax(220px,280px)_1fr]">
         <Skeleton className="h-48 rounded-xl" />
         <Skeleton className="h-72 rounded-xl" />
       </div>
+      <Skeleton className="h-72 rounded-xl" />
     </div>
   )
 }
@@ -39,16 +41,17 @@ export async function CrimeStatisticsContent() {
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 sm:max-w-xl">
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Walang crime data pa. Mag-upload sa Settings (Super Admin) gamit ang PNP-CIRAS Excel
-            export — kukunin lang ang ppo, stn, barangay, YEAR, typeofPlace, dateReported,
-            dateCommitted, timeCommitted, crime, at category.
+            export. Kung na-upload na dati, mag-upload ulit para sa bagong Index / Non-Index tabs at
+            monthly chart.
           </CardContent>
         </Card>
       ) : (
         <>
           <p className="text-sm text-muted-foreground">
             Source file: <span className="font-medium text-foreground">{data.fileName}</span>
+            {data.year ? ` · Year ${data.year}` : ""}
           </p>
-          <CrimeVolumeSection data={data} />
+          <CrimeStatisticsTabs data={data} />
         </>
       )}
     </div>

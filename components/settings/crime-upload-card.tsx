@@ -23,7 +23,8 @@ type CrimeUploadCardProps = {
 type UploadSummary = {
   insertedCount: number
   skippedRows: number
-  totalVolume: number
+  indexVolume: number
+  nonIndexVolume: number
   year: number | null
 }
 
@@ -61,7 +62,8 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
         setSummary({
           insertedCount: result.insertedCount,
           skippedRows: result.skippedRows,
-          totalVolume: result.analytics.totalVolume,
+          indexVolume: result.analytics.indexCrime.totalVolume,
+          nonIndexVolume: result.analytics.nonIndexCrime.totalVolume,
           year: result.analytics.year,
         })
         setSuccess(
@@ -142,7 +144,10 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge variant="secondary">
-                Total volume: {summary.totalVolume.toLocaleString()}
+                Index: {summary.indexVolume.toLocaleString()}
+              </Badge>
+              <Badge variant="secondary">
+                Non-index: {summary.nonIndexVolume.toLocaleString()}
               </Badge>
               {summary.year ? <Badge variant="secondary">Year: {summary.year}</Badge> : null}
             </div>

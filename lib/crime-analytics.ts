@@ -1,73 +1,12 @@
 import { unstable_cache } from "next/cache"
 
+import { isIndexCrimeCategory, isNonIndexCrimeCategory } from "@/lib/crime-config"
 import { fetchStoredCrimeAnalytics } from "@/lib/crime-records"
-import type { CrimeAnalytics } from "@/lib/crime-types"
+import type { CrimeAnalytics, CrimeCategoryStats, CrimeMonthlyCount } from "@/lib/crime-types"
 import type { CountItem } from "@/lib/personnel-types"
 import type { ParsedCrimeRecord } from "@/lib/crime-xlsx-parser"
 
 export const CRIME_SUPABASE_SOURCE_LABEL = "PRO4A Crime Stats (Supabase)"
-
-const CSV_EXPECTED_HEADERS = [
-  "ppo",
-  "stn",
-  "barangay",
-  "year",
-  "typeofplace",
-  "datereported",
-  "datecommitted",
-  "timecommitted",
-  "crime",
-  "category",
-  "victim",
-  "suspect",
-  "narrative",
-  "casestatus",
-  "lat",
-  "lng",
-] as const
-
-function parseCsvLine(line: string): string[] {
-  const values: string[] = []
-  let current = ""
-  let inQuotes = false
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
-
-    if (char === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"'
-        i++
-      } else {
-        inQuotes = !inQuotes
-      }
-    } else if (char === "," && !inQuotes) {
-      values.push(current)
-      current = ""
-    } else {
-      current += char
-    }
-  }
-
-  values.push(current)
-  return values
-}
-
-function parseCsvRows(text: string): string[][] {
-  return text
-    .split(/\r?\n/)
-    .filter((line) => line.trim().length > 0)
-    .map((line) => parseCsvLine(line).map((value) => value.trim()))
-}
-
-function normalizeHeader(value: string) {
-  return value.replace(/^\uFEFF/, "").trim().toLowerCase()
-}
-
-function isCrimeDataSheet(headers: string[]) {
-  const normalized = headers.map(normalizeHeader)
-  return CSV_EXPECTED_HEADERS.every((header) => normalized.includes(header))
-}
 
 function buildCountItems(counts: Map<string, number>, total: number): CountItem[] {
   return [...counts.entries()]
@@ -79,6 +18,17 @@ function buildCountItems(counts: Map<string, number>, total: number): CountItem[
     .sort((left, right) => right.count - left.count)
 }
 
+function emptyCategoryStats(): CrimeCategoryStats {
+  return {
+    totalVolume: 0,
+    coveredPeriodStart: null,
+    coveredPeriodEnd: null,
+    ppoBreakdown: [],
+    crimeBreakdown: [],
+    monthlyBreakdown: [],
+  }
+}
+
 export function emptyCrimeAnalytics(fileName = ""): CrimeAnalytics {
   return {
     lastUpdated: new Date().toISOString(),
@@ -86,19 +36,20 @@ export function emptyCrimeAnalytics(fileName = ""): CrimeAnalytics {
     dataSource: CRIME_SUPABASE_SOURCE_LABEL,
     dataReady: false,
     year: null,
-    totalVolume: 0,
-    coveredPeriodStart: null,
-    coveredPeriodEnd: null,
-    ppoBreakdown: [],
-    crimeBreakdown: [],
+    indexCrime: emptyCategoryStats(),
+    nonIndexCrime: emptyCategoryStats(),
     categoryBreakdown: [],
-    statusBreakdown: [],
   }
 }
 
-function parseSlashDate(value: string): Date | null {
-  const trimmed = value.trim()
+function parseCommittedDateValue(value: string | null | undefined): Date | null {
+  const trimmed = String(value ?? "").trim()
   if (!trimmed) return null
+
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (isoMatch) {
+    return new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]))
+  }
 
   const parts = trimmed.split("/")
   if (parts.length !== 3) return null
@@ -123,18 +74,6 @@ function parseSlashDate(value: string): Date | null {
   return date
 }
 
-function parseCommittedDateValue(value: string | null | undefined): Date | null {
-  const trimmed = String(value ?? "").trim()
-  if (!trimmed) return null
-
-  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/)
-  if (isoMatch) {
-    return new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]))
-  }
-
-  return parseSlashDate(trimmed)
-}
-
 function formatCrimePeriodDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -143,38 +82,52 @@ function formatCrimePeriodDate(date: Date) {
   }).format(date)
 }
 
-function buildCoveredPeriod(year: number | null, latestCommitted: Date | null) {
-  if (!year) {
-    return { coveredPeriodStart: null, coveredPeriodEnd: null }
-  }
+function getRecordMonthKey(record: ParsedCrimeRecord): string | null {
+  const dateStr = record.dateCommitted || record.dateReported
+  if (!dateStr) return null
 
-  const coveredPeriodStart = formatCrimePeriodDate(new Date(year, 0, 1))
-  const coveredPeriodEnd = latestCommitted ? formatCrimePeriodDate(latestCommitted) : null
-
-  return { coveredPeriodStart, coveredPeriodEnd }
+  const match = dateStr.match(/^(\d{4})-(\d{2})/)
+  return match ? `${match[1]}-${match[2]}` : null
 }
 
-export function buildCrimeAnalyticsFromRecords(
+function formatMonthLabel(monthKey: string, spanMultipleYears: boolean) {
+  const [year, month] = monthKey.split("-")
+  const date = new Date(Number(year), Number(month) - 1, 1)
+  const shortMonth = new Intl.DateTimeFormat("en-US", { month: "short" }).format(date)
+  return spanMultipleYears ? `${shortMonth} ${year}` : shortMonth
+}
+
+function buildMonthlyBreakdown(
   records: ParsedCrimeRecord[],
-  meta: { fileName: string; lastUpdated: string },
-): CrimeAnalytics {
+): CrimeMonthlyCount[] {
+  const monthCounts = new Map<string, number>()
+
+  for (const record of records) {
+    const monthKey = getRecordMonthKey(record)
+    if (!monthKey) continue
+    monthCounts.set(monthKey, (monthCounts.get(monthKey) ?? 0) + 1)
+  }
+
+  const years = new Set([...monthCounts.keys()].map((key) => key.slice(0, 4)))
+  const spanMultipleYears = years.size > 1
+
+  return [...monthCounts.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([monthKey, count]) => ({
+      monthKey,
+      label: formatMonthLabel(monthKey, spanMultipleYears),
+      count,
+    }))
+}
+
+function buildCategoryStats(records: ParsedCrimeRecord[], year: number | null): CrimeCategoryStats {
   const ppoCounts = new Map<string, number>()
   const crimeCounts = new Map<string, number>()
-  const categoryCounts = new Map<string, number>()
-  let year: number | null = null
   let latestCommitted: Date | null = null
 
   for (const record of records) {
     ppoCounts.set(record.ppo, (ppoCounts.get(record.ppo) ?? 0) + 1)
     crimeCounts.set(record.crime, (crimeCounts.get(record.crime) ?? 0) + 1)
-
-    if (record.category) {
-      categoryCounts.set(record.category, (categoryCounts.get(record.category) ?? 0) + 1)
-    }
-
-    if (record.year != null) {
-      year ??= record.year
-    }
 
     const committedDate = parseCommittedDateValue(record.dateCommitted)
     if (committedDate && (!latestCommitted || committedDate > latestCommitted)) {
@@ -183,101 +136,50 @@ export function buildCrimeAnalyticsFromRecords(
   }
 
   const totalVolume = records.length
-  const { coveredPeriodStart, coveredPeriodEnd } = buildCoveredPeriod(year, latestCommitted)
+  const coveredPeriodStart = year
+    ? formatCrimePeriodDate(new Date(year, 0, 1))
+    : null
+  const coveredPeriodEnd = latestCommitted ? formatCrimePeriodDate(latestCommitted) : null
+
+  return {
+    totalVolume,
+    coveredPeriodStart,
+    coveredPeriodEnd,
+    ppoBreakdown: buildCountItems(ppoCounts, totalVolume),
+    crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
+    monthlyBreakdown: buildMonthlyBreakdown(records),
+  }
+}
+
+export function buildCrimeAnalyticsFromRecords(
+  records: ParsedCrimeRecord[],
+  meta: { fileName: string; lastUpdated: string },
+): CrimeAnalytics {
+  const indexRecords = records.filter((record) => isIndexCrimeCategory(record.category))
+  const nonIndexRecords = records.filter((record) => isNonIndexCrimeCategory(record.category))
+
+  const categoryCounts = new Map<string, number>()
+  let year: number | null = null
+
+  for (const record of records) {
+    if (record.category) {
+      categoryCounts.set(record.category, (categoryCounts.get(record.category) ?? 0) + 1)
+    }
+
+    if (record.year != null) {
+      year ??= record.year
+    }
+  }
 
   return {
     lastUpdated: meta.lastUpdated,
     fileName: meta.fileName,
     dataSource: CRIME_SUPABASE_SOURCE_LABEL,
-    dataReady: true,
+    dataReady: indexRecords.length > 0 || nonIndexRecords.length > 0,
     year,
-    totalVolume,
-    coveredPeriodStart,
-    coveredPeriodEnd,
-    ppoBreakdown: buildCountItems(ppoCounts, totalVolume),
-    crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
-    categoryBreakdown: buildCountItems(categoryCounts, totalVolume),
-    statusBreakdown: [],
-  }
-}
-
-export function buildCrimeAnalytics(csvText: string, fileName: string): CrimeAnalytics {
-  const rows = parseCsvRows(csvText)
-  if (rows.length < 2) {
-    return emptyCrimeAnalytics(fileName)
-  }
-
-  const headers = rows[0].map(normalizeHeader)
-  if (!isCrimeDataSheet(headers)) {
-    return emptyCrimeAnalytics(fileName)
-  }
-
-  const ppoIndex = headers.indexOf("ppo")
-  const yearIndex = headers.indexOf("year")
-  const committedIndex = headers.indexOf("datecommitted")
-  const crimeIndex = headers.indexOf("crime")
-  const categoryIndex = headers.indexOf("category")
-  const statusIndex = headers.indexOf("casestatus")
-
-  const ppoCounts = new Map<string, number>()
-  const crimeCounts = new Map<string, number>()
-  const categoryCounts = new Map<string, number>()
-  const statusCounts = new Map<string, number>()
-  let year: number | null = null
-  let latestCommitted: Date | null = null
-  let totalVolume = 0
-
-  for (const row of rows.slice(1)) {
-    const ppo = row[ppoIndex]?.trim()
-    const crime = row[crimeIndex]?.trim()
-    const category = row[categoryIndex]?.trim()
-    const status = row[statusIndex]?.trim()
-
-    if (!ppo || !crime) continue
-
-    totalVolume += 1
-
-    const yearValue = Number.parseInt(row[yearIndex] ?? "", 10)
-    if (Number.isFinite(yearValue)) {
-      year ??= yearValue
-    }
-
-    const committedDate = parseSlashDate(row[committedIndex] ?? "")
-    if (committedDate && (!latestCommitted || committedDate > latestCommitted)) {
-      latestCommitted = committedDate
-    }
-
-    ppoCounts.set(ppo, (ppoCounts.get(ppo) ?? 0) + 1)
-    crimeCounts.set(crime, (crimeCounts.get(crime) ?? 0) + 1)
-
-    if (category) {
-      categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1)
-    }
-
-    if (status) {
-      statusCounts.set(status, (statusCounts.get(status) ?? 0) + 1)
-    }
-  }
-
-  if (totalVolume === 0) {
-    return emptyCrimeAnalytics(fileName)
-  }
-
-  const { coveredPeriodStart, coveredPeriodEnd } = buildCoveredPeriod(year, latestCommitted)
-
-  return {
-    lastUpdated: new Date().toISOString(),
-    fileName,
-    dataSource: "PNP-CIRAS CSV",
-    dataReady: true,
-    year,
-    totalVolume,
-    coveredPeriodStart,
-    coveredPeriodEnd,
-    ppoBreakdown: buildCountItems(ppoCounts, totalVolume),
-    crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
-    categoryBreakdown: buildCountItems(categoryCounts, totalVolume),
-    statusBreakdown: buildCountItems(statusCounts, totalVolume),
+    indexCrime: buildCategoryStats(indexRecords, year),
+    nonIndexCrime: buildCategoryStats(nonIndexRecords, year),
+    categoryBreakdown: buildCountItems(categoryCounts, records.length),
   }
 }
 
@@ -292,7 +194,7 @@ async function loadCrimeAnalytics(): Promise<CrimeAnalytics> {
   return emptyCrimeAnalytics()
 }
 
-export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v2"
+export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v3"
 
 const getCachedCrimeAnalytics = unstable_cache(loadCrimeAnalytics, [CRIME_ANALYTICS_CACHE_TAG], {
   revalidate: false,

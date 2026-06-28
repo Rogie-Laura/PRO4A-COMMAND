@@ -91,7 +91,7 @@ export async function fetchStoredCrimeAnalytics(): Promise<CrimeAnalytics | null
   }
 
   const analytics = data.analytics as CrimeAnalytics
-  if (!analytics.dataReady) {
+  if (!analytics.dataReady || !analytics.indexCrime || !analytics.nonIndexCrime) {
     return null
   }
 
@@ -100,6 +100,8 @@ export async function fetchStoredCrimeAnalytics(): Promise<CrimeAnalytics | null
     fileName: analytics.fileName || data.filename,
     lastUpdated: analytics.lastUpdated || data.created_at,
     categoryBreakdown: analytics.categoryBreakdown ?? [],
+    indexCrime: analytics.indexCrime,
+    nonIndexCrime: analytics.nonIndexCrime,
   }
 }
 
