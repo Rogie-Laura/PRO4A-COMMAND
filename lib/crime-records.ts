@@ -1,7 +1,8 @@
 import { buildCrimeAnalyticsFromRecords } from "@/lib/crime-analytics"
 import {
+  buildFocusCrimeCatalogFromNames,
   crimeNamesMatch,
-  INDEX_FOCUS_CRIME_ALWAYS,
+  INDEX_FOCUS_CRIME_ORDER,
   isIndexCrimeCategory,
   normalizeCrimeName,
 } from "@/lib/crime-config"
@@ -283,20 +284,7 @@ function mapRangeRow(row: {
 }
 
 function buildFocusCrimeCatalogFromBreakdown(breakdown: CountItem[]): string[] {
-  const crimes = new Map<string, string>()
-
-  for (const always of INDEX_FOCUS_CRIME_ALWAYS) {
-    const normalized = normalizeCrimeName(always)
-    crimes.set(normalized.toUpperCase(), normalized)
-  }
-
-  for (const item of breakdown) {
-    const normalized = normalizeCrimeName(item.name)
-    if (!normalized) continue
-    crimes.set(normalized.toUpperCase(), normalized)
-  }
-
-  return [...crimes.values()].sort((left, right) => left.localeCompare(right))
+  return buildFocusCrimeCatalogFromNames(breakdown.map((item) => item.name))
 }
 
 async function fetchIndexCrimeRowsForRangeQuery(
@@ -386,17 +374,12 @@ async function fetchIndexFocusCrimeCatalogForBatch(batch: StoredCrimeBatchRow): 
   if (hasCurrentAnalyticsShape(batch.analytics)) {
     const analytics = normalizeStoredAnalytics(batch.analytics, batch)
     if (analytics.indexCrime.focusCrimeCatalog?.length) {
-      return analytics.indexCrime.focusCrimeCatalog
+      return buildFocusCrimeCatalogFromNames(analytics.indexCrime.focusCrimeCatalog)
     }
     return buildFocusCrimeCatalogFromBreakdown(analytics.indexCrime.crimeBreakdown)
   }
 
-  const crimes = new Map<string, string>()
-  for (const always of INDEX_FOCUS_CRIME_ALWAYS) {
-    const normalized = normalizeCrimeName(always)
-    crimes.set(normalized.toUpperCase(), normalized)
-  }
-
+  const crimeNames: string[] = []
   let from = 0
   const supabase = createAdminClient()
 
@@ -419,8 +402,7 @@ async function fetchIndexFocusCrimeCatalogForBatch(batch: StoredCrimeBatchRow): 
 
     for (const row of data) {
       const normalized = normalizeCrimeName(row.crime ?? "")
-      if (!normalized) continue
-      crimes.set(normalized.toUpperCase(), normalized)
+      if (normalized) crimeNames.push(normalized)
     }
 
     if (data.length < FETCH_PAGE_SIZE) {
@@ -430,7 +412,7 @@ async function fetchIndexFocusCrimeCatalogForBatch(batch: StoredCrimeBatchRow): 
     from += FETCH_PAGE_SIZE
   }
 
-  return [...crimes.values()].sort((left, right) => left.localeCompare(right))
+  return buildFocusCrimeCatalogFromNames(crimeNames)
 }
 
 function getCrimeCount(counts: Map<string, number>, crimeName: string) {
@@ -443,7 +425,7 @@ function getCrimeCount(counts: Map<string, number>, crimeName: string) {
 }
 
 function emptyFocusCrimeComparisonRows(): CrimeFocusComparativeRow[] {
-  return INDEX_FOCUS_CRIME_ALWAYS.map((crime) => ({
+  return INDEX_FOCUS_CRIME_ORDER.map((crime) => ({
     crime,
     periodA: 0,
     periodB: 0,
@@ -471,12 +453,6 @@ function buildFocusCrimeComparisonRows(
         ...metrics,
       }
     })
-    .sort(
-      (left, right) =>
-        right.periodB - left.periodB ||
-        right.periodA - left.periodA ||
-        left.crime.localeCompare(right.crime),
-    )
 }
 
 function summarizeIndexCrimeCrimeCounts(

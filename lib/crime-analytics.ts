@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache"
 
 import {
-  INDEX_FOCUS_CRIME_ALWAYS,
+  buildFocusCrimeCatalogFromNames,
   isIndexCrimeCategory,
   isNonIndexCrimeCategory,
   normalizeCrimeName,
@@ -148,20 +148,7 @@ function buildUnitBreakdownByPpo(records: ParsedCrimeRecord[]): Record<string, C
 }
 
 function buildFocusCrimeCatalog(crimeCounts: Map<string, number>): string[] {
-  const crimes = new Map<string, string>()
-
-  for (const always of INDEX_FOCUS_CRIME_ALWAYS) {
-    const normalized = normalizeCrimeName(always)
-    crimes.set(normalized.toUpperCase(), normalized)
-  }
-
-  for (const name of crimeCounts.keys()) {
-    const normalized = normalizeCrimeName(name)
-    if (!normalized) continue
-    crimes.set(normalized.toUpperCase(), normalized)
-  }
-
-  return [...crimes.values()].sort((left, right) => left.localeCompare(right))
+  return buildFocusCrimeCatalogFromNames([...crimeCounts.keys()])
 }
 
 function buildCategoryStats(
