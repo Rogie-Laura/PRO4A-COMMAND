@@ -172,12 +172,12 @@ export function createPeriodBBarLabels(
     const width = typeof props.width === "number" ? props.width : Number(props.width ?? 0)
     const centerX = x + width / 2
 
-    // Zero-height bars are rendered on the axis tick instead.
-    if (row.periodB === 0) return null
-
     if (placement === "aboveTotal") {
       return renderPeriodBReviewLabelStack(centerX, y, row)
     }
+
+    // Zero-height bars fall back to the axis tick on the main PPO chart.
+    if (row.periodB === 0) return null
 
     if (!row.changeDirection) return null
 

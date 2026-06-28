@@ -6,9 +6,8 @@ import { Bar, BarChart, CartesianGrid, LabelList, Legend, XAxis, YAxis } from "r
 import { comparePpoCrimeTypesAction } from "@/app/(dashboard)/ridmd/actions"
 import {
   ComparativeBarTotalLabel,
-  ComparativeChangeTickLabel,
   comparativeBarChartConfig,
-  createPeriodBBarLabels,
+  createPeriodBChangeLabel,
   type ComparativeBarRow,
 } from "@/components/dashboard/crime-comparative-chart-utils"
 import { OfficeLogo } from "@/components/dashboard/office-logo"
@@ -23,7 +22,6 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { CrimePeriodRange } from "@/lib/crime-comparative"
-import { buildComparativePeriodNarrative } from "@/lib/crime-comparative"
 import type { CrimePpoBreakdownItem } from "@/lib/crime-ppo-config"
 
 type CrimeComparativePpoSheetProps = {
@@ -71,7 +69,6 @@ function CrimeAxisTick({
   if (!row) return null
 
   const text = truncateCrimeLabel(row.label, compact)
-  const changeLineOffset = 28
 
   return (
     <g transform={`translate(${x},${y})`}>
@@ -79,9 +76,6 @@ function CrimeAxisTick({
         <title>{row.label}</title>
         {text}
       </text>
-      {row.periodB === 0 ? (
-        <ComparativeChangeTickLabel row={row} dy={changeLineOffset} layout="stacked" />
-      ) : null}
     </g>
   )
 }
@@ -135,14 +129,7 @@ export function CrimeComparativePpoSheet({
     return Math.max(360, rows.length * 96 + 56)
   }, [isMobile, rows.length])
 
-  const chartHeight = useMemo(() => {
-    return isMobile ? 400 : 460
-  }, [isMobile])
-
-  const periodBBarLabels = useMemo(
-    () => createPeriodBBarLabels(rows, "aboveTotal"),
-    [rows],
-  )
+  const periodBChangeLabel = useMemo(() => createPeriodBChangeLabel(rows), [rows])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -168,22 +155,21 @@ export function CrimeComparativePpoSheet({
 
             <DialogBody>
               {isPending ? (
-                <Skeleton className="h-[360px] w-full rounded-lg" />
+                <Skeleton className="h-[400px] w-full rounded-lg" />
               ) : error ? (
                 <p className="py-8 text-center text-sm text-destructive">{error}</p>
               ) : (
                 <div className="w-full overflow-x-auto overscroll-x-contain">
                   <ChartContainer
                     config={comparativeBarChartConfig}
-                    className="aspect-auto"
+                    className="aspect-auto h-[400px] sm:h-[460px]"
                     style={{
-                      height: chartHeight,
                       minWidth: chartMinWidth ?? "100%",
                       width: chartMinWidth ?? "100%",
                     }}
                     initialDimension={{
                       width: chartMinWidth ?? (isMobile ? 360 : 720),
-                      height: chartHeight,
+                      height: isMobile ? 400 : 460,
                     }}
                   >
                     <BarChart
@@ -198,7 +184,7 @@ export function CrimeComparativePpoSheet({
                         tickLine={false}
                         axisLine={false}
                         interval={0}
-                        height={isMobile ? 112 : 96}
+                        height={isMobile ? 72 : 64}
                         tick={(props) => (
                           <CrimeAxisTick {...props} chartData={rows} compact={isMobile} />
                         )}
@@ -222,27 +208,12 @@ export function CrimeComparativePpoSheet({
                         radius={[4, 4, 0, 0]}
                         maxBarSize={isMobile ? 34 : 48}
                       >
-                        <LabelList dataKey="periodB" content={periodBBarLabels} />
+                        <LabelList dataKey="periodB" content={periodBChangeLabel} />
                       </Bar>
                     </BarChart>
                   </ChartContainer>
                 </div>
               )}
-
-              {!isPending && rows.length > 0 ? (
-                <div className="mt-4 border-t border-border/40 pt-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Breakdown by focus crime
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {rows.map((row) => (
-                      <p key={row.label} className="text-xs leading-relaxed text-foreground/90 sm:text-sm">
-                        {buildComparativePeriodNarrative(row)}
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
             </DialogBody>
           </>
         ) : null}
