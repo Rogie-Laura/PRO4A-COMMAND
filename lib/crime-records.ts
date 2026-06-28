@@ -1,6 +1,15 @@
 import { buildCrimeAnalyticsFromRecords } from "@/lib/crime-analytics"
+import { isIndexCrimeCategory } from "@/lib/crime-config"
+import {
+  buildComparativeResult,
+  type CrimeComparativeResult,
+  type CrimePeriodRange,
+  type CrimePeriodSnapshot,
+} from "@/lib/crime-comparative"
+import { getEffectiveCrimeDate, isIsoDateInRange } from "@/lib/crime-dates"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { CrimeAnalytics } from "@/lib/crime-types"
+import type { CountItem } from "@/lib/personnel-types"
 import type { ParsedCrimeRecord } from "@/lib/crime-xlsx-parser"
 
 const INSERT_CHUNK_SIZE = 1000
@@ -225,6 +234,142 @@ export async function fetchStoredCrimeAnalytics(): Promise<CrimeAnalytics | null
   }
 
   return rebuilt
+}
+
+type IndexCrimeRangeRow = {
+  ppo: string
+  category: string
+  dateCommitted: string | null
+  dateReported: string | null
+}
+
+function buildPpoBreakdown(counts: Map<string, number>, total: number): CountItem[] {
+  return [...counts.entries()]
+    .map(([name, count]) => ({
+      name,
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 1000) / 10 : 0,
+    }))
+    .sort((left, right) => right.count - left.count)
+}
+
+function mapRangeRow(row: {
+  ppo: string
+  category: string
+  date_committed: string | null
+  date_reported: string | null
+}): IndexCrimeRangeRow {
+  return {
+    ppo: row.ppo,
+    category: row.category ?? "",
+    dateCommitted: row.date_committed,
+    dateReported: row.date_reported,
+  }
+}
+
+async function fetchIndexCrimeRowsForRangeQuery(
+  batchId: string,
+  startIso: string,
+  endIso: string,
+  mode: "committed" | "reported",
+): Promise<IndexCrimeRangeRow[]> {
+  const supabase = createAdminClient()
+  const rows: IndexCrimeRangeRow[] = []
+  let from = 0
+
+  while (true) {
+    let query = supabase
+      .from("crime_records")
+      .select("ppo, category, date_committed, date_reported")
+      .eq("batch_id", batchId)
+
+    if (mode === "committed") {
+      query = query
+        .not("date_committed", "is", null)
+        .gte("date_committed", startIso)
+        .lte("date_committed", endIso)
+    } else {
+      query = query
+        .is("date_committed", null)
+        .not("date_reported", "is", null)
+        .gte("date_reported", startIso)
+        .lte("date_reported", endIso)
+    }
+
+    const { data, error } = await query.order("id", { ascending: true }).range(from, from + FETCH_PAGE_SIZE - 1)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    if (!data || data.length === 0) {
+      break
+    }
+
+    rows.push(...data.map(mapRangeRow))
+
+    if (data.length < FETCH_PAGE_SIZE) {
+      break
+    }
+
+    from += FETCH_PAGE_SIZE
+  }
+
+  return rows
+}
+
+function summarizeIndexCrimeRows(
+  rows: IndexCrimeRangeRow[],
+  range: CrimePeriodRange,
+): CrimePeriodSnapshot {
+  const ppoCounts = new Map<string, number>()
+  let totalVolume = 0
+
+  for (const row of rows) {
+    if (!isIndexCrimeCategory(row.category)) continue
+
+    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted, row.dateReported)
+    if (!effectiveDate || !isIsoDateInRange(effectiveDate, range.start, range.end)) {
+      continue
+    }
+
+    ppoCounts.set(row.ppo, (ppoCounts.get(row.ppo) ?? 0) + 1)
+    totalVolume += 1
+  }
+
+  return {
+    ...range,
+    totalVolume,
+    ppoBreakdown: buildPpoBreakdown(ppoCounts, totalVolume),
+  }
+}
+
+export async function fetchIndexCrimePeriodSnapshot(
+  range: CrimePeriodRange,
+): Promise<CrimePeriodSnapshot> {
+  const batch = await getLatestStoredCrimeBatch()
+  if (!batch) {
+    return { ...range, totalVolume: 0, ppoBreakdown: [] }
+  }
+
+  const [committedRows, reportedRows] = await Promise.all([
+    fetchIndexCrimeRowsForRangeQuery(batch.id, range.start, range.end, "committed"),
+    fetchIndexCrimeRowsForRangeQuery(batch.id, range.start, range.end, "reported"),
+  ])
+
+  return summarizeIndexCrimeRows([...committedRows, ...reportedRows], range)
+}
+
+export async function compareIndexCrimePeriods(
+  periodA: CrimePeriodRange,
+  periodB: CrimePeriodRange,
+): Promise<CrimeComparativeResult> {
+  const [snapshotA, snapshotB] = await Promise.all([
+    fetchIndexCrimePeriodSnapshot(periodA),
+    fetchIndexCrimePeriodSnapshot(periodB),
+  ])
+
+  return buildComparativeResult(snapshotA, snapshotB)
 }
 
 export async function replaceCrimeRecords({

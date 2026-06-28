@@ -6,12 +6,13 @@ import { Bar, BarChart, LabelList, XAxis, YAxis } from "recharts"
 import { OfficeLogo } from "@/components/dashboard/office-logo"
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart"
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import type { CrimePpoBreakdownItem } from "@/lib/crime-ppo-config"
 
 export type CrimeStationBreakdownItem = {
@@ -19,7 +20,7 @@ export type CrimeStationBreakdownItem = {
   count: number
 }
 
-type CrimeUnitSheetProps = {
+type CrimeUnitModalProps = {
   office: (CrimePpoBreakdownItem & { stations: CrimeStationBreakdownItem[] }) | null
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -54,7 +55,7 @@ function estimateLabelWidth(stations: CrimeStationBreakdownItem[], compact: bool
     return Math.min(128, Math.max(96, longest * 5.5 + 20))
   }
 
-  return Math.min(400, Math.max(220, longest * 7.5 + 32))
+  return Math.min(320, Math.max(180, longest * 7.5 + 32))
 }
 
 function truncateStationLabel(label: string, compact: boolean) {
@@ -114,7 +115,7 @@ function StationTooltip({
   )
 }
 
-export function CrimeUnitSheet({ office, open, onOpenChange }: CrimeUnitSheetProps) {
+export function CrimeUnitModal({ office, open, onOpenChange }: CrimeUnitModalProps) {
   const isMobile = useIsMobile()
   const [chartReady, setChartReady] = useState(false)
 
@@ -129,18 +130,19 @@ export function CrimeUnitSheet({ office, open, onOpenChange }: CrimeUnitSheetPro
   }, [open, office?.csvName])
 
   const chartHeight = useMemo(() => {
-    if (!office) return 400
-    return Math.max(400, office.stations.length * 44 + 72)
-  }, [office])
+    if (!office) return 320
+    const contentHeight = office.stations.length * 44 + 72
+    return Math.min(Math.max(280, contentHeight), isMobile ? 420 : 520)
+  }, [office, isMobile])
 
   const labelWidth = useMemo(() => {
-    if (!office) return isMobile ? 112 : 220
+    if (!office) return isMobile ? 112 : 200
     return estimateLabelWidth(office.stations, isMobile)
   }, [office, isMobile])
 
   const chartMinWidth = useMemo(() => {
     if (!isMobile) return undefined
-    return labelWidth + 220
+    return labelWidth + 200
   }, [isMobile, labelWidth])
 
   const total = useMemo(
@@ -149,15 +151,12 @@ export function CrimeUnitSheet({ office, open, onOpenChange }: CrimeUnitSheetPro
   )
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="h-full !w-full max-w-none overflow-y-auto sm:!w-[98vw]"
-      >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl">
         {office && (
           <>
-            <SheetHeader className="border-b pb-4">
-              <div className="flex items-center gap-3 pr-8">
+            <DialogHeader className="border-b border-primary/15 bg-gradient-to-br from-primary/10 via-transparent to-transparent">
+              <div className="flex items-center gap-3">
                 <OfficeLogo
                   src={office.logo}
                   alt={office.label}
@@ -165,33 +164,33 @@ export function CrimeUnitSheet({ office, open, onOpenChange }: CrimeUnitSheetPro
                   colorClass={office.colorClass}
                 />
                 <div className="min-w-0">
-                  <SheetTitle className="text-lg">{office.label}</SheetTitle>
-                  <SheetDescription>
+                  <DialogTitle>{office.label}</DialogTitle>
+                  <DialogDescription>
                     {office.stations.length} units · {total.toLocaleString()} index crimes
-                  </SheetDescription>
+                  </DialogDescription>
                 </div>
               </div>
-            </SheetHeader>
+            </DialogHeader>
 
-            <div className="pb-8 pl-0 pr-4">
+            <DialogBody>
               {office.stations.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
                   Walang index crime data para sa office na ito.
                 </p>
               ) : chartReady ? (
-                <div className="mt-2 w-full overflow-x-auto">
+                <div className="w-full overflow-x-auto">
                   <ChartContainer
                     config={chartConfig}
-                    className="aspect-auto w-full min-h-[280px]"
+                    className="aspect-auto w-full min-h-[240px]"
                     style={{ height: chartHeight, minWidth: chartMinWidth }}
-                    initialDimension={{ width: isMobile ? 360 : 640, height: chartHeight }}
+                    initialDimension={{ width: isMobile ? 320 : 560, height: chartHeight }}
                   >
                     <BarChart
                       data={office.stations}
                       layout="vertical"
                       margin={{
                         top: 8,
-                        right: isMobile ? 40 : 56,
+                        right: isMobile ? 36 : 52,
                         left: 4,
                         bottom: 8,
                       }}
@@ -235,12 +234,12 @@ export function CrimeUnitSheet({ office, open, onOpenChange }: CrimeUnitSheetPro
                   </ChartContainer>
                 </div>
               ) : (
-                <div className="mt-2 h-[280px] w-full animate-pulse rounded-lg bg-muted/40" />
+                <div className="h-[280px] w-full animate-pulse rounded-lg bg-muted/40" />
               )}
-            </div>
+            </DialogBody>
           </>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }

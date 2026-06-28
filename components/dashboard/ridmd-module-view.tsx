@@ -2,9 +2,9 @@
 
 import { useState } from "react"
 
+import { CrimeComparativePanel } from "@/components/dashboard/crime-comparative-panel"
 import { CrimeIndexPanel } from "@/components/dashboard/crime-index-panel"
 import { SwipeCarousel } from "@/components/dashboard/swipe-carousel"
-import { SectionPlaceholder } from "@/components/section-placeholder"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { CrimeAnalytics } from "@/lib/crime-types"
 
@@ -16,7 +16,12 @@ export function RidmdModuleView({ data }: RidmdModuleViewProps) {
   const [activeTab, setActiveTab] = useState("crime-statistics")
 
   const crimePanel = <CrimeIndexPanel data={data} />
-  const comparativePanel = <SectionPlaceholder title="Comparative Crime Stats" />
+  const comparativePanel = (
+    <CrimeComparativePanel
+      dataReady={data.dataReady}
+      monthlyBreakdown={data.indexCrime.monthlyBreakdown}
+    />
+  )
 
   return (
     <div className="space-y-4">

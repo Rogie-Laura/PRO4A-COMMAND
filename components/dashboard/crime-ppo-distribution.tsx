@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 
-import { CrimeUnitSheet } from "@/components/dashboard/crime-unit-sheet"
+import { CrimeUnitModal } from "@/components/dashboard/crime-unit-sheet"
 import { OfficeLogo } from "@/components/dashboard/office-logo"
 import { buildCrimePpoBreakdownItems, type CrimePpoBreakdownItem } from "@/lib/crime-ppo-config"
 import type { CountItem } from "@/lib/personnel-types"
@@ -71,7 +71,7 @@ export function CrimePpoDistribution({
         ))}
       </div>
 
-      <CrimeUnitSheet office={selectedOffice} open={open} onOpenChange={handleOpenChange} />
+      <CrimeUnitModal office={selectedOffice} open={open} onOpenChange={handleOpenChange} />
     </>
   )
 }
