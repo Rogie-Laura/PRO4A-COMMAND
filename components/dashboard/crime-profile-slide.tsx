@@ -173,11 +173,10 @@ export function CrimeProfileSlide({ focusCrime, periodA, periodB, isMobile }: Cr
         </p>
       </div>
 
-      <div className="grid min-h-[560px] grid-cols-1 gap-3 lg:grid-cols-5 lg:grid-rows-2">
+      <div className="flex flex-col gap-3">
         <ProfilePanel
           title="Previous vs Period in Review"
           description={profile.crime}
-          className="lg:col-span-2 lg:row-span-2"
         >
           {comparisonRows.length === 0 ? (
             <p className="w-full py-8 text-center text-sm text-muted-foreground">Walang data.</p>
@@ -223,7 +222,6 @@ export function CrimeProfileSlide({ focusCrime, periodA, periodB, isMobile }: Cr
         <ProfilePanel
           title="Type of Place"
           description={`Period in review · ${profile.periodBLabel}`}
-          className="lg:col-span-3"
         >
           {typeofPlaceData.length === 0 ? (
             <p className="w-full py-8 text-center text-sm text-muted-foreground">Walang data.</p>
@@ -267,7 +265,6 @@ export function CrimeProfileSlide({ focusCrime, periodA, periodB, isMobile }: Cr
         <ProfilePanel
           title="PPO Distribution"
           description={`Period in review · ${profile.periodBLabel}`}
-          className="lg:col-span-1"
         >
           {ppoPieData.length === 0 ? (
             <p className="w-full py-8 text-center text-sm text-muted-foreground">Walang data.</p>
@@ -326,7 +323,6 @@ export function CrimeProfileSlide({ focusCrime, periodA, periodB, isMobile }: Cr
         <ProfilePanel
           title="Case Status"
           description={`Period in review · ${profile.periodBLabel}`}
-          className="lg:col-span-2"
         >
           {caseStatusData.length === 0 ? (
             <p className="w-full py-8 text-center text-sm text-muted-foreground">Walang data.</p>

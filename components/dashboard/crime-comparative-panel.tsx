@@ -15,7 +15,6 @@ import {
 import { CrimeComparativePpoSheet } from "@/components/dashboard/crime-comparative-ppo-sheet"
 import { ComparativeFocusCrimeChart } from "@/components/dashboard/crime-comparative-focus-chart"
 import { CrimeProfileSlide } from "@/components/dashboard/crime-profile-slide"
-import { SwipeCarousel } from "@/components/dashboard/swipe-carousel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -368,130 +367,6 @@ export function CrimeComparativePanel({
     }
   }
 
-  const profileSlides = useMemo(
-    () => [
-      {
-        id: "comparative",
-        label: "Comparative overview",
-        dotClassName: "bg-primary",
-        content: (
-          <div className="space-y-4">
-            <Card className="gap-0 py-0">
-              <CardHeader className="border-b pb-4">
-                <CardTitle className="text-base">Index Crime by PPO</CardTitle>
-                <CardDescription>Click a PPO bar to open the focus crime profile.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4">
-                {ppoChartData.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    Walang PPO breakdown sa napiling date ranges.
-                  </p>
-                ) : (
-                  <div className="w-full overflow-x-auto overscroll-x-contain">
-                    <ChartContainer
-                      config={chartConfig}
-                      className="aspect-auto h-[400px]"
-                      style={{
-                        minWidth: chartMinWidth ?? "100%",
-                        width: chartMinWidth ?? "100%",
-                      }}
-                      initialDimension={{
-                        width: chartMinWidth ?? (isMobile ? 360 : 640),
-                        height: 400,
-                      }}
-                    >
-                      <BarChart
-                        data={ppoChartData}
-                        margin={{ top: 72, right: isMobile ? 12 : 8, left: 0, bottom: 4 }}
-                        barCategoryGap={isMobile ? "24%" : "20%"}
-                        barGap={isMobile ? 3 : 6}
-                      >
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
-                        <XAxis
-                          dataKey="label"
-                          tickLine={false}
-                          axisLine={false}
-                          interval={0}
-                          height={isMobile ? 108 : 92}
-                          tick={(props) => (
-                            <PpoAxisTick {...props} chartData={ppoChartData} compact={isMobile} />
-                          )}
-                        />
-                        <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Legend wrapperStyle={isMobile ? { paddingTop: 8 } : undefined} />
-                        <Bar
-                          dataKey="periodA"
-                          name="Previous period"
-                          fill="var(--color-periodA)"
-                          radius={[4, 4, 0, 0]}
-                          maxBarSize={isMobile ? 34 : 48}
-                          className="cursor-pointer"
-                          onClick={handlePpoBarClick}
-                        >
-                          <LabelList dataKey="periodA" content={<ComparativeBarTotalLabel />} />
-                        </Bar>
-                        <Bar
-                          dataKey="periodB"
-                          name="Period in review"
-                          fill="var(--color-periodB)"
-                          radius={[4, 4, 0, 0]}
-                          maxBarSize={isMobile ? 34 : 48}
-                          className="cursor-pointer"
-                          onClick={handlePpoBarClick}
-                        >
-                          <LabelList dataKey="periodB" content={periodBChangeLabel} />
-                        </Bar>
-                      </BarChart>
-                    </ChartContainer>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="gap-0 py-0">
-              <CardHeader className="border-b pb-4">
-                <CardTitle className="text-base">Focus Crime Distribution</CardTitle>
-                <CardDescription>
-                  Index focus crimes · previous period vs period in review (PRO CALABARZON)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4">
-                <ComparativeFocusCrimeChart
-                  rows={focusCrimeChartData}
-                  isMobile={isMobile}
-                  height={isMobile ? 400 : 460}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        ),
-      },
-      ...INDEX_FOCUS_CRIME_ORDER.map((crime) => ({
-        id: `profile-${crime}`,
-        label: crime,
-        dotClassName: "bg-sky-500",
-        content: (
-          <CrimeProfileSlide
-            focusCrime={crime}
-            periodA={periodA}
-            periodB={periodB}
-            isMobile={isMobile}
-          />
-        ),
-      })),
-    ],
-    [
-      chartMinWidth,
-      focusCrimeChartData,
-      isMobile,
-      periodA,
-      periodB,
-      periodBChangeLabel,
-      ppoChartData,
-    ],
-  )
-
   if (!dataReady) {
     return (
       <Card className="border-dashed border-muted-foreground/25 bg-muted/15">
@@ -643,11 +518,106 @@ export function CrimeComparativePanel({
             </Card>
           </div>
 
-          <SwipeCarousel
-            slides={profileSlides}
-            swipeHint="Swipe: Comparative overview · Crime Profile (Murder, Homicide, …)"
-            ariaLabel="Comparative and crime profile slides"
-          />
+          <Card className="gap-0 py-0">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-base">Index Crime by PPO</CardTitle>
+              <CardDescription>Click a PPO bar to open the focus crime profile.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-4">
+              {ppoChartData.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  Walang PPO breakdown sa napiling date ranges.
+                </p>
+              ) : (
+                <div className="w-full overflow-x-auto overscroll-x-contain">
+                  <ChartContainer
+                    config={chartConfig}
+                    className="aspect-auto h-[400px]"
+                    style={{
+                      minWidth: chartMinWidth ?? "100%",
+                      width: chartMinWidth ?? "100%",
+                    }}
+                    initialDimension={{
+                      width: chartMinWidth ?? (isMobile ? 360 : 640),
+                      height: 400,
+                    }}
+                  >
+                    <BarChart
+                      data={ppoChartData}
+                      margin={{ top: 72, right: isMobile ? 12 : 8, left: 0, bottom: 4 }}
+                      barCategoryGap={isMobile ? "24%" : "20%"}
+                      barGap={isMobile ? 3 : 6}
+                    >
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        interval={0}
+                        height={isMobile ? 108 : 92}
+                        tick={(props) => (
+                          <PpoAxisTick {...props} chartData={ppoChartData} compact={isMobile} />
+                        )}
+                      />
+                      <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Legend wrapperStyle={isMobile ? { paddingTop: 8 } : undefined} />
+                      <Bar
+                        dataKey="periodA"
+                        name="Previous period"
+                        fill="var(--color-periodA)"
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={isMobile ? 34 : 48}
+                        className="cursor-pointer"
+                        onClick={handlePpoBarClick}
+                      >
+                        <LabelList dataKey="periodA" content={<ComparativeBarTotalLabel />} />
+                      </Bar>
+                      <Bar
+                        dataKey="periodB"
+                        name="Period in review"
+                        fill="var(--color-periodB)"
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={isMobile ? 34 : 48}
+                        className="cursor-pointer"
+                        onClick={handlePpoBarClick}
+                      >
+                        <LabelList dataKey="periodB" content={periodBChangeLabel} />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="gap-0 py-0">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-base">Focus Crime Distribution</CardTitle>
+              <CardDescription>
+                Index focus crimes · previous period vs period in review (PRO CALABARZON)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4">
+              <ComparativeFocusCrimeChart
+                rows={focusCrimeChartData}
+                isMobile={isMobile}
+                height={isMobile ? 400 : 460}
+              />
+            </CardContent>
+          </Card>
+
+          <div className="space-y-6">
+            {INDEX_FOCUS_CRIME_ORDER.map((crime) => (
+              <CrimeProfileSlide
+                key={crime}
+                focusCrime={crime}
+                periodA={periodA}
+                periodB={periodB}
+                isMobile={isMobile}
+              />
+            ))}
+          </div>
 
           <CrimeComparativePpoSheet
             office={selectedOffice}
