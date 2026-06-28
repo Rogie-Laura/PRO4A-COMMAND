@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import type { ParsedBmiRecord } from "@/lib/bmi-xlsx-parser"
 import type { BmiCategoryId } from "@/lib/bmi-config"
 
-const INSERT_CHUNK_SIZE = 500
+const INSERT_CHUNK_SIZE = 1000
 
 export type BmiUploadBatchInfo = {
   id: string

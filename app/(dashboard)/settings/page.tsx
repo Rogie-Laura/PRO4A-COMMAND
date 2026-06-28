@@ -16,6 +16,8 @@ import { getSession } from "@/lib/auth/get-session"
 import { isSuperAdmin } from "@/lib/auth/roles"
 import { getLatestBmiUploadBatch, type BmiUploadBatchInfo } from "@/lib/bmi-records"
 
+export const maxDuration = 300
+
 export default async function SettingsPage() {
   const session = await getSession()
 

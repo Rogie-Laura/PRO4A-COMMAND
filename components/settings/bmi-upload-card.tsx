@@ -87,7 +87,7 @@ export function BmiUploadCard({ latestBatch }: BmiUploadCardProps) {
         <CardDescription>
           Super Admin lang. Gamitin ang sample Excel format (Rank Fullname, SubUnitDesc, Assignment,
           BMI Class, Age, Height, Weight, atbp.). Kapag may upload, iyon ang gagamitin ng Health &
-          BMI dashboard.
+          BMI dashboard. Maaaring tumagal ng 1–2 minuto ang malaking file (~14k rows).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -124,7 +124,7 @@ export function BmiUploadCard({ latestBatch }: BmiUploadCardProps) {
 
           <Button onClick={handleUpload} disabled={isPending}>
             <UploadIcon />
-            {isPending ? "Ina-upload..." : "Upload to Supabase"}
+            {isPending ? "Ina-upload... (huwag isara ang page)" : "Upload to Supabase"}
           </Button>
         </div>
 

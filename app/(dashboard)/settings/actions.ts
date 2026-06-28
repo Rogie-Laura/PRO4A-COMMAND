@@ -78,41 +78,49 @@ export async function getLatestBmiUploadBatchAction() {
 }
 
 export async function uploadBmiRecordsAction(formData: FormData) {
-  const session = await requireSuperAdminSession()
-  const file = formData.get("file")
+  try {
+    const session = await requireSuperAdminSession()
+    const file = formData.get("file")
 
-  if (!(file instanceof File)) {
-    throw new Error("Pumili ng Excel file (.xlsx).")
-  }
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
 
-  if (!file.name.toLowerCase().endsWith(".xlsx")) {
-    throw new Error("Excel (.xlsx) lang ang tinatanggap.")
-  }
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
 
-  if (file.size === 0) {
-    throw new Error("Walang laman ang file.")
-  }
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
 
-  if (file.size > MAX_BMI_UPLOAD_BYTES) {
-    throw new Error("Mas malaki sa 15 MB ang file. Hatiin o i-compress muna.")
-  }
+    if (file.size > MAX_BMI_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 15 MB ang file. Hatiin o i-compress muna.")
+    }
 
-  const buffer = Buffer.from(await file.arrayBuffer())
-  const parsed = parseBmiXlsx(buffer)
-  const result = await replaceBmiRecords({
-    filename: file.name,
-    uploadedByLabel: session.label,
-    records: parsed.records,
-  })
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const parsed = parseBmiXlsx(buffer)
+    const result = await replaceBmiRecords({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      records: parsed.records,
+    })
 
-  updateTag(HEALTH_ANALYTICS_CACHE_TAG)
-  revalidatePath("/settings")
-  revalidatePath("/health-and-bmi")
+    updateTag(HEALTH_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/health-and-bmi")
 
-  return {
-    batch: result.batch,
-    insertedCount: result.insertedCount,
-    skippedRows: parsed.skippedRows,
-    categoryPreview: parsed.categoryPreview,
+    return {
+      batch: result.batch,
+      insertedCount: result.insertedCount,
+      skippedRows: parsed.skippedRows,
+      categoryPreview: parsed.categoryPreview,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang upload. Subukan ulit o bawasan ang laki ng file.")
   }
 }
