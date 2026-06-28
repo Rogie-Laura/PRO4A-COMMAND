@@ -442,6 +442,64 @@ function getCrimeCount(counts: Map<string, number>, crimeName: string) {
   return 0
 }
 
+function emptyFocusCrimeComparisonRows(): CrimeFocusComparativeRow[] {
+  return INDEX_FOCUS_CRIME_ALWAYS.map((crime) => ({
+    crime,
+    periodA: 0,
+    periodB: 0,
+    change: 0,
+    changePct: null,
+    changeDirection: "flat" as const,
+  }))
+}
+
+function buildFocusCrimeComparisonRows(
+  catalog: string[],
+  countsA: Map<string, number>,
+  countsB: Map<string, number>,
+): CrimeFocusComparativeRow[] {
+  return catalog
+    .map((crime) => {
+      const periodACount = getCrimeCount(countsA, crime)
+      const periodBCount = getCrimeCount(countsB, crime)
+      const metrics = buildCountChangeMetrics(periodACount, periodBCount)
+
+      return {
+        crime,
+        periodA: periodACount,
+        periodB: periodBCount,
+        ...metrics,
+      }
+    })
+    .sort(
+      (left, right) =>
+        right.periodB - left.periodB ||
+        right.periodA - left.periodA ||
+        left.crime.localeCompare(right.crime),
+    )
+}
+
+function summarizeIndexCrimeCrimeCounts(
+  rows: IndexCrimeRangeRow[],
+  range: CrimePeriodRange,
+): Map<string, number> {
+  const crimeCounts = new Map<string, number>()
+
+  for (const row of rows) {
+    if (!isIndexCrimeCategory(row.category)) continue
+
+    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted, row.dateReported)
+    if (!effectiveDate || !isIsoDateInRange(effectiveDate, range.start, range.end)) {
+      continue
+    }
+
+    const crimeName = normalizeCrimeName(row.crime) || "Unknown"
+    crimeCounts.set(crimeName, (crimeCounts.get(crimeName) ?? 0) + 1)
+  }
+
+  return crimeCounts
+}
+
 function summarizeIndexCrimeCrimeCountsForPpo(
   rows: IndexCrimeRangeRow[],
   ppoCsvName: string,
@@ -522,30 +580,51 @@ async function loadPpoCrimeTypeComparison(
     fetchIndexCrimeCrimeCountsForPpoPeriod(batchId, ppoCsvName, periodB),
   ])
 
-  return catalog
-    .map((crime) => {
-      const periodACount = getCrimeCount(countsA, crime)
-      const periodBCount = getCrimeCount(countsB, crime)
-      const metrics = buildCountChangeMetrics(periodACount, periodBCount)
-
-      return {
-        crime,
-        periodA: periodACount,
-        periodB: periodBCount,
-        ...metrics,
-      }
-    })
-    .sort(
-      (left, right) =>
-        right.periodB - left.periodB ||
-        right.periodA - left.periodA ||
-        left.crime.localeCompare(right.crime),
-    )
+  return buildFocusCrimeComparisonRows(catalog, countsA, countsB)
 }
 
 const getCachedPpoCrimeTypeComparison = unstable_cache(
   loadPpoCrimeTypeComparison,
   ["crime-ppo-profile-v1"],
+  {
+    revalidate: false,
+    tags: [CRIME_COMPARE_CACHE_TAG],
+  },
+)
+
+async function loadRegionalCrimeTypeComparison(
+  batchId: string,
+  periodAStart: string,
+  periodAEnd: string,
+  periodBStart: string,
+  periodBEnd: string,
+): Promise<CrimeFocusComparativeRow[]> {
+  const periodA: CrimePeriodRange = {
+    start: periodAStart,
+    end: periodAEnd,
+    label: "",
+  }
+  const periodB: CrimePeriodRange = {
+    start: periodBStart,
+    end: periodBEnd,
+    label: "",
+  }
+
+  const [catalog, rowsA, rowsB] = await Promise.all([
+    fetchIndexFocusCrimeCatalogByBatchId(batchId),
+    fetchIndexCrimeRowsForRangeQuery(batchId, periodAStart, periodAEnd),
+    fetchIndexCrimeRowsForRangeQuery(batchId, periodBStart, periodBEnd),
+  ])
+
+  const countsA = summarizeIndexCrimeCrimeCounts(rowsA, periodA)
+  const countsB = summarizeIndexCrimeCrimeCounts(rowsB, periodB)
+
+  return buildFocusCrimeComparisonRows(catalog, countsA, countsB)
+}
+
+const getCachedRegionalCrimeTypeComparison = unstable_cache(
+  loadRegionalCrimeTypeComparison,
+  ["crime-regional-focus-v1"],
   {
     revalidate: false,
     tags: [CRIME_COMPARE_CACHE_TAG],
@@ -593,19 +672,30 @@ export async function compareIndexCrimeForPpoByCrimeType(
 ): Promise<CrimeFocusComparativeRow[]> {
   const batch = await getLatestStoredCrimeBatch()
   if (!batch) {
-    return INDEX_FOCUS_CRIME_ALWAYS.map((crime) => ({
-      crime,
-      periodA: 0,
-      periodB: 0,
-      change: 0,
-      changePct: null,
-      changeDirection: "flat" as const,
-    }))
+    return emptyFocusCrimeComparisonRows()
   }
 
   return getCachedPpoCrimeTypeComparison(
     batch.id,
     ppoCsvName.trim(),
+    periodA.start,
+    periodA.end,
+    periodB.start,
+    periodB.end,
+  )
+}
+
+export async function compareIndexCrimeByCrimeType(
+  periodA: CrimePeriodRange,
+  periodB: CrimePeriodRange,
+): Promise<CrimeFocusComparativeRow[]> {
+  const batch = await getLatestStoredCrimeBatch()
+  if (!batch) {
+    return emptyFocusCrimeComparisonRows()
+  }
+
+  return getCachedRegionalCrimeTypeComparison(
+    batch.id,
     periodA.start,
     periodA.end,
     periodB.start,

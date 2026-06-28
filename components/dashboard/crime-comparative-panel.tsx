@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react"
 import { ArrowDownRight, ArrowUpRight, CalendarRange, Minus, RefreshCw } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, LabelList, Legend, XAxis, YAxis } from "recharts"
 
-import { compareCrimePeriodsAction } from "@/app/(dashboard)/ridmd/actions"
+import { compareCrimePeriodsAction, compareRegionalFocusCrimesAction } from "@/app/(dashboard)/ridmd/actions"
 import {
   ComparativeBarTotalLabel,
   ComparativeChangeTickLabel,
@@ -13,6 +13,7 @@ import {
   type ComparativeBarRow,
 } from "@/components/dashboard/crime-comparative-chart-utils"
 import { CrimeComparativePpoSheet } from "@/components/dashboard/crime-comparative-ppo-sheet"
+import { ComparativeFocusCrimeChart } from "@/components/dashboard/crime-comparative-focus-chart"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -234,6 +235,7 @@ export function CrimeComparativePanel({
   const [periodA, setPeriodA] = useState<CrimePeriodRange>(initialRanges.periodA)
   const [periodB, setPeriodB] = useState<CrimePeriodRange>(initialRanges.periodB)
   const [result, setResult] = useState<CrimeComparativeResult | null>(null)
+  const [focusCrimeChartData, setFocusCrimeChartData] = useState<ComparativeBarRow[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [selectedOffice, setSelectedOffice] = useState<CrimePpoBreakdownItem | null>(null)
@@ -256,10 +258,24 @@ export function CrimeComparativePanel({
     setError(null)
     startTransition(async () => {
       try {
-        const comparison = await compareCrimePeriodsAction(nextA, nextB)
+        const [comparison, focusCrimes] = await Promise.all([
+          compareCrimePeriodsAction(nextA, nextB),
+          compareRegionalFocusCrimesAction(nextA, nextB),
+        ])
         setResult(comparison)
+        setFocusCrimeChartData(
+          focusCrimes.map((row) => ({
+            label: row.crime,
+            periodA: row.periodA,
+            periodB: row.periodB,
+            change: row.change,
+            changePct: row.changePct,
+            changeDirection: row.changeDirection,
+          })),
+        )
       } catch (compareError) {
         setResult(null)
+        setFocusCrimeChartData([])
         setError(
           compareError instanceof Error
             ? compareError.message
@@ -570,6 +586,22 @@ export function CrimeComparativePanel({
                   </ChartContainer>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="gap-0 py-0">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-base">Focus Crime Distribution</CardTitle>
+              <CardDescription>
+                Index focus crimes · previous period vs period in review (PRO CALABARZON)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4">
+              <ComparativeFocusCrimeChart
+                rows={focusCrimeChartData}
+                isMobile={isMobile}
+                height={isMobile ? 400 : 460}
+              />
             </CardContent>
           </Card>
 
