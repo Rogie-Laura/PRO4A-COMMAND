@@ -1,15 +1,15 @@
 "use client"
 
 import { useEffect, useMemo, useState, useTransition } from "react"
-import { Bar, BarChart, CartesianGrid, Customized, LabelList, Legend, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, LabelList, Legend, XAxis, YAxis } from "recharts"
 
 import { comparePpoCrimeTypesAction } from "@/app/(dashboard)/ridmd/actions"
 import {
   ComparativeBarTotalLabel,
-  ComparativeChangeOverlay,
+  ComparativeChangeTickLabel,
   comparativeBarChartConfig,
+  createPeriodBChangeLabel,
   type ComparativeBarRow,
-  type ComparativeChangeOverlayProps,
 } from "@/components/dashboard/crime-comparative-chart-utils"
 import { OfficeLogo } from "@/components/dashboard/office-logo"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
@@ -78,6 +78,12 @@ function CrimeAxisTick({
         <title>{row.label}</title>
         {text}
       </text>
+      {row.periodA === 0 && row.periodB === 0 ? (
+        <text x={0} y={0} dy={26} textAnchor="middle" fill="currentColor" fontSize={10} fontWeight={600}>
+          0 · 0
+        </text>
+      ) : null}
+      {row.periodB === 0 ? <ComparativeChangeTickLabel row={row} dy={row.periodA === 0 && row.periodB === 0 ? 40 : 28} /> : null}
     </g>
   )
 }
@@ -135,6 +141,8 @@ export function CrimeComparativePpoSheet({
     return isMobile ? 360 : 420
   }, [isMobile])
 
+  const periodBChangeLabel = useMemo(() => createPeriodBChangeLabel(rows), [rows])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl">
@@ -162,10 +170,6 @@ export function CrimeComparativePpoSheet({
                 <Skeleton className="h-[360px] w-full rounded-lg" />
               ) : error ? (
                 <p className="py-8 text-center text-sm text-destructive">{error}</p>
-              ) : rows.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  Walang focus crime data para sa napiling periods at office na ito.
-                </p>
               ) : (
                 <div className="w-full overflow-x-auto overscroll-x-contain">
                   <ChartContainer
@@ -193,7 +197,7 @@ export function CrimeComparativePpoSheet({
                         tickLine={false}
                         axisLine={false}
                         interval={0}
-                        height={isMobile ? 56 : 48}
+                        height={isMobile ? 88 : 72}
                         tick={(props) => (
                           <CrimeAxisTick {...props} chartData={rows} compact={isMobile} />
                         )}
@@ -218,17 +222,8 @@ export function CrimeComparativePpoSheet({
                         maxBarSize={isMobile ? 34 : 48}
                       >
                         <LabelList dataKey="periodB" content={<ComparativeBarTotalLabel />} />
+                        <LabelList dataKey="periodB" content={periodBChangeLabel} />
                       </Bar>
-                      <Customized
-                        component={(props: Record<string, unknown>) => (
-                          <ComparativeChangeOverlay
-                            xAxisMap={props.xAxisMap as ComparativeChangeOverlayProps["xAxisMap"]}
-                            yAxisMap={props.yAxisMap as ComparativeChangeOverlayProps["yAxisMap"]}
-                            chartData={rows}
-                            barSeriesCount={2}
-                          />
-                        )}
-                      />
                     </BarChart>
                   </ChartContainer>
                 </div>

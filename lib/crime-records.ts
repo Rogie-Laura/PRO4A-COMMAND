@@ -1,5 +1,10 @@
 import { buildCrimeAnalyticsFromRecords } from "@/lib/crime-analytics"
-import { isIndexCrimeCategory } from "@/lib/crime-config"
+import {
+  crimeNamesMatch,
+  INDEX_FOCUS_CRIME_ALWAYS,
+  isIndexCrimeCategory,
+  normalizeCrimeName,
+} from "@/lib/crime-config"
 import {
   buildComparativeResult,
   buildCountChangeMetrics,
@@ -361,6 +366,58 @@ export async function fetchIndexCrimePeriodSnapshot(
   return summarizeIndexCrimeRows([...committedRows, ...reportedRows], range)
 }
 
+async function fetchIndexFocusCrimeCatalog(batchId: string): Promise<string[]> {
+  const supabase = createAdminClient()
+  const crimes = new Map<string, string>()
+  let from = 0
+
+  for (const always of INDEX_FOCUS_CRIME_ALWAYS) {
+    const normalized = normalizeCrimeName(always)
+    crimes.set(normalized.toUpperCase(), normalized)
+  }
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("crime_records")
+      .select("crime, category")
+      .eq("batch_id", batchId)
+      .order("id", { ascending: true })
+      .range(from, from + FETCH_PAGE_SIZE - 1)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    if (!data || data.length === 0) {
+      break
+    }
+
+    for (const row of data) {
+      if (!isIndexCrimeCategory(row.category ?? "")) continue
+      const normalized = normalizeCrimeName(row.crime ?? "")
+      if (!normalized) continue
+      crimes.set(normalized.toUpperCase(), normalized)
+    }
+
+    if (data.length < FETCH_PAGE_SIZE) {
+      break
+    }
+
+    from += FETCH_PAGE_SIZE
+  }
+
+  return [...crimes.values()].sort((left, right) => left.localeCompare(right))
+}
+
+function getCrimeCount(counts: Map<string, number>, crimeName: string) {
+  for (const [name, count] of counts) {
+    if (crimeNamesMatch(name, crimeName)) {
+      return count
+    }
+  }
+  return 0
+}
+
 function summarizeIndexCrimeCrimeCountsForPpo(
   rows: IndexCrimeRangeRow[],
   ppoCsvName: string,
@@ -378,7 +435,7 @@ function summarizeIndexCrimeCrimeCountsForPpo(
       continue
     }
 
-    const crimeName = row.crime.trim() || "Unknown"
+    const crimeName = normalizeCrimeName(row.crime) || "Unknown"
     crimeCounts.set(crimeName, (crimeCounts.get(crimeName) ?? 0) + 1)
   }
 
@@ -405,17 +462,28 @@ export async function compareIndexCrimeForPpoByCrimeType(
   periodA: CrimePeriodRange,
   periodB: CrimePeriodRange,
 ): Promise<CrimeFocusComparativeRow[]> {
-  const [countsA, countsB] = await Promise.all([
+  const batch = await getLatestStoredCrimeBatch()
+  if (!batch) {
+    return INDEX_FOCUS_CRIME_ALWAYS.map((crime) => ({
+      crime,
+      periodA: 0,
+      periodB: 0,
+      change: 0,
+      changePct: null,
+      changeDirection: "flat" as const,
+    }))
+  }
+
+  const [catalog, countsA, countsB] = await Promise.all([
+    fetchIndexFocusCrimeCatalog(batch.id),
     fetchIndexCrimeCrimeCountsForPpoPeriod(ppoCsvName, periodA),
     fetchIndexCrimeCrimeCountsForPpoPeriod(ppoCsvName, periodB),
   ])
 
-  const crimes = [...new Set([...countsA.keys(), ...countsB.keys()])]
-
-  return crimes
+  return catalog
     .map((crime) => {
-      const periodACount = countsA.get(crime) ?? 0
-      const periodBCount = countsB.get(crime) ?? 0
+      const periodACount = getCrimeCount(countsA, crime)
+      const periodBCount = getCrimeCount(countsB, crime)
       const metrics = buildCountChangeMetrics(periodACount, periodBCount)
 
       return {
@@ -425,8 +493,7 @@ export async function compareIndexCrimeForPpoByCrimeType(
         ...metrics,
       }
     })
-    .filter((row) => row.periodA > 0 || row.periodB > 0)
-    .sort((left, right) => right.periodB - left.periodB || right.periodA - left.periodA)
+    .sort((left, right) => right.periodB - left.periodB || right.periodA - left.periodA || left.crime.localeCompare(right.crime))
 }
 
 export async function compareIndexCrimePeriods(

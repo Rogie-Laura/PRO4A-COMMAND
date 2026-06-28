@@ -2,15 +2,15 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { ArrowDownRight, ArrowUpRight, CalendarRange, Minus, RefreshCw } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, Customized, LabelList, Legend, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, LabelList, Legend, XAxis, YAxis } from "recharts"
 
 import { compareCrimePeriodsAction } from "@/app/(dashboard)/ridmd/actions"
 import {
   ComparativeBarTotalLabel,
-  ComparativeChangeOverlay,
+  ComparativeChangeTickLabel,
   comparativeBarChartConfig,
+  createPeriodBChangeLabel,
   type ComparativeBarRow,
-  type ComparativeChangeOverlayProps,
 } from "@/components/dashboard/crime-comparative-chart-utils"
 import { CrimeComparativePpoSheet } from "@/components/dashboard/crime-comparative-ppo-sheet"
 import { Badge } from "@/components/ui/badge"
@@ -78,6 +78,7 @@ function PpoAxisTick(props: {
   const lines = props.compact
     ? [row.shortLabel, row.label.replace(/\s+PPO$/i, "")]
     : [row.label]
+  const changeLineOffset = 12 + lines.length * 14 + 2
 
   return (
     <g transform={`translate(${x},${y})`}>
@@ -95,6 +96,7 @@ function PpoAxisTick(props: {
           {line}
         </text>
       ))}
+      {row.periodB === 0 ? <ComparativeChangeTickLabel row={row} dy={changeLineOffset} /> : null}
     </g>
   )
 }
@@ -317,6 +319,11 @@ export function CrimeComparativePanel({
     return Math.max(360, ppoChartData.length * perPpo + 56)
   }, [isMobile, ppoChartData])
 
+  const periodBChangeLabel = useMemo(
+    () => createPeriodBChangeLabel(ppoChartData),
+    [ppoChartData],
+  )
+
   function handlePpoBarClick(_data: unknown, index: number) {
     const row = ppoChartData[index]
     if (!row) return
@@ -537,7 +544,7 @@ export function CrimeComparativePanel({
                         tickLine={false}
                         axisLine={false}
                         interval={0}
-                        height={isMobile ? 68 : 56}
+                        height={isMobile ? 82 : 68}
                         tick={(props) => (
                           <PpoAxisTick {...props} chartData={ppoChartData} compact={isMobile} />
                         )}
@@ -566,17 +573,8 @@ export function CrimeComparativePanel({
                         onClick={handlePpoBarClick}
                       >
                         <LabelList dataKey="periodB" content={<ComparativeBarTotalLabel />} />
+                        <LabelList dataKey="periodB" content={periodBChangeLabel} />
                       </Bar>
-                      <Customized
-                        component={(props: Record<string, unknown>) => (
-                          <ComparativeChangeOverlay
-                            xAxisMap={props.xAxisMap as ComparativeChangeOverlayProps["xAxisMap"]}
-                            yAxisMap={props.yAxisMap as ComparativeChangeOverlayProps["yAxisMap"]}
-                            chartData={ppoChartData}
-                            barSeriesCount={2}
-                          />
-                        )}
-                      />
                     </BarChart>
                   </ChartContainer>
                 </div>

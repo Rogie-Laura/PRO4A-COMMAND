@@ -55,8 +55,8 @@ export function buildCountChangeMetrics(periodA: number, periodB: number): {
     else changeDirection = "flat"
   } else if (periodB > 0) {
     changeDirection = "up"
-  } else if (periodA === 0 && periodB === 0) {
-    changeDirection = null
+  } else {
+    changeDirection = "flat"
   }
 
   return { change, changePct, changeDirection }
