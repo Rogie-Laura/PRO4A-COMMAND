@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache"
 
+import { BMI_SUPABASE_SOURCE_LABEL } from "@/lib/bmi-analytics-build"
 import {
   BMI_CATEGORIES,
   getBmiCategoryFromLabel,
@@ -7,16 +8,16 @@ import {
   isBmiDrilldownCategory,
   type BmiCategoryId,
 } from "@/lib/bmi-config"
-import { fetchStoredBmiRecords, type StoredBmiRecord } from "@/lib/bmi-records"
+import { fetchBmiPersonnelByCategory, fetchStoredBmiAnalytics } from "@/lib/bmi-records"
 import { fetchRictmdBmiSheetCsv, parseCsv } from "@/lib/google-sheets"
 import {
   isRictmdBmiSheet,
   isRictmdPersonnelRow,
   RICTMD_BMI_SHEET,
 } from "@/lib/rictmd-bmi-sheet"
-import type { BmiCategoryCount, BmiPersonnelDetail, HealthAnalytics } from "@/lib/health-types"
+import type { BmiCategoryCount, BmiPersonnelDetail, HealthAnalyticsSummary } from "@/lib/health-types"
 
-export const BMI_SUPABASE_SOURCE_LABEL = "PRO4A BMI Records (Supabase)"
+export { BMI_SUPABASE_SOURCE_LABEL }
 
 function pickField(row: Record<string, string>, keys: string[]) {
   for (const key of keys) {
@@ -69,20 +70,6 @@ function formatPersonName(row: Record<string, string>) {
   return firstName || surname || "Unknown"
 }
 
-function formatStoredPersonName(record: StoredBmiRecord) {
-  const parts = record.fullName.split(/\s+/).filter(Boolean)
-
-  if (parts.length >= 2) {
-    const surname = parts[parts.length - 1]
-    const firstName = parts[0]
-    const middle =
-      parts.length > 2 && parts[1] ? ` ${parts[1].charAt(0)}.` : ""
-    return `${surname}, ${firstName}${middle}`
-  }
-
-  return record.fullName || record.rank || "Unknown"
-}
-
 function mapPersonnelDetail(row: Record<string, string>): BmiPersonnelDetail {
   const rank = pickField(row, ["Rank"])
   const name = formatPersonName(row)
@@ -96,81 +83,6 @@ function mapPersonnelDetail(row: Record<string, string>): BmiPersonnelDetail {
     unit: unit || "—",
     age: age || "—",
   }
-}
-
-function mapStoredPersonnelDetail(record: StoredBmiRecord): BmiPersonnelDetail {
-  const name = formatStoredPersonName(record)
-  const unit = record.subUnit || record.assignment
-
-  return {
-    id: String(record.id),
-    rank: record.rank,
-    name,
-    unit: unit || "—",
-    age: record.age != null ? String(record.age) : "—",
-  }
-}
-
-function buildPersonnelByCategoryFromSheet(
-  rows: Record<string, string>[],
-): Partial<Record<BmiCategoryId, BmiPersonnelDetail[]>> {
-  const grouped = Object.fromEntries(
-    BMI_CATEGORIES.map((category) => [category.id, [] as BmiPersonnelDetail[]]),
-  ) as Record<BmiCategoryId, BmiPersonnelDetail[]>
-
-  for (const row of rows) {
-    if (!hasBmiData(row)) continue
-
-    const categoryId = resolveBmiCategory(row)
-    if (!categoryId || !isBmiDrilldownCategory(categoryId)) continue
-
-    grouped[categoryId].push(mapPersonnelDetail(row))
-  }
-
-  return finalizePersonnelGroups(grouped)
-}
-
-function buildPersonnelByCategoryFromRecords(
-  records: StoredBmiRecord[],
-): Partial<Record<BmiCategoryId, BmiPersonnelDetail[]>> {
-  const grouped = Object.fromEntries(
-    BMI_CATEGORIES.map((category) => [category.id, [] as BmiPersonnelDetail[]]),
-  ) as Record<BmiCategoryId, BmiPersonnelDetail[]>
-
-  for (const record of records) {
-    const categoryId =
-      record.bmiCategoryId ??
-      getBmiCategoryFromLabel(record.bmiClass) ??
-      (record.bmiResult != null ? getBmiCategoryFromValue(record.bmiResult) : null)
-
-    if (!categoryId || !isBmiDrilldownCategory(categoryId)) continue
-
-    grouped[categoryId].push(mapStoredPersonnelDetail(record))
-  }
-
-  return finalizePersonnelGroups(grouped)
-}
-
-function finalizePersonnelGroups(
-  grouped: Record<BmiCategoryId, BmiPersonnelDetail[]>,
-): Partial<Record<BmiCategoryId, BmiPersonnelDetail[]>> {
-  for (const categoryId of Object.keys(grouped) as BmiCategoryId[]) {
-    grouped[categoryId].sort((left, right) => {
-      const byName = left.name.localeCompare(right.name, "en", { sensitivity: "base" })
-      if (byName !== 0) return byName
-      return left.rank.localeCompare(right.rank, "en", { sensitivity: "base" })
-    })
-  }
-
-  const personnelByCategory: Partial<Record<BmiCategoryId, BmiPersonnelDetail[]>> = {}
-
-  for (const categoryId of Object.keys(grouped) as BmiCategoryId[]) {
-    if (grouped[categoryId].length > 0) {
-      personnelByCategory[categoryId] = grouped[categoryId]
-    }
-  }
-
-  return personnelByCategory
 }
 
 function buildCategoryCountsFromSheet(rows: Record<string, string>[]): BmiCategoryCount[] {
@@ -191,33 +103,6 @@ function buildCategoryCountsFromSheet(rows: Record<string, string>[]): BmiCatego
     assessed += 1
   }
 
-  return toCategoryCounts(counts, assessed)
-}
-
-function buildCategoryCountsFromRecords(records: StoredBmiRecord[]): BmiCategoryCount[] {
-  const counts = Object.fromEntries(BMI_CATEGORIES.map((category) => [category.id, 0])) as Record<
-    BmiCategoryId,
-    number
-  >
-
-  let assessed = 0
-
-  for (const record of records) {
-    const categoryId =
-      record.bmiCategoryId ??
-      getBmiCategoryFromLabel(record.bmiClass) ??
-      (record.bmiResult != null ? getBmiCategoryFromValue(record.bmiResult) : null)
-
-    if (!categoryId) continue
-
-    counts[categoryId] += 1
-    assessed += 1
-  }
-
-  return toCategoryCounts(counts, assessed)
-}
-
-function toCategoryCounts(counts: Record<BmiCategoryId, number>, assessed: number): BmiCategoryCount[] {
   return BMI_CATEGORIES.map((category) => ({
     id: category.id,
     label: category.label,
@@ -226,7 +111,7 @@ function toCategoryCounts(counts: Record<BmiCategoryId, number>, assessed: numbe
   }))
 }
 
-function emptyAnalytics(): HealthAnalytics {
+function emptyAnalytics(): HealthAnalyticsSummary {
   return {
     lastUpdated: new Date().toISOString(),
     dataReady: false,
@@ -238,35 +123,20 @@ function emptyAnalytics(): HealthAnalytics {
       count: 0,
       percentage: 0,
     })),
-    personnelByCategory: {},
   }
 }
 
-async function loadFromSupabase(): Promise<HealthAnalytics | null> {
+async function loadFromSupabase(): Promise<HealthAnalyticsSummary | null> {
   try {
-    const stored = await fetchStoredBmiRecords()
-    if (!stored) return null
-
-    const categories = buildCategoryCountsFromRecords(stored.records)
-    const personnelByCategory = buildPersonnelByCategoryFromRecords(stored.records)
-    const totalAssessed = categories.reduce((sum, category) => sum + category.count, 0)
-
-    if (totalAssessed === 0) return null
-
-    return {
-      lastUpdated: stored.batch.createdAt,
-      dataReady: true,
-      dataSource: BMI_SUPABASE_SOURCE_LABEL,
-      totalAssessed,
-      categories,
-      personnelByCategory,
-    }
+    const stored = await fetchStoredBmiAnalytics()
+    if (!stored || !stored.dataReady) return null
+    return stored
   } catch {
     return null
   }
 }
 
-async function loadFromGoogleSheet(): Promise<HealthAnalytics | null> {
+async function loadFromGoogleSheet(): Promise<HealthAnalyticsSummary | null> {
   try {
     const csv = await fetchRictmdBmiSheetCsv()
     const rows = parseCsv(csv)
@@ -277,7 +147,6 @@ async function loadFromGoogleSheet(): Promise<HealthAnalytics | null> {
 
     const rictmdRows = rows.filter(isRictmdPersonnelRow)
     const categories = buildCategoryCountsFromSheet(rictmdRows)
-    const personnelByCategory = buildPersonnelByCategoryFromSheet(rictmdRows)
     const totalAssessed = categories.reduce((sum, category) => sum + category.count, 0)
 
     if (totalAssessed === 0) {
@@ -290,14 +159,55 @@ async function loadFromGoogleSheet(): Promise<HealthAnalytics | null> {
       dataSource: RICTMD_BMI_SHEET.label,
       totalAssessed,
       categories,
-      personnelByCategory,
     }
   } catch {
     return null
   }
 }
 
-async function loadHealthAnalytics(): Promise<HealthAnalytics> {
+async function loadSheetPersonnelForCategory(categoryId: BmiCategoryId): Promise<BmiPersonnelDetail[]> {
+  if (!isBmiDrilldownCategory(categoryId)) return []
+
+  try {
+    const csv = await fetchRictmdBmiSheetCsv()
+    const rows = parseCsv(csv)
+
+    if (!isRictmdBmiSheet(rows)) {
+      return []
+    }
+
+    const personnel = rows
+      .filter(isRictmdPersonnelRow)
+      .filter((row) => hasBmiData(row) && resolveBmiCategory(row) === categoryId)
+      .map(mapPersonnelDetail)
+      .sort((left, right) => {
+        const byName = left.name.localeCompare(right.name, "en", { sensitivity: "base" })
+        if (byName !== 0) return byName
+        return left.rank.localeCompare(right.rank, "en", { sensitivity: "base" })
+      })
+
+    return personnel
+  } catch {
+    return []
+  }
+}
+
+export async function fetchBmiPersonnelForCategory(
+  categoryId: BmiCategoryId,
+): Promise<BmiPersonnelDetail[]> {
+  try {
+    const fromSupabase = await fetchBmiPersonnelByCategory(categoryId)
+    if (fromSupabase.length > 0) {
+      return fromSupabase
+    }
+  } catch {
+    // fall through to Google Sheet fallback
+  }
+
+  return loadSheetPersonnelForCategory(categoryId)
+}
+
+async function loadHealthAnalytics(): Promise<HealthAnalyticsSummary> {
   const fromSupabase = await loadFromSupabase()
   if (fromSupabase) return fromSupabase
 
@@ -307,15 +217,15 @@ async function loadHealthAnalytics(): Promise<HealthAnalytics> {
   return emptyAnalytics()
 }
 
-export const HEALTH_ANALYTICS_CACHE_TAG = "health-analytics-supabase-v1"
+export const HEALTH_ANALYTICS_CACHE_TAG = "health-analytics-supabase-v2"
 
-/** Cached until manual refresh — no repeat fetch on revisit. */
+/** Cached until manual refresh — summary only; personnel loads on drilldown. */
 const getCachedHealthAnalytics = unstable_cache(
   loadHealthAnalytics,
   [HEALTH_ANALYTICS_CACHE_TAG],
   { revalidate: false, tags: [HEALTH_ANALYTICS_CACHE_TAG] },
 )
 
-export async function getHealthAnalytics(): Promise<HealthAnalytics> {
+export async function getHealthAnalytics(): Promise<HealthAnalyticsSummary> {
   return getCachedHealthAnalytics()
 }

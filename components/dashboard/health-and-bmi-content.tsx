@@ -37,7 +37,7 @@ export async function HealthAndBmiContent() {
           sourceLabel={data.dataSource}
           syncDescription={
             data.dataSource === BMI_SUPABASE_SOURCE_LABEL
-              ? "synced from Supabase upload (cached until you refresh)"
+              ? "category summary cached · personnel loads when you open a category"
               : "synced from Google Sheet fallback (cached until you refresh)"
           }
         />
@@ -53,11 +53,7 @@ export async function HealthAndBmiContent() {
         </Card>
       )}
 
-      <BmiCategoryCards
-        categories={data.categories}
-        totalAssessed={data.totalAssessed}
-        personnelByCategory={data.personnelByCategory}
-      />
+      <BmiCategoryCards categories={data.categories} totalAssessed={data.totalAssessed} />
     </div>
   )
 }

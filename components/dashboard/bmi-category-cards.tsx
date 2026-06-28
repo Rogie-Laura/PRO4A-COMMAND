@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 
+import { fetchBmiCategoryPersonnelAction } from "@/app/(dashboard)/health-and-bmi/actions"
 import { BmiPersonnelSheet } from "@/components/dashboard/bmi-personnel-sheet"
 import {
   Card,
@@ -17,7 +18,6 @@ import { cn } from "@/lib/utils"
 type BmiCategoryCardsProps = {
   categories: BmiCategoryCount[]
   totalAssessed: number
-  personnelByCategory: Partial<Record<BmiCategoryId, BmiPersonnelDetail[]>>
 }
 
 type SelectedCategory = {
@@ -26,26 +26,37 @@ type SelectedCategory = {
   personnel: BmiPersonnelDetail[]
 }
 
-export function BmiCategoryCards({
-  categories,
-  totalAssessed,
-  personnelByCategory,
-}: BmiCategoryCardsProps) {
+export function BmiCategoryCards({ categories, totalAssessed }: BmiCategoryCardsProps) {
   const [selectedCategory, setSelectedCategory] = useState<SelectedCategory | null>(null)
   const [open, setOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   function handleCategoryClick(category: BmiCategoryCount) {
-    if (!isBmiDrilldownCategory(category.id) || category.count === 0) return
-
-    const personnel = personnelByCategory[category.id] ?? []
-    if (personnel.length === 0) return
+    if (!isBmiDrilldownCategory(category.id) || category.count === 0 || isPending) return
 
     setSelectedCategory({
       id: category.id,
       label: category.label,
-      personnel,
+      personnel: [],
     })
     setOpen(true)
+
+    startTransition(async () => {
+      try {
+        const personnel = await fetchBmiCategoryPersonnelAction(category.id)
+        setSelectedCategory({
+          id: category.id,
+          label: category.label,
+          personnel,
+        })
+      } catch {
+        setSelectedCategory({
+          id: category.id,
+          label: category.label,
+          personnel: [],
+        })
+      }
+    })
   }
 
   function handleOpenChange(nextOpen: boolean) {
@@ -84,6 +95,7 @@ export function BmiCategoryCards({
                   BMI_CATEGORY_GLASS[category.id],
                   isDrilldown &&
                     "cursor-pointer transition-colors hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  isPending && isDrilldown && "opacity-80",
                 )}
               >
                 <CardHeader className="pb-2">
@@ -111,8 +123,9 @@ export function BmiCategoryCards({
               <button
                 key={category.id}
                 type="button"
+                disabled={isPending}
                 onClick={() => handleCategoryClick(category)}
-                className="text-left"
+                className="text-left disabled:cursor-wait"
               >
                 {card}
               </button>
@@ -124,6 +137,7 @@ export function BmiCategoryCards({
       <BmiPersonnelSheet
         categoryLabel={selectedCategory?.label ?? null}
         personnel={selectedCategory?.personnel ?? []}
+        isLoading={open && isPending}
         open={open}
         onOpenChange={handleOpenChange}
       />

@@ -8,11 +8,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { BmiPersonnelDetail } from "@/lib/health-types"
 
 type BmiPersonnelSheetProps = {
   categoryLabel: string | null
   personnel: BmiPersonnelDetail[]
+  isLoading?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -37,9 +39,20 @@ function PersonCard({ person }: { person: BmiPersonnelDetail }) {
   )
 }
 
+function LoadingRows() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <Skeleton key={index} className="h-20 w-full rounded-lg" />
+      ))}
+    </div>
+  )
+}
+
 export function BmiPersonnelSheet({
   categoryLabel,
   personnel,
+  isLoading = false,
   open,
   onOpenChange,
 }: BmiPersonnelSheetProps) {
@@ -51,41 +64,53 @@ export function BmiPersonnelSheet({
             <DialogHeader>
               <DialogTitle>{categoryLabel}</DialogTitle>
               <DialogDescription>
-                {personnel.length.toLocaleString()} personnel in this BMI category
+                {isLoading
+                  ? "Loading personnel list…"
+                  : `${personnel.length.toLocaleString()} personnel in this BMI category`}
               </DialogDescription>
             </DialogHeader>
 
             <DialogBody>
-              <div className="space-y-3 md:hidden">
-                {personnel.map((person) => (
-                  <PersonCard key={person.id} person={person} />
-                ))}
-              </div>
-
-              <div className="hidden overflow-x-auto md:block">
-                <table className="w-full min-w-[640px] text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="pb-3 pr-4 font-medium">Rank</th>
-                      <th className="pb-3 px-3 font-medium">Name</th>
-                      <th className="pb-3 px-3 font-medium">Unit</th>
-                      <th className="pb-3 pl-3 text-center font-medium">Age</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              {isLoading ? (
+                <LoadingRows />
+              ) : personnel.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  Walang personnel records para sa category na ito.
+                </p>
+              ) : (
+                <>
+                  <div className="space-y-3 md:hidden">
                     {personnel.map((person) => (
-                      <tr key={person.id} className="border-b last:border-0">
-                        <td className="py-3 pr-4 font-medium">{person.rank}</td>
-                        <td className="px-3 py-3">{person.name}</td>
-                        <td className="px-3 py-3 text-muted-foreground">{person.unit}</td>
-                        <td className="py-3 pl-3 text-center font-semibold tabular-nums text-primary">
-                          {person.age}
-                        </td>
-                      </tr>
+                      <PersonCard key={person.id} person={person} />
                     ))}
-                  </tbody>
-                </table>
-              </div>
+                  </div>
+
+                  <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full min-w-[640px] text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-muted-foreground">
+                          <th className="pb-3 pr-4 font-medium">Rank</th>
+                          <th className="pb-3 px-3 font-medium">Name</th>
+                          <th className="pb-3 px-3 font-medium">Unit</th>
+                          <th className="pb-3 pl-3 text-center font-medium">Age</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {personnel.map((person) => (
+                          <tr key={person.id} className="border-b last:border-0">
+                            <td className="py-3 pr-4 font-medium">{person.rank}</td>
+                            <td className="px-3 py-3">{person.name}</td>
+                            <td className="px-3 py-3 text-muted-foreground">{person.unit}</td>
+                            <td className="py-3 pl-3 text-center font-semibold tabular-nums text-primary">
+                              {person.age}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </DialogBody>
           </>
         )}

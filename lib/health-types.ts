@@ -15,11 +15,15 @@ export type BmiPersonnelDetail = {
   age: string
 }
 
-export type HealthAnalytics = {
+export type HealthAnalyticsSummary = {
   lastUpdated: string
   dataReady: boolean
   dataSource: string
   totalAssessed: number
   categories: BmiCategoryCount[]
-  personnelByCategory: Partial<Record<BmiCategoryId, BmiPersonnelDetail[]>>
+}
+
+/** @deprecated Loaded lazily on category drilldown — not included in page load. */
+export type HealthAnalytics = HealthAnalyticsSummary & {
+  personnelByCategory?: Partial<Record<BmiCategoryId, BmiPersonnelDetail[]>>
 }
