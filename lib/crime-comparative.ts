@@ -18,8 +18,11 @@ export type CrimePeriodSnapshot = CrimePeriodRange & {
 }
 
 export type CrimeComparativeResult = {
+  /** Previous / baseline period. */
   periodA: CrimePeriodSnapshot
+  /** Period under review (current comparison target). */
   periodB: CrimePeriodSnapshot
+  /** periodB.totalVolume - periodA.totalVolume */
   change: number
   changePct: number | null
   direction: "up" | "down" | "flat"
@@ -62,7 +65,7 @@ export const COMPARATIVE_PRESETS: ComparativePreset[] = [
   {
     id: "custom",
     label: "Custom date range",
-    description: "Piliin ang sariling start at end date para sa Period A at B",
+    description: "Period A = previous · Period B = period in review",
   },
 ]
 
@@ -118,13 +121,13 @@ export function buildPresetRanges(
   const today = startOfDay(referenceDate)
 
   if (presetId === "month-vs-last-month") {
-    const periodAStart = new Date(today.getFullYear(), today.getMonth(), 1)
-    const periodAEnd = today
-    const periodBStart = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-    const periodBEnd = new Date(today.getFullYear(), today.getMonth(), 0)
+    const reviewStart = new Date(today.getFullYear(), today.getMonth(), 1)
+    const reviewEnd = today
+    const previousStart = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+    const previousEnd = new Date(today.getFullYear(), today.getMonth(), 0)
 
-    const periodA = clampRange(periodAStart, periodAEnd, bounds)
-    const periodB = clampRange(periodBStart, periodBEnd, bounds)
+    const periodA = clampRange(previousStart, previousEnd, bounds)
+    const periodB = clampRange(reviewStart, reviewEnd, bounds)
 
     return {
       periodA: {
@@ -139,17 +142,17 @@ export function buildPresetRanges(
   }
 
   if (presetId === "last-30-vs-prev-30") {
-    const periodAEnd = today
-    const periodAStart = new Date(today)
-    periodAStart.setDate(periodAStart.getDate() - 29)
+    const reviewEnd = today
+    const reviewStart = new Date(today)
+    reviewStart.setDate(reviewStart.getDate() - 29)
 
-    const periodBEnd = new Date(periodAStart)
-    periodBEnd.setDate(periodBEnd.getDate() - 1)
-    const periodBStart = new Date(periodBEnd)
-    periodBStart.setDate(periodBStart.getDate() - 29)
+    const previousEnd = new Date(reviewStart)
+    previousEnd.setDate(previousEnd.getDate() - 1)
+    const previousStart = new Date(previousEnd)
+    previousStart.setDate(previousStart.getDate() - 29)
 
-    const periodA = clampRange(periodAStart, periodAEnd, bounds)
-    const periodB = clampRange(periodBStart, periodBEnd, bounds)
+    const periodA = clampRange(previousStart, previousEnd, bounds)
+    const periodB = clampRange(reviewStart, reviewEnd, bounds)
 
     return {
       periodA: {
@@ -164,15 +167,15 @@ export function buildPresetRanges(
   }
 
   if (presetId === "quarter-vs-last-quarter") {
-    const periodAStart = getQuarterStart(today)
-    const periodAEnd = today
-    const previousQuarterEnd = new Date(periodAStart)
+    const reviewStart = getQuarterStart(today)
+    const reviewEnd = today
+    const previousQuarterEnd = new Date(reviewStart)
     previousQuarterEnd.setDate(previousQuarterEnd.getDate() - 1)
-    const periodBStart = getQuarterStart(previousQuarterEnd)
-    const periodBEnd = getQuarterEnd(previousQuarterEnd)
+    const previousStart = getQuarterStart(previousQuarterEnd)
+    const previousEnd = getQuarterEnd(previousQuarterEnd)
 
-    const periodA = clampRange(periodAStart, periodAEnd, bounds)
-    const periodB = clampRange(periodBStart, periodBEnd, bounds)
+    const periodA = clampRange(previousStart, previousEnd, bounds)
+    const periodB = clampRange(reviewStart, reviewEnd, bounds)
 
     return {
       periodA: {
@@ -187,13 +190,13 @@ export function buildPresetRanges(
   }
 
   if (presetId === "year-to-date-vs-last-year") {
-    const periodAStart = new Date(today.getFullYear(), 0, 1)
-    const periodAEnd = today
-    const periodBStart = new Date(today.getFullYear() - 1, 0, 1)
-    const periodBEnd = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
+    const reviewStart = new Date(today.getFullYear(), 0, 1)
+    const reviewEnd = today
+    const previousStart = new Date(today.getFullYear() - 1, 0, 1)
+    const previousEnd = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
 
-    const periodA = clampRange(periodAStart, periodAEnd, bounds)
-    const periodB = clampRange(periodBStart, periodBEnd, bounds)
+    const periodA = clampRange(previousStart, previousEnd, bounds)
+    const periodB = clampRange(reviewStart, reviewEnd, bounds)
 
     return {
       periodA: {
@@ -207,19 +210,29 @@ export function buildPresetRanges(
     }
   }
 
-  const fallbackEnd = bounds?.max ?? toIsoDateString(today)
-  const fallbackStart = bounds?.min ?? toIsoDateString(new Date(today.getFullYear(), today.getMonth(), 1))
+  const fallbackReviewEnd = bounds?.max ?? toIsoDateString(today)
+  const fallbackReviewStart =
+    bounds?.min ?? toIsoDateString(new Date(today.getFullYear(), today.getMonth(), 1))
+  const fallbackPreviousEnd = new Date(`${fallbackReviewStart}T00:00:00`)
+  fallbackPreviousEnd.setDate(fallbackPreviousEnd.getDate() - 1)
+  const fallbackPreviousStart = new Date(fallbackPreviousEnd)
+  fallbackPreviousStart.setDate(fallbackPreviousStart.getDate() - 29)
+
+  const periodA = clampRange(fallbackPreviousStart, fallbackPreviousEnd, bounds)
+  const periodB = clampRange(
+    new Date(`${fallbackReviewStart}T00:00:00`),
+    new Date(`${fallbackReviewEnd}T00:00:00`),
+    bounds,
+  )
 
   return {
     periodA: {
-      start: fallbackStart,
-      end: fallbackEnd,
-      label: formatCrimeDateRangeLabel(fallbackStart, fallbackEnd),
+      ...periodA,
+      label: formatCrimeDateRangeLabel(periodA.start, periodA.end),
     },
     periodB: {
-      start: fallbackStart,
-      end: fallbackEnd,
-      label: formatCrimeDateRangeLabel(fallbackStart, fallbackEnd),
+      ...periodB,
+      label: formatCrimeDateRangeLabel(periodB.start, periodB.end),
     },
   }
 }
@@ -228,15 +241,15 @@ export function buildComparativeResult(
   periodA: CrimePeriodSnapshot,
   periodB: CrimePeriodSnapshot,
 ): CrimeComparativeResult {
-  const change = periodA.totalVolume - periodB.totalVolume
+  const change = periodB.totalVolume - periodA.totalVolume
   let changePct: number | null = null
   let direction: CrimeComparativeResult["direction"] = "flat"
 
-  if (periodB.totalVolume > 0) {
-    changePct = Math.round((change / periodB.totalVolume) * 1000) / 10
+  if (periodA.totalVolume > 0) {
+    changePct = Math.round((change / periodA.totalVolume) * 1000) / 10
     if (changePct > 0) direction = "up"
     else if (changePct < 0) direction = "down"
-  } else if (periodA.totalVolume > 0) {
+  } else if (periodB.totalVolume > 0) {
     direction = "up"
   }
 

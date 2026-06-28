@@ -30,8 +30,8 @@ type CrimeComparativePanelProps = {
 }
 
 const chartConfig = {
-  periodA: { label: "Period A", color: "hsl(199 89% 48%)" },
-  periodB: { label: "Period B", color: "hsl(346 77% 50%)" },
+  periodA: { label: "Previous period", color: "hsl(346 77% 50%)" },
+  periodB: { label: "Period in review", color: "hsl(199 89% 48%)" },
 }
 
 function PeriodFields({
@@ -128,9 +128,9 @@ function ChangeBadge({ result }: { result: CrimeComparativeResult }) {
       </p>
       <p className="mt-1 text-xs opacity-90">
         {result.direction === "up"
-          ? "Mas mataas ang Period A"
+          ? "Mas mataas ang period in review"
           : result.direction === "down"
-            ? "Mas mababa ang Period A"
+            ? "Mas mababa ang period in review"
             : "Parehong level"}
         {" · "}
         {result.change >= 0 ? "+" : ""}
@@ -202,7 +202,7 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
       percentage: 0,
     }))
 
-    return buildCrimePpoBreakdownItems(mergedBreakdown, result.periodA.totalVolume).map((office) => ({
+    return buildCrimePpoBreakdownItems(mergedBreakdown, result.periodB.totalVolume).map((office) => ({
       label: office.label,
       periodA: countsA.get(normalizePpoName(office.csvName)) ?? 0,
       periodB: countsB.get(normalizePpoName(office.csvName)) ?? 0,
@@ -268,8 +268,8 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
 
           <div className="grid gap-4 lg:grid-cols-2">
             <PeriodFields
-              title="Period A"
-              accentClassName="border-sky-500/20 bg-sky-500/5"
+              title="Period A · Previous period"
+              accentClassName="border-rose-500/20 bg-rose-500/5"
               range={periodA}
               onChange={(next) => {
                 setPresetId("custom")
@@ -280,8 +280,8 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
               disabled={isPending}
             />
             <PeriodFields
-              title="Period B"
-              accentClassName="border-rose-500/20 bg-rose-500/5"
+              title="Period B · Period in review"
+              accentClassName="border-sky-500/20 bg-sky-500/5"
               range={periodB}
               onChange={(next) => {
                 setPresetId("custom")
@@ -314,18 +314,18 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
       {result ? (
         <>
           <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr]">
-            <Card className="gap-0 overflow-hidden border-sky-500/20 bg-sky-500/5 py-0">
+            <Card className="gap-0 overflow-hidden border-rose-500/20 bg-rose-500/5 py-0">
               <CardHeader className="border-b border-border/40 pb-3">
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle className="text-sm">Period A</CardTitle>
-                  <Badge variant="outline" className="border-sky-500/30 text-sky-700 dark:text-sky-300">
-                    Current
+                  <Badge variant="outline" className="border-rose-500/30 text-rose-700 dark:text-rose-300">
+                    Previous period
                   </Badge>
                 </div>
                 <CardDescription className="text-xs">{result.periodA.label}</CardDescription>
               </CardHeader>
               <CardContent className="p-4">
-                <p className="text-3xl font-bold tabular-nums text-sky-700 dark:text-sky-300">
+                <p className="text-3xl font-bold tabular-nums text-rose-700 dark:text-rose-300">
                   {result.periodA.totalVolume.toLocaleString()}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">index crimes</p>
@@ -334,18 +334,18 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
 
             <ChangeBadge result={result} />
 
-            <Card className="gap-0 overflow-hidden border-rose-500/20 bg-rose-500/5 py-0">
+            <Card className="gap-0 overflow-hidden border-sky-500/20 bg-sky-500/5 py-0">
               <CardHeader className="border-b border-border/40 pb-3">
                 <div className="flex items-center justify-between gap-2">
                   <CardTitle className="text-sm">Period B</CardTitle>
-                  <Badge variant="outline" className="border-rose-500/30 text-rose-700 dark:text-rose-300">
-                    Baseline
+                  <Badge variant="outline" className="border-sky-500/30 text-sky-700 dark:text-sky-300">
+                    Period in review
                   </Badge>
                 </div>
                 <CardDescription className="text-xs">{result.periodB.label}</CardDescription>
               </CardHeader>
               <CardContent className="p-4">
-                <p className="text-3xl font-bold tabular-nums text-rose-700 dark:text-rose-300">
+                <p className="text-3xl font-bold tabular-nums text-sky-700 dark:text-sky-300">
                   {result.periodB.totalVolume.toLocaleString()}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">index crimes</p>
@@ -357,9 +357,9 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
             <CardHeader className="border-b pb-4">
               <CardTitle className="text-base">Index Crime by PPO</CardTitle>
               <CardDescription>
-                <span className="text-sky-600 dark:text-sky-400">Sky = Period A</span>
+                <span className="text-rose-600 dark:text-rose-400">Rose = Previous period (A)</span>
                 {" · "}
-                <span className="text-rose-600 dark:text-rose-400">Rose = Period B</span>
+                <span className="text-sky-600 dark:text-sky-400">Sky = Period in review (B)</span>
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4">
@@ -382,8 +382,8 @@ export function CrimeComparativePanel({ dataReady, monthlyBreakdown }: CrimeComp
                     <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar dataKey="periodA" name="Period A" fill="var(--color-periodA)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="periodB" name="Period B" fill="var(--color-periodB)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="periodA" name="Previous period" fill="var(--color-periodA)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="periodB" name="Period in review" fill="var(--color-periodB)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ChartContainer>
               )}
