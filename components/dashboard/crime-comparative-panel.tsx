@@ -38,10 +38,90 @@ const chartConfig = {
 
 type PpoChartRow = {
   label: string
+  shortLabel: string
   periodA: number
   periodB: number
+  change: number
   changePct: number | null
   changeDirection: "up" | "down" | "flat" | null
+}
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 639px)")
+    const update = () => setIsMobile(media.matches)
+
+    update()
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
+  }, [])
+
+  return isMobile
+}
+
+function PpoAxisTick(props: {
+  x?: number | string
+  y?: number | string
+  payload?: { value?: string }
+  chartData: PpoChartRow[]
+  compact?: boolean
+}) {
+  const x = typeof props.x === "number" ? props.x : Number(props.x ?? 0)
+  const y = typeof props.y === "number" ? props.y : Number(props.y ?? 0)
+  const row = props.chartData.find((item) => item.label === props.payload?.value)
+  if (!row) return null
+
+  const lines = props.compact
+    ? [row.shortLabel, row.label.replace(/\s+PPO$/i, "")]
+    : [row.label]
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {lines.map((line, index) => (
+        <text
+          key={`${row.label}-${index}`}
+          x={0}
+          y={0}
+          dy={12 + index * 14}
+          textAnchor="middle"
+          fill="currentColor"
+          fontSize={11}
+          fontWeight={index === 0 && props.compact ? 700 : 500}
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  )
+}
+
+function BarTotalLabel(props: {
+  x?: number | string
+  y?: number | string
+  width?: number | string
+  value?: number | string
+}) {
+  const x = typeof props.x === "number" ? props.x : Number(props.x ?? 0)
+  const y = typeof props.y === "number" ? props.y : Number(props.y ?? 0)
+  const width = typeof props.width === "number" ? props.width : Number(props.width ?? 0)
+  const value = typeof props.value === "number" ? props.value : Number(props.value ?? 0)
+
+  if (!Number.isFinite(value) || value <= 0) return null
+
+  return (
+    <text
+      x={x + width / 2}
+      y={y - 6}
+      textAnchor="middle"
+      className="fill-foreground"
+      fontSize={11}
+      fontWeight={700}
+    >
+      {value.toLocaleString()}
+    </text>
+  )
 }
 
 function PeriodBBarChangeLabel(props: {
@@ -58,7 +138,8 @@ function PeriodBBarChangeLabel(props: {
   const height = typeof props.height === "number" ? props.height : Number(props.height ?? 0)
   const row = props.chartData[props.index ?? -1]
 
-  if (!row || row.periodB <= 0 || height < 24) return null
+  if (!row || row.periodB <= 0 || height < 34) return null
+  if (!row.changeDirection) return null
 
   const color =
     row.changeDirection === "up"
@@ -69,21 +150,18 @@ function PeriodBBarChangeLabel(props: {
 
   const arrow =
     row.changeDirection === "up" ? "↑" : row.changeDirection === "down" ? "↓" : "—"
-  const label =
-    row.changePct != null ? `${arrow} ${Math.abs(row.changePct)}%` : row.changeDirection ? arrow : null
-
-  if (!label) return null
+  const changeCount = Math.abs(row.change).toLocaleString()
+  const pctPart = row.changePct != null ? ` · ${Math.abs(row.changePct)}%` : ""
 
   return (
-    <text
-      x={x + width / 2}
-      y={y + height - 6}
-      textAnchor="middle"
-      fill={color}
-      fontSize={10}
-      fontWeight={700}
-    >
-      {label}
+    <text x={x + width / 2} y={y + height - 8} textAnchor="middle" fill={color}>
+      <tspan fontSize={16} fontWeight={800} dy={0}>
+        {arrow}
+      </tspan>
+      <tspan fontSize={11} fontWeight={700} dx={3}>
+        {changeCount}
+        {pctPart}
+      </tspan>
     </text>
   )
 }
@@ -221,6 +299,7 @@ export function CrimeComparativePanel({
   const [result, setResult] = useState<CrimeComparativeResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const isMobile = useIsMobile()
 
   function applyPreset(nextPresetId: ComparativePresetId) {
     setPresetId(nextPresetId)
@@ -296,13 +375,21 @@ export function CrimeComparativePanel({
 
       return {
         label: office.label,
+        shortLabel: office.shortLabel,
         periodA,
         periodB,
+        change: periodB - periodA,
         changePct,
         changeDirection,
       }
     })
   }, [result])
+
+  const chartMinWidth = useMemo(() => {
+    if (!isMobile || ppoChartData.length === 0) return undefined
+    const perPpo = 108
+    return Math.max(360, ppoChartData.length * perPpo + 56)
+  }, [isMobile, ppoChartData])
 
   if (!dataReady) {
     return (
@@ -474,39 +561,64 @@ export function CrimeComparativePanel({
                   Walang PPO breakdown sa napiling date ranges.
                 </p>
               ) : (
-                <ChartContainer config={chartConfig} className="aspect-auto h-[320px] w-full">
-                  <BarChart data={ppoChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
-                    <XAxis
-                      dataKey="label"
-                      tickLine={false}
-                      axisLine={false}
-                      interval={0}
-                      tick={{ fontSize: 11 }}
-                      height={56}
-                    />
-                    <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Legend />
-                    <Bar
-                      dataKey="periodA"
-                      name="Previous period"
-                      fill="var(--color-periodA)"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="periodB"
-                      name="Period in review"
-                      fill="var(--color-periodB)"
-                      radius={[4, 4, 0, 0]}
+                <div className="w-full overflow-x-auto overscroll-x-contain">
+                  <ChartContainer
+                    config={chartConfig}
+                    className="aspect-auto h-[360px]"
+                    style={{
+                      minWidth: chartMinWidth ?? "100%",
+                      width: chartMinWidth ?? "100%",
+                    }}
+                    initialDimension={{
+                      width: chartMinWidth ?? (isMobile ? 360 : 640),
+                      height: 360,
+                    }}
+                  >
+                    <BarChart
+                      data={ppoChartData}
+                      margin={{ top: 28, right: isMobile ? 12 : 8, left: 0, bottom: 4 }}
+                      barCategoryGap={isMobile ? "24%" : "20%"}
+                      barGap={isMobile ? 3 : 6}
                     >
-                      <LabelList
-                        dataKey="periodB"
-                        content={(props) => <PeriodBBarChangeLabel {...props} chartData={ppoChartData} />}
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        interval={0}
+                        height={isMobile ? 68 : 56}
+                        tick={(props) => (
+                          <PpoAxisTick {...props} chartData={ppoChartData} compact={isMobile} />
+                        )}
                       />
-                    </Bar>
-                  </BarChart>
-                </ChartContainer>
+                      <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Legend wrapperStyle={isMobile ? { paddingTop: 8 } : undefined} />
+                      <Bar
+                        dataKey="periodA"
+                        name="Previous period"
+                        fill="var(--color-periodA)"
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={isMobile ? 34 : 48}
+                      >
+                        <LabelList dataKey="periodA" content={<BarTotalLabel />} />
+                      </Bar>
+                      <Bar
+                        dataKey="periodB"
+                        name="Period in review"
+                        fill="var(--color-periodB)"
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={isMobile ? 34 : 48}
+                      >
+                        <LabelList dataKey="periodB" content={<BarTotalLabel />} />
+                        <LabelList
+                          dataKey="periodB"
+                          content={(props) => <PeriodBBarChangeLabel {...props} chartData={ppoChartData} />}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                </div>
               )}
             </CardContent>
           </Card>
