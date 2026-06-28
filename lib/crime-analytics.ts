@@ -1,6 +1,11 @@
 import { unstable_cache } from "next/cache"
 
-import { isIndexCrimeCategory, isNonIndexCrimeCategory } from "@/lib/crime-config"
+import {
+  INDEX_FOCUS_CRIME_ALWAYS,
+  isIndexCrimeCategory,
+  isNonIndexCrimeCategory,
+  normalizeCrimeName,
+} from "@/lib/crime-config"
 import { fetchStoredCrimeAnalytics } from "@/lib/crime-records"
 import type { CrimeAnalytics, CrimeCategoryStats, CrimeMonthlyCount } from "@/lib/crime-types"
 import type { CountItem } from "@/lib/personnel-types"
@@ -142,7 +147,28 @@ function buildUnitBreakdownByPpo(records: ParsedCrimeRecord[]): Record<string, C
   return unitBreakdownByPpo
 }
 
-function buildCategoryStats(records: ParsedCrimeRecord[], year: number | null): CrimeCategoryStats {
+function buildFocusCrimeCatalog(crimeCounts: Map<string, number>): string[] {
+  const crimes = new Map<string, string>()
+
+  for (const always of INDEX_FOCUS_CRIME_ALWAYS) {
+    const normalized = normalizeCrimeName(always)
+    crimes.set(normalized.toUpperCase(), normalized)
+  }
+
+  for (const name of crimeCounts.keys()) {
+    const normalized = normalizeCrimeName(name)
+    if (!normalized) continue
+    crimes.set(normalized.toUpperCase(), normalized)
+  }
+
+  return [...crimes.values()].sort((left, right) => left.localeCompare(right))
+}
+
+function buildCategoryStats(
+  records: ParsedCrimeRecord[],
+  year: number | null,
+  includeFocusCrimeCatalog = false,
+): CrimeCategoryStats {
   const ppoCounts = new Map<string, number>()
   const crimeCounts = new Map<string, number>()
   let latestCommitted: Date | null = null
@@ -170,6 +196,7 @@ function buildCategoryStats(records: ParsedCrimeRecord[], year: number | null): 
     ppoBreakdown: buildCountItems(ppoCounts, totalVolume),
     unitBreakdownByPpo: buildUnitBreakdownByPpo(records),
     crimeBreakdown: buildCountItems(crimeCounts, totalVolume),
+    focusCrimeCatalog: includeFocusCrimeCatalog ? buildFocusCrimeCatalog(crimeCounts) : undefined,
     monthlyBreakdown: buildMonthlyBreakdown(records),
   }
 }
@@ -200,7 +227,7 @@ export function buildCrimeAnalyticsFromRecords(
     dataSource: CRIME_SUPABASE_SOURCE_LABEL,
     dataReady: indexRecords.length > 0 || nonIndexRecords.length > 0,
     year,
-    indexCrime: buildCategoryStats(indexRecords, year),
+    indexCrime: buildCategoryStats(indexRecords, year, true),
     nonIndexCrime: buildCategoryStats(nonIndexRecords, year),
     categoryBreakdown: buildCountItems(categoryCounts, records.length),
   }
@@ -217,7 +244,7 @@ async function loadCrimeAnalytics(): Promise<CrimeAnalytics> {
   return emptyCrimeAnalytics()
 }
 
-export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v5"
+export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v6"
 
 const getCachedCrimeAnalytics = unstable_cache(loadCrimeAnalytics, [CRIME_ANALYTICS_CACHE_TAG], {
   revalidate: false,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { Bar, BarChart, CartesianGrid, LabelList, Legend, XAxis, YAxis } from "recharts"
 
 import { comparePpoCrimeTypesAction } from "@/app/(dashboard)/ridmd/actions"
@@ -91,6 +91,7 @@ export function CrimeComparativePpoSheet({
   const [rows, setRows] = useState<ComparativeBarRow[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const profileCacheRef = useRef(new Map<string, ComparativeBarRow[]>())
 
   useEffect(() => {
     if (!open || !office) {
@@ -99,19 +100,27 @@ export function CrimeComparativePpoSheet({
       return
     }
 
+    const cacheKey = `${office.csvName}|${periodA.start}|${periodA.end}|${periodB.start}|${periodB.end}`
+    const cachedRows = profileCacheRef.current.get(cacheKey)
+    if (cachedRows) {
+      setRows(cachedRows)
+      setError(null)
+      return
+    }
+
     startTransition(async () => {
       try {
         const result = await comparePpoCrimeTypesAction(office.csvName, periodA, periodB)
-        setRows(
-          result.map((row) => ({
-            label: row.crime,
-            periodA: row.periodA,
-            periodB: row.periodB,
-            change: row.change,
-            changePct: row.changePct,
-            changeDirection: row.changeDirection,
-          })),
-        )
+        const nextRows = result.map((row) => ({
+          label: row.crime,
+          periodA: row.periodA,
+          periodB: row.periodB,
+          change: row.change,
+          changePct: row.changePct,
+          changeDirection: row.changeDirection,
+        }))
+        profileCacheRef.current.set(cacheKey, nextRows)
+        setRows(nextRows)
         setError(null)
       } catch (loadError) {
         setRows([])

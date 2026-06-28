@@ -18,9 +18,11 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import type { CrimeAnalytics } from "@/lib/crime-types"
 import type { CountItem } from "@/lib/personnel-types"
 import type { ParsedCrimeRecord } from "@/lib/crime-xlsx-parser"
+import { unstable_cache } from "next/cache"
 
 const INSERT_CHUNK_SIZE = 1000
 const FETCH_PAGE_SIZE = 1000
+const CRIME_COMPARE_CACHE_TAG = "crime-analytics-supabase-v6"
 
 export type CrimeUploadBatchInfo = {
   id: string
@@ -136,6 +138,9 @@ function normalizeStoredAnalytics(
     indexCrime: {
       ...analytics.indexCrime,
       unitBreakdownByPpo: analytics.indexCrime.unitBreakdownByPpo ?? {},
+      focusCrimeCatalog:
+        analytics.indexCrime.focusCrimeCatalog ??
+        buildFocusCrimeCatalogFromBreakdown(analytics.indexCrime.crimeBreakdown ?? []),
     },
     nonIndexCrime: {
       ...analytics.nonIndexCrime,
@@ -277,29 +282,44 @@ function mapRangeRow(row: {
   }
 }
 
+function buildFocusCrimeCatalogFromBreakdown(breakdown: CountItem[]): string[] {
+  const crimes = new Map<string, string>()
+
+  for (const always of INDEX_FOCUS_CRIME_ALWAYS) {
+    const normalized = normalizeCrimeName(always)
+    crimes.set(normalized.toUpperCase(), normalized)
+  }
+
+  for (const item of breakdown) {
+    const normalized = normalizeCrimeName(item.name)
+    if (!normalized) continue
+    crimes.set(normalized.toUpperCase(), normalized)
+  }
+
+  return [...crimes.values()].sort((left, right) => left.localeCompare(right))
+}
+
 async function fetchIndexCrimeRowsForRangeQuery(
   batchId: string,
   startIso: string,
   endIso: string,
-  mode: "committed" | "reported",
+  options?: { ppo?: string },
 ): Promise<IndexCrimeRangeRow[]> {
   const supabase = createAdminClient()
   const rows: IndexCrimeRangeRow[] = []
   let from = 0
+  const dateOrFilter = `and(date_committed.gte.${startIso},date_committed.lte.${endIso}),and(date_committed.is.null,date_reported.gte.${startIso},date_reported.lte.${endIso})`
 
   while (true) {
     let query = supabase
       .from("crime_records")
       .select("ppo, crime, category, date_committed, date_reported")
       .eq("batch_id", batchId)
+      .ilike("category", "INDEX")
+      .or(dateOrFilter)
 
-    if (mode === "committed") {
-      query = query.gte("date_committed", startIso).lte("date_committed", endIso)
-    } else {
-      query = query
-        .is("date_committed", null)
-        .gte("date_reported", startIso)
-        .lte("date_reported", endIso)
+    if (options?.ppo) {
+      query = query.eq("ppo", options.ppo.trim())
     }
 
     const { data, error } = await query.order("id", { ascending: true }).range(from, from + FETCH_PAGE_SIZE - 1)
@@ -358,29 +378,34 @@ export async function fetchIndexCrimePeriodSnapshot(
     return { ...range, totalVolume: 0, ppoBreakdown: [] }
   }
 
-  const [committedRows, reportedRows] = await Promise.all([
-    fetchIndexCrimeRowsForRangeQuery(batch.id, range.start, range.end, "committed"),
-    fetchIndexCrimeRowsForRangeQuery(batch.id, range.start, range.end, "reported"),
-  ])
-
-  return summarizeIndexCrimeRows([...committedRows, ...reportedRows], range)
+  const rows = await fetchIndexCrimeRowsForRangeQuery(batch.id, range.start, range.end)
+  return summarizeIndexCrimeRows(rows, range)
 }
 
-async function fetchIndexFocusCrimeCatalog(batchId: string): Promise<string[]> {
-  const supabase = createAdminClient()
-  const crimes = new Map<string, string>()
-  let from = 0
+async function fetchIndexFocusCrimeCatalogForBatch(batch: StoredCrimeBatchRow): Promise<string[]> {
+  if (hasCurrentAnalyticsShape(batch.analytics)) {
+    const analytics = normalizeStoredAnalytics(batch.analytics, batch)
+    if (analytics.indexCrime.focusCrimeCatalog?.length) {
+      return analytics.indexCrime.focusCrimeCatalog
+    }
+    return buildFocusCrimeCatalogFromBreakdown(analytics.indexCrime.crimeBreakdown)
+  }
 
+  const crimes = new Map<string, string>()
   for (const always of INDEX_FOCUS_CRIME_ALWAYS) {
     const normalized = normalizeCrimeName(always)
     crimes.set(normalized.toUpperCase(), normalized)
   }
 
+  let from = 0
+  const supabase = createAdminClient()
+
   while (true) {
     const { data, error } = await supabase
       .from("crime_records")
-      .select("crime, category")
-      .eq("batch_id", batchId)
+      .select("crime")
+      .eq("batch_id", batch.id)
+      .ilike("category", "INDEX")
       .order("id", { ascending: true })
       .range(from, from + FETCH_PAGE_SIZE - 1)
 
@@ -393,7 +418,6 @@ async function fetchIndexFocusCrimeCatalog(batchId: string): Promise<string[]> {
     }
 
     for (const row of data) {
-      if (!isIndexCrimeCategory(row.category ?? "")) continue
       const normalized = normalizeCrimeName(row.crime ?? "")
       if (!normalized) continue
       crimes.set(normalized.toUpperCase(), normalized)
@@ -443,19 +467,124 @@ function summarizeIndexCrimeCrimeCountsForPpo(
 }
 
 async function fetchIndexCrimeCrimeCountsForPpoPeriod(
+  batchId: string,
   ppoCsvName: string,
   range: CrimePeriodRange,
 ): Promise<Map<string, number>> {
-  const batch = await getLatestStoredCrimeBatch()
-  if (!batch) return new Map()
+  const rows = await fetchIndexCrimeRowsForRangeQuery(batchId, range.start, range.end, {
+    ppo: ppoCsvName,
+  })
 
-  const [committedRows, reportedRows] = await Promise.all([
-    fetchIndexCrimeRowsForRangeQuery(batch.id, range.start, range.end, "committed"),
-    fetchIndexCrimeRowsForRangeQuery(batch.id, range.start, range.end, "reported"),
+  return summarizeIndexCrimeCrimeCountsForPpo(rows, ppoCsvName, range)
+}
+
+async function fetchIndexFocusCrimeCatalogByBatchId(batchId: string): Promise<string[]> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("crime_upload_batches")
+    .select("id, filename, uploaded_by_label, record_count, created_at, analytics")
+    .eq("id", batchId)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data) {
+    return buildFocusCrimeCatalogFromBreakdown([])
+  }
+
+  return fetchIndexFocusCrimeCatalogForBatch(data as StoredCrimeBatchRow)
+}
+
+async function loadPpoCrimeTypeComparison(
+  batchId: string,
+  ppoCsvName: string,
+  periodAStart: string,
+  periodAEnd: string,
+  periodBStart: string,
+  periodBEnd: string,
+): Promise<CrimeFocusComparativeRow[]> {
+  const periodA: CrimePeriodRange = {
+    start: periodAStart,
+    end: periodAEnd,
+    label: "",
+  }
+  const periodB: CrimePeriodRange = {
+    start: periodBStart,
+    end: periodBEnd,
+    label: "",
+  }
+
+  const [catalog, countsA, countsB] = await Promise.all([
+    fetchIndexFocusCrimeCatalogByBatchId(batchId),
+    fetchIndexCrimeCrimeCountsForPpoPeriod(batchId, ppoCsvName, periodA),
+    fetchIndexCrimeCrimeCountsForPpoPeriod(batchId, ppoCsvName, periodB),
   ])
 
-  return summarizeIndexCrimeCrimeCountsForPpo([...committedRows, ...reportedRows], ppoCsvName, range)
+  return catalog
+    .map((crime) => {
+      const periodACount = getCrimeCount(countsA, crime)
+      const periodBCount = getCrimeCount(countsB, crime)
+      const metrics = buildCountChangeMetrics(periodACount, periodBCount)
+
+      return {
+        crime,
+        periodA: periodACount,
+        periodB: periodBCount,
+        ...metrics,
+      }
+    })
+    .sort(
+      (left, right) =>
+        right.periodB - left.periodB ||
+        right.periodA - left.periodA ||
+        left.crime.localeCompare(right.crime),
+    )
 }
+
+const getCachedPpoCrimeTypeComparison = unstable_cache(
+  loadPpoCrimeTypeComparison,
+  ["crime-ppo-profile-v1"],
+  {
+    revalidate: false,
+    tags: [CRIME_COMPARE_CACHE_TAG],
+  },
+)
+
+async function loadPeriodComparison(
+  batchId: string,
+  periodAStart: string,
+  periodAEnd: string,
+  periodBStart: string,
+  periodBEnd: string,
+): Promise<CrimeComparativeResult> {
+  const periodA: CrimePeriodRange = {
+    start: periodAStart,
+    end: periodAEnd,
+    label: "",
+  }
+  const periodB: CrimePeriodRange = {
+    start: periodBStart,
+    end: periodBEnd,
+    label: "",
+  }
+
+  const [rowsA, rowsB] = await Promise.all([
+    fetchIndexCrimeRowsForRangeQuery(batchId, periodAStart, periodAEnd),
+    fetchIndexCrimeRowsForRangeQuery(batchId, periodBStart, periodBEnd),
+  ])
+
+  return buildComparativeResult(
+    summarizeIndexCrimeRows(rowsA, periodA),
+    summarizeIndexCrimeRows(rowsB, periodB),
+  )
+}
+
+const getCachedPeriodComparison = unstable_cache(loadPeriodComparison, ["crime-period-compare-v1"], {
+  revalidate: false,
+  tags: [CRIME_COMPARE_CACHE_TAG],
+})
 
 export async function compareIndexCrimeForPpoByCrimeType(
   ppoCsvName: string,
@@ -474,38 +603,41 @@ export async function compareIndexCrimeForPpoByCrimeType(
     }))
   }
 
-  const [catalog, countsA, countsB] = await Promise.all([
-    fetchIndexFocusCrimeCatalog(batch.id),
-    fetchIndexCrimeCrimeCountsForPpoPeriod(ppoCsvName, periodA),
-    fetchIndexCrimeCrimeCountsForPpoPeriod(ppoCsvName, periodB),
-  ])
-
-  return catalog
-    .map((crime) => {
-      const periodACount = getCrimeCount(countsA, crime)
-      const periodBCount = getCrimeCount(countsB, crime)
-      const metrics = buildCountChangeMetrics(periodACount, periodBCount)
-
-      return {
-        crime,
-        periodA: periodACount,
-        periodB: periodBCount,
-        ...metrics,
-      }
-    })
-    .sort((left, right) => right.periodB - left.periodB || right.periodA - left.periodA || left.crime.localeCompare(right.crime))
+  return getCachedPpoCrimeTypeComparison(
+    batch.id,
+    ppoCsvName.trim(),
+    periodA.start,
+    periodA.end,
+    periodB.start,
+    periodB.end,
+  )
 }
 
 export async function compareIndexCrimePeriods(
   periodA: CrimePeriodRange,
   periodB: CrimePeriodRange,
 ): Promise<CrimeComparativeResult> {
-  const [snapshotA, snapshotB] = await Promise.all([
-    fetchIndexCrimePeriodSnapshot(periodA),
-    fetchIndexCrimePeriodSnapshot(periodB),
-  ])
+  const batch = await getLatestStoredCrimeBatch()
+  if (!batch) {
+    return buildComparativeResult(
+      { ...periodA, totalVolume: 0, ppoBreakdown: [] },
+      { ...periodB, totalVolume: 0, ppoBreakdown: [] },
+    )
+  }
 
-  return buildComparativeResult(snapshotA, snapshotB)
+  const result = await getCachedPeriodComparison(
+    batch.id,
+    periodA.start,
+    periodA.end,
+    periodB.start,
+    periodB.end,
+  )
+
+  return {
+    ...result,
+    periodA: { ...result.periodA, label: periodA.label },
+    periodB: { ...result.periodB, label: periodB.label },
+  }
 }
 
 export async function replaceCrimeRecords({

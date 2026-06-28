@@ -13,6 +13,8 @@ export type CrimeCategoryStats = {
   ppoBreakdown: CountItem[]
   unitBreakdownByPpo: Record<string, CountItem[]>
   crimeBreakdown: CountItem[]
+  /** Distinct index crime names for focus-crime profiles (cached on upload). */
+  focusCrimeCatalog?: string[]
   monthlyBreakdown: CrimeMonthlyCount[]
 }
 
