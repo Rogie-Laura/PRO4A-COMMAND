@@ -3,7 +3,7 @@ import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { HealthAndBmiRefreshButton } from "@/components/dashboard/health-and-bmi-refresh-button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getHealthAnalytics } from "@/lib/health-analytics"
+import { BMI_SUPABASE_SOURCE_LABEL, getHealthAnalytics } from "@/lib/health-analytics"
 
 export function HealthAndBmiLoading() {
   return (
@@ -35,7 +35,11 @@ export async function HealthAndBmiContent() {
         <DataSyncBanner
           lastUpdated={data.lastUpdated}
           sourceLabel={data.dataSource}
-          syncDescription="synced from Google Sheet (cached until you refresh)"
+          syncDescription={
+            data.dataSource === BMI_SUPABASE_SOURCE_LABEL
+              ? "synced from Supabase upload (cached until you refresh)"
+              : "synced from Google Sheet fallback (cached until you refresh)"
+          }
         />
         <HealthAndBmiRefreshButton />
       </div>
@@ -43,8 +47,8 @@ export async function HealthAndBmiContent() {
       {!data.dataReady && (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">
           <CardContent className="py-4 text-sm text-muted-foreground">
-            Walang BMI records mula sa RICTMD personnel pa. Siguraduhing naka-public ang
-            Google Sheet at may Station/Office, BMI, at BMI Category sa RICTMD tab.
+            Walang BMI records pa. Mag-upload sa Settings (Super Admin) gamit ang Excel format, o
+            siguraduhing naka-public ang Google Sheet fallback para sa RICTMD personnel.
           </CardContent>
         </Card>
       )}
