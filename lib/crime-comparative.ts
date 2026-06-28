@@ -62,6 +62,41 @@ export function buildCountChangeMetrics(periodA: number, periodB: number): {
   return { change, changePct, changeDirection }
 }
 
+export function buildComparativePeriodNarrative(row: {
+  label: string
+  periodA: number
+  periodB: number
+  change: number
+  changePct: number | null
+  changeDirection: CrimeFocusComparativeRow["changeDirection"]
+}): string {
+  const subject = row.label
+
+  if (row.periodA === 0 && row.periodB === 0) {
+    return `${subject} recorded no index crime in the previous period or the period in review.`
+  }
+
+  if (row.changeDirection === "up") {
+    const absChange = Math.abs(row.change)
+    const pct = row.changePct != null ? ` (${Math.abs(row.changePct)}%)` : ""
+    if (row.periodA === 0) {
+      return `${subject} recorded ${row.periodB} index crime${row.periodB === 1 ? "" : "s"} in the period in review, with none in the previous period.`
+    }
+    return `${subject} recorded an increase of ${absChange} index crime${absChange === 1 ? "" : "s"}${pct} in the period in review compared to the previous period.`
+  }
+
+  if (row.changeDirection === "down") {
+    const absChange = Math.abs(row.change)
+    const pct = row.changePct != null ? ` (${Math.abs(row.changePct)}%)` : ""
+    if (row.periodB === 0) {
+      return `${subject} recorded no index crime in the period in review, down from ${row.periodA} in the previous period.`
+    }
+    return `${subject} recorded a decrease of ${absChange} index crime${absChange === 1 ? "" : "s"}${pct} in the period in review compared to the previous period.`
+  }
+
+  return `${subject} recorded no change in index crime (${row.periodB}) between the previous period and the period in review.`
+}
+
 export type ComparativePresetId =
   | "month-vs-last-month"
   | "last-30-vs-prev-30"

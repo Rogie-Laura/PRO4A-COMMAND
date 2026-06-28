@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   buildPresetRanges,
   buildCountChangeMetrics,
+  buildComparativePeriodNarrative,
   COMPARATIVE_PRESETS,
   getCrimeDataBounds,
   type ComparativePresetId,
@@ -501,18 +502,7 @@ export function CrimeComparativePanel({
           <Card className="gap-0 py-0">
             <CardHeader className="border-b pb-4">
               <CardTitle className="text-base">Index Crime by PPO</CardTitle>
-              <div className="max-w-3xl space-y-1 text-sm leading-relaxed text-muted-foreground">
-                <p className="font-medium text-foreground">Paliwanag sa bar graph</p>
-                <p>
-                  Light orange ang Period A (nakaraang period); light blue ang Period B (period in review).
-                  Ang numero sa taas ng bar ay bilang ng index crime sa period na iyon.
-                </p>
-                <p>
-                  Sa blue bar, ang arrow ang pagbabago kumpara sa nakaraan — berde pababa kung bumaba ang kaso,
-                  pula pataas kung tumaas.
-                </p>
-                <p>I-click ang bar ng PPO para makita ang focus crime profile nito.</p>
-              </div>
+              <CardDescription>I-click ang bar ng PPO para makita ang focus crime profile.</CardDescription>
             </CardHeader>
             <CardContent className="p-4">
               {ppoChartData.length === 0 ? (
@@ -580,6 +570,15 @@ export function CrimeComparativePanel({
                   </ChartContainer>
                 </div>
               )}
+              {ppoChartData.length > 0 ? (
+                <div className="mt-4 space-y-2.5 border-t border-border/40 pt-4">
+                  {ppoChartData.map((row) => (
+                    <p key={row.csvName} className="text-sm leading-relaxed text-muted-foreground">
+                      {buildComparativePeriodNarrative(row)}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 

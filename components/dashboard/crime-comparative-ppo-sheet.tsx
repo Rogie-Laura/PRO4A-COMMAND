@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { CrimePeriodRange } from "@/lib/crime-comparative"
+import { buildComparativePeriodNarrative } from "@/lib/crime-comparative"
 import type { CrimePpoBreakdownItem } from "@/lib/crime-ppo-config"
-import { cn } from "@/lib/utils"
 
 type CrimeComparativePpoSheetProps = {
   office: CrimePpoBreakdownItem | null
@@ -229,12 +229,12 @@ export function CrimeComparativePpoSheet({
               )}
 
               {!isPending && rows.length > 0 ? (
-                <div className="mt-3 max-w-3xl space-y-1 text-xs leading-relaxed text-muted-foreground">
-                  <p className="font-medium text-foreground">Paliwanag sa bar graph</p>
-                  <p>
-                    Light orange ang Period A; light blue ang Period B. Nasa taas ng bar ang bilang; sa blue
-                    bar, ang arrow ang pagbabago — berde pababa kung bumaba, pula pataas kung tumaas.
-                  </p>
+                <div className="mt-4 space-y-2 border-t border-border/40 pt-4">
+                  {rows.map((row) => (
+                    <p key={row.label} className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                      {buildComparativePeriodNarrative(row)}
+                    </p>
+                  ))}
                 </div>
               ) : null}
             </DialogBody>
