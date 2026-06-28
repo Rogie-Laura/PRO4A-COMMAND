@@ -2,9 +2,17 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { ArrowDownRight, ArrowUpRight, CalendarRange, Minus, RefreshCw } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, LabelList, Legend, XAxis, YAxis } from "recharts"
+import { Bar, BarChart, CartesianGrid, Customized, LabelList, Legend, XAxis, YAxis } from "recharts"
 
 import { compareCrimePeriodsAction } from "@/app/(dashboard)/ridmd/actions"
+import {
+  ComparativeBarTotalLabel,
+  ComparativeChangeOverlay,
+  comparativeBarChartConfig,
+  type ComparativeBarRow,
+  type ComparativeChangeOverlayProps,
+} from "@/components/dashboard/crime-comparative-chart-utils"
+import { CrimeComparativePpoSheet } from "@/components/dashboard/crime-comparative-ppo-sheet"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   buildPresetRanges,
+  buildCountChangeMetrics,
   COMPARATIVE_PRESETS,
   getCrimeDataBounds,
   type ComparativePresetId,
@@ -20,7 +29,7 @@ import {
   type CrimePeriodRange,
 } from "@/lib/crime-comparative"
 import { formatCrimeDateRangeLabel, isValidIsoDateRange } from "@/lib/crime-dates"
-import { buildCrimePpoBreakdownItems } from "@/lib/crime-ppo-config"
+import { buildCrimePpoBreakdownItems, type CrimePpoBreakdownItem } from "@/lib/crime-ppo-config"
 import type { CrimeMonthlyCount } from "@/lib/crime-types"
 import { cn } from "@/lib/utils"
 
@@ -31,19 +40,12 @@ type CrimeComparativePanelProps = {
   coveredPeriodEnd: string | null
 }
 
-const chartConfig = {
-  periodA: { label: "Previous period", color: "hsl(33 95% 72%)" },
-  periodB: { label: "Period in review", color: "hsl(205 85% 72%)" },
-}
+const chartConfig = comparativeBarChartConfig
 
-type PpoChartRow = {
-  label: string
-  shortLabel: string
-  periodA: number
-  periodB: number
-  change: number
-  changePct: number | null
-  changeDirection: "up" | "down" | "flat" | null
+type PpoChartRow = ComparativeBarRow & {
+  csvName: string
+  logo: string
+  colorClass: string
 }
 
 function useIsMobile() {
@@ -94,75 +96,6 @@ function PpoAxisTick(props: {
         </text>
       ))}
     </g>
-  )
-}
-
-function BarTotalLabel(props: {
-  x?: number | string
-  y?: number | string
-  width?: number | string
-  value?: number | string
-}) {
-  const x = typeof props.x === "number" ? props.x : Number(props.x ?? 0)
-  const y = typeof props.y === "number" ? props.y : Number(props.y ?? 0)
-  const width = typeof props.width === "number" ? props.width : Number(props.width ?? 0)
-  const value = typeof props.value === "number" ? props.value : Number(props.value ?? 0)
-
-  if (!Number.isFinite(value) || value <= 0) return null
-
-  return (
-    <text
-      x={x + width / 2}
-      y={y - 6}
-      textAnchor="middle"
-      className="fill-foreground"
-      fontSize={11}
-      fontWeight={700}
-    >
-      {value.toLocaleString()}
-    </text>
-  )
-}
-
-function PeriodBBarChangeLabel(props: {
-  x?: number | string
-  y?: number | string
-  width?: number | string
-  height?: number | string
-  index?: number
-  chartData: PpoChartRow[]
-}) {
-  const x = typeof props.x === "number" ? props.x : Number(props.x ?? 0)
-  const y = typeof props.y === "number" ? props.y : Number(props.y ?? 0)
-  const width = typeof props.width === "number" ? props.width : Number(props.width ?? 0)
-  const height = typeof props.height === "number" ? props.height : Number(props.height ?? 0)
-  const row = props.chartData[props.index ?? -1]
-
-  if (!row || row.periodB <= 0 || height < 34) return null
-  if (!row.changeDirection) return null
-
-  const color =
-    row.changeDirection === "up"
-      ? "#dc2626"
-      : row.changeDirection === "down"
-        ? "#059669"
-        : "#737373"
-
-  const arrow =
-    row.changeDirection === "up" ? "↑" : row.changeDirection === "down" ? "↓" : "—"
-  const changeCount = Math.abs(row.change).toLocaleString()
-  const pctPart = row.changePct != null ? ` · ${Math.abs(row.changePct)}%` : ""
-
-  return (
-    <text x={x + width / 2} y={y + height - 8} textAnchor="middle" fill={color}>
-      <tspan fontSize={16} fontWeight={800} dy={0}>
-        {arrow}
-      </tspan>
-      <tspan fontSize={11} fontWeight={700} dx={3}>
-        {changeCount}
-        {pctPart}
-      </tspan>
-    </text>
   )
 }
 
@@ -299,6 +232,8 @@ export function CrimeComparativePanel({
   const [result, setResult] = useState<CrimeComparativeResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [selectedOffice, setSelectedOffice] = useState<CrimePpoBreakdownItem | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
   const isMobile = useIsMobile()
 
   function applyPreset(nextPresetId: ComparativePresetId) {
@@ -361,26 +296,17 @@ export function CrimeComparativePanel({
     return buildCrimePpoBreakdownItems(mergedBreakdown, result.periodB.totalVolume).map((office) => {
       const periodA = countsA.get(normalizePpoName(office.csvName)) ?? 0
       const periodB = countsB.get(normalizePpoName(office.csvName)) ?? 0
-      let changePct: number | null = null
-      let changeDirection: PpoChartRow["changeDirection"] = null
-
-      if (periodA > 0) {
-        changePct = Math.round(((periodB - periodA) / periodA) * 1000) / 10
-        if (changePct > 0) changeDirection = "up"
-        else if (changePct < 0) changeDirection = "down"
-        else changeDirection = "flat"
-      } else if (periodB > 0) {
-        changeDirection = "up"
-      }
+      const metrics = buildCountChangeMetrics(periodA, periodB)
 
       return {
+        csvName: office.csvName,
+        logo: office.logo,
+        colorClass: office.colorClass,
         label: office.label,
         shortLabel: office.shortLabel,
         periodA,
         periodB,
-        change: periodB - periodA,
-        changePct,
-        changeDirection,
+        ...metrics,
       }
     })
   }, [result])
@@ -390,6 +316,29 @@ export function CrimeComparativePanel({
     const perPpo = 108
     return Math.max(360, ppoChartData.length * perPpo + 56)
   }, [isMobile, ppoChartData])
+
+  function handlePpoBarClick(_data: unknown, index: number) {
+    const row = ppoChartData[index]
+    if (!row) return
+
+    setSelectedOffice({
+      csvName: row.csvName,
+      label: row.label,
+      shortLabel: row.shortLabel ?? row.label.slice(0, 2),
+      logo: row.logo,
+      colorClass: row.colorClass,
+      count: row.periodB,
+      percentage: 0,
+    })
+    setProfileOpen(true)
+  }
+
+  function handleProfileOpenChange(nextOpen: boolean) {
+    setProfileOpen(nextOpen)
+    if (!nextOpen) {
+      setSelectedOffice(null)
+    }
+  }
 
   if (!dataReady) {
     return (
@@ -553,6 +502,8 @@ export function CrimeComparativePanel({
                 <span className="text-emerald-600 dark:text-emerald-400">green ↓ bumaba</span>
                 {" · "}
                 <span className="text-red-600 dark:text-red-400">red ↑ tumaas</span>
+                {" · "}
+                Click a PPO bar for focus crime profile
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4">
@@ -600,8 +551,10 @@ export function CrimeComparativePanel({
                         fill="var(--color-periodA)"
                         radius={[4, 4, 0, 0]}
                         maxBarSize={isMobile ? 34 : 48}
+                        className="cursor-pointer"
+                        onClick={handlePpoBarClick}
                       >
-                        <LabelList dataKey="periodA" content={<BarTotalLabel />} />
+                        <LabelList dataKey="periodA" content={<ComparativeBarTotalLabel />} />
                       </Bar>
                       <Bar
                         dataKey="periodB"
@@ -609,19 +562,35 @@ export function CrimeComparativePanel({
                         fill="var(--color-periodB)"
                         radius={[4, 4, 0, 0]}
                         maxBarSize={isMobile ? 34 : 48}
+                        className="cursor-pointer"
+                        onClick={handlePpoBarClick}
                       >
-                        <LabelList dataKey="periodB" content={<BarTotalLabel />} />
-                        <LabelList
-                          dataKey="periodB"
-                          content={(props) => <PeriodBBarChangeLabel {...props} chartData={ppoChartData} />}
-                        />
+                        <LabelList dataKey="periodB" content={<ComparativeBarTotalLabel />} />
                       </Bar>
+                      <Customized
+                        component={(props: Record<string, unknown>) => (
+                          <ComparativeChangeOverlay
+                            xAxisMap={props.xAxisMap as ComparativeChangeOverlayProps["xAxisMap"]}
+                            yAxisMap={props.yAxisMap as ComparativeChangeOverlayProps["yAxisMap"]}
+                            chartData={ppoChartData}
+                            barSeriesCount={2}
+                          />
+                        )}
+                      />
                     </BarChart>
                   </ChartContainer>
                 </div>
               )}
             </CardContent>
           </Card>
+
+          <CrimeComparativePpoSheet
+            office={selectedOffice}
+            periodA={periodA}
+            periodB={periodB}
+            open={profileOpen}
+            onOpenChange={handleProfileOpenChange}
+          />
         </>
       ) : null}
     </div>

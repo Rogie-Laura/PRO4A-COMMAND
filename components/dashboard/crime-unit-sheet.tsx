@@ -164,7 +164,7 @@ export function CrimeUnitModal({ office, open, onOpenChange }: CrimeUnitModalPro
                   colorClass={office.colorClass}
                 />
                 <div className="min-w-0">
-                  <DialogTitle>{office.label}</DialogTitle>
+                  <DialogTitle>{office.label} Crime Profile</DialogTitle>
                   <DialogDescription>
                     {office.stations.length} units · {total.toLocaleString()} index crimes
                   </DialogDescription>

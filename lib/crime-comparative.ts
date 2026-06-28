@@ -30,6 +30,38 @@ export type CrimeComparativeResult = {
   direction: "up" | "down" | "flat"
 }
 
+export type CrimeFocusComparativeRow = {
+  crime: string
+  periodA: number
+  periodB: number
+  change: number
+  changePct: number | null
+  changeDirection: "up" | "down" | "flat" | null
+}
+
+export function buildCountChangeMetrics(periodA: number, periodB: number): {
+  change: number
+  changePct: number | null
+  changeDirection: CrimeFocusComparativeRow["changeDirection"]
+} {
+  const change = periodB - periodA
+  let changePct: number | null = null
+  let changeDirection: CrimeFocusComparativeRow["changeDirection"] = null
+
+  if (periodA > 0) {
+    changePct = Math.round((change / periodA) * 1000) / 10
+    if (changePct > 0) changeDirection = "up"
+    else if (changePct < 0) changeDirection = "down"
+    else changeDirection = "flat"
+  } else if (periodB > 0) {
+    changeDirection = "up"
+  } else if (periodA === 0 && periodB === 0) {
+    changeDirection = null
+  }
+
+  return { change, changePct, changeDirection }
+}
+
 export type ComparativePresetId =
   | "month-vs-last-month"
   | "last-30-vs-prev-30"
