@@ -62,14 +62,85 @@ export function buildCountChangeMetrics(periodA: number, periodB: number): {
   return { change, changePct, changeDirection }
 }
 
-export function buildComparativePeriodNarrative(row: {
+type ComparativeNarrativeRow = {
   label: string
   periodA: number
   periodB: number
   change: number
   changePct: number | null
   changeDirection: CrimeFocusComparativeRow["changeDirection"]
-}): string {
+}
+
+function formatChangePct(changePct: number | null) {
+  return changePct != null ? ` (${Math.abs(changePct)}%)` : ""
+}
+
+function formatIncidentCount(count: number) {
+  return `${count.toLocaleString()} index crime${count === 1 ? "" : "s"}`
+}
+
+export function buildComparativeRegionalBriefing(result: CrimeComparativeResult): string {
+  const previousTotal = formatIncidentCount(result.periodA.totalVolume)
+  const reviewTotal = formatIncidentCount(result.periodB.totalVolume)
+  const absChange = Math.abs(result.change)
+  const pct = formatChangePct(result.changePct)
+
+  if (result.direction === "up") {
+    return `For the period in review (${result.periodB.label}), PRO CALABARZON recorded a total of ${reviewTotal} — an increase of ${absChange.toLocaleString()} incident${absChange === 1 ? "" : "s"}${pct} compared to ${previousTotal} in the previous period (${result.periodA.label}).`
+  }
+
+  if (result.direction === "down") {
+    return `For the period in review (${result.periodB.label}), PRO CALABARZON recorded a total of ${reviewTotal} — a decrease of ${absChange.toLocaleString()} incident${absChange === 1 ? "" : "s"}${pct} compared to ${previousTotal} in the previous period (${result.periodA.label}).`
+  }
+
+  return `For the period in review (${result.periodB.label}), PRO CALABARZON remained at ${reviewTotal} — unchanged from the previous period (${result.periodA.label}).`
+}
+
+export const COMPARATIVE_CHART_GUIDE = [
+  "Light orange bar — previous period (Period A / baseline).",
+  "Light blue bar — period in review (Period B / current comparison target).",
+  "Arrow below the blue bar — change in count; red (↑) for increase, green (↓) for decrease.",
+  "Click a PPO bar to open that office's focus crime profile.",
+] as const
+
+export function buildComparativePpoHighlights(rows: ComparativeNarrativeRow[]): string[] {
+  const increases = rows
+    .filter((row) => row.changeDirection === "up" && row.change > 0)
+    .sort((left, right) => right.change - left.change)
+  const decreases = rows
+    .filter((row) => row.changeDirection === "down" && row.change < 0)
+    .sort((left, right) => left.change - right.change)
+
+  const highlights: string[] = []
+
+  if (increases[0]) {
+    const row = increases[0]
+    highlights.push(
+      `Largest increase: ${row.label} — +${row.change.toLocaleString()} incident${row.change === 1 ? "" : "s"}${formatChangePct(row.changePct)}.`,
+    )
+  }
+
+  if (decreases[0]) {
+    const row = decreases[0]
+    highlights.push(
+      `Largest decrease: ${row.label} — ${row.change.toLocaleString()} incident${Math.abs(row.change) === 1 ? "" : "s"}${formatChangePct(row.changePct)}.`,
+    )
+  }
+
+  const unchangedCount = rows.filter(
+    (row) => row.changeDirection === "flat" || row.change === 0,
+  ).length
+
+  if (unchangedCount > 0 && unchangedCount < rows.length) {
+    highlights.push(
+      `${unchangedCount} PPO${unchangedCount === 1 ? "" : "s"} recorded no change in index crime count across both periods.`,
+    )
+  }
+
+  return highlights.slice(0, 4)
+}
+
+export function buildComparativePeriodNarrative(row: ComparativeNarrativeRow): string {
   const subject = row.label
 
   if (row.periodA === 0 && row.periodB === 0) {
@@ -78,23 +149,23 @@ export function buildComparativePeriodNarrative(row: {
 
   if (row.changeDirection === "up") {
     const absChange = Math.abs(row.change)
-    const pct = row.changePct != null ? ` (${Math.abs(row.changePct)}%)` : ""
+    const pct = formatChangePct(row.changePct)
     if (row.periodA === 0) {
-      return `${subject} recorded ${row.periodB} index crime${row.periodB === 1 ? "" : "s"} in the period in review, with none in the previous period.`
+      return `${subject} recorded ${formatIncidentCount(row.periodB)} in the period in review, with none in the previous period.`
     }
-    return `${subject} recorded an increase of ${absChange} index crime${absChange === 1 ? "" : "s"}${pct} in the period in review compared to the previous period.`
+    return `${subject} recorded an increase of ${absChange.toLocaleString()} incident${absChange === 1 ? "" : "s"}${pct} in the period in review compared to the previous period.`
   }
 
   if (row.changeDirection === "down") {
     const absChange = Math.abs(row.change)
-    const pct = row.changePct != null ? ` (${Math.abs(row.changePct)}%)` : ""
+    const pct = formatChangePct(row.changePct)
     if (row.periodB === 0) {
-      return `${subject} recorded no index crime in the period in review, down from ${row.periodA} in the previous period.`
+      return `${subject} recorded no index crime in the period in review, down from ${row.periodA.toLocaleString()} in the previous period.`
     }
-    return `${subject} recorded a decrease of ${absChange} index crime${absChange === 1 ? "" : "s"}${pct} in the period in review compared to the previous period.`
+    return `${subject} recorded a decrease of ${absChange.toLocaleString()} incident${absChange === 1 ? "" : "s"}${pct} in the period in review compared to the previous period.`
   }
 
-  return `${subject} recorded no change in index crime (${row.periodB}) between the previous period and the period in review.`
+  return `${subject} remained at ${row.periodB.toLocaleString()} index crime${row.periodB === 1 ? "" : "s"} — no change between the two periods.`
 }
 
 export type ComparativePresetId =

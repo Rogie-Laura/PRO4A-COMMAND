@@ -229,12 +229,17 @@ export function CrimeComparativePpoSheet({
               )}
 
               {!isPending && rows.length > 0 ? (
-                <div className="mt-4 space-y-2 border-t border-border/40 pt-4">
-                  {rows.map((row) => (
-                    <p key={row.label} className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                      {buildComparativePeriodNarrative(row)}
-                    </p>
-                  ))}
+                <div className="mt-4 border-t border-border/40 pt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Breakdown by focus crime
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {rows.map((row) => (
+                      <p key={row.label} className="text-xs leading-relaxed text-foreground/90 sm:text-sm">
+                        {buildComparativePeriodNarrative(row)}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </DialogBody>

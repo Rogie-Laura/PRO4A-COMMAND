@@ -1,7 +1,14 @@
 "use client"
 
 import { useEffect, useMemo, useState, useTransition } from "react"
-import { ArrowDownRight, ArrowUpRight, CalendarRange, Minus, RefreshCw } from "lucide-react"
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  CalendarRange,
+  FileText,
+  Minus,
+  RefreshCw,
+} from "lucide-react"
 import { Bar, BarChart, CartesianGrid, LabelList, Legend, XAxis, YAxis } from "recharts"
 
 import { compareCrimePeriodsAction } from "@/app/(dashboard)/ridmd/actions"
@@ -23,6 +30,9 @@ import {
   buildPresetRanges,
   buildCountChangeMetrics,
   buildComparativePeriodNarrative,
+  buildComparativePpoHighlights,
+  buildComparativeRegionalBriefing,
+  COMPARATIVE_CHART_GUIDE,
   COMPARATIVE_PRESETS,
   getCrimeDataBounds,
   type ComparativePresetId,
@@ -325,6 +335,11 @@ export function CrimeComparativePanel({
     [ppoChartData],
   )
 
+  const briefingHighlights = useMemo(
+    () => buildComparativePpoHighlights(ppoChartData),
+    [ppoChartData],
+  )
+
   function handlePpoBarClick(_data: unknown, index: number) {
     const row = ppoChartData[index]
     if (!row) return
@@ -499,10 +514,63 @@ export function CrimeComparativePanel({
             </Card>
           </div>
 
+          <Card className="gap-0 overflow-hidden border-primary/20 bg-gradient-to-br from-primary/8 via-background to-background py-0">
+            <CardHeader className="border-b border-primary/10 pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileText className="size-4 text-primary" />
+                Comparative Report Briefing
+              </CardTitle>
+              <CardDescription>
+                Read or present this summary in a command briefing — ready for executive review.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5 p-4">
+              <blockquote className="border-l-4 border-primary/40 pl-4 text-sm leading-relaxed text-foreground sm:text-[15px]">
+                {buildComparativeRegionalBriefing(result)}
+              </blockquote>
+
+              {briefingHighlights.length > 0 ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Key highlights
+                  </p>
+                  <ul className="mt-2.5 space-y-2">
+                    {briefingHighlights.map((item) => (
+                      <li
+                        key={item}
+                        className="flex gap-2 text-sm leading-relaxed text-foreground/90 before:mt-2 before:size-1.5 before:shrink-0 before:rounded-full before:bg-primary/70"
+                      >
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  How to read the bar graph
+                </p>
+                <ul className="mt-2.5 space-y-2">
+                  {COMPARATIVE_CHART_GUIDE.map((item) => (
+                    <li
+                      key={item}
+                      className="flex gap-2 text-sm leading-relaxed text-muted-foreground before:mt-2 before:size-1.5 before:shrink-0 before:rounded-full before:bg-muted-foreground/50"
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="gap-0 py-0">
             <CardHeader className="border-b pb-4">
               <CardTitle className="text-base">Index Crime by PPO</CardTitle>
-              <CardDescription>I-click ang bar ng PPO para makita ang focus crime profile.</CardDescription>
+              <CardDescription>
+                Side-by-side comparison per PPO · click a bar to open the focus crime profile
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-4">
               {ppoChartData.length === 0 ? (
@@ -571,12 +639,17 @@ export function CrimeComparativePanel({
                 </div>
               )}
               {ppoChartData.length > 0 ? (
-                <div className="mt-4 space-y-2.5 border-t border-border/40 pt-4">
-                  {ppoChartData.map((row) => (
-                    <p key={row.csvName} className="text-sm leading-relaxed text-muted-foreground">
-                      {buildComparativePeriodNarrative(row)}
-                    </p>
-                  ))}
+                <div className="mt-4 border-t border-border/40 pt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Breakdown by PPO
+                  </p>
+                  <div className="mt-3 space-y-2.5">
+                    {ppoChartData.map((row) => (
+                      <p key={row.csvName} className="text-sm leading-relaxed text-foreground/90">
+                        {buildComparativePeriodNarrative(row)}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </CardContent>
