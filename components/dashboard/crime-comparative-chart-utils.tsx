@@ -17,7 +17,7 @@ export type ComparativeBarRow = {
   changeDirection: CrimeFocusComparativeRow["changeDirection"]
 }
 
-export function formatComparativeChangeLabel(row: ComparativeBarRow) {
+export function getComparativeChangeParts(row: ComparativeBarRow) {
   const color =
     row.changeDirection === "up"
       ? "#dc2626"
@@ -28,7 +28,19 @@ export function formatComparativeChangeLabel(row: ComparativeBarRow) {
   const arrow =
     row.changeDirection === "up" ? "↑" : row.changeDirection === "down" ? "↓" : "—"
   const changeCount = Math.abs(row.change).toLocaleString()
-  const pctPart = row.changePct != null ? ` · ${Math.abs(row.changePct)}%` : row.changeDirection === "flat" ? " · 0%" : ""
+  const pct =
+    row.changePct != null
+      ? `${Math.abs(row.changePct)}%`
+      : row.changeDirection === "flat"
+        ? "0%"
+        : null
+
+  return { color, arrow, changeCount, pct }
+}
+
+export function formatComparativeChangeLabel(row: ComparativeBarRow) {
+  const { color, arrow, changeCount, pct } = getComparativeChangeParts(row)
+  const pctPart = pct ? ` · ${pct}` : ""
 
   return { color, text: `${arrow} ${changeCount}${pctPart}` }
 }
@@ -62,24 +74,27 @@ export function ComparativeBarTotalLabel(props: {
   )
 }
 
-function renderChangeLabelText(
+function renderStackedChangeLabel(
   centerX: number,
-  y: number,
+  topY: number,
   row: ComparativeBarRow,
   compact?: boolean,
 ) {
-  const { color, text } = formatComparativeChangeLabel(row)
-  const arrow = text.split(" ")[0] ?? "—"
-  const rest = text.slice(arrow.length).trim()
+  if (!row.changeDirection) return null
+
+  const { color, arrow, changeCount, pct } = getComparativeChangeParts(row)
+  const countSize = compact ? 11 : 12
+  const pctSize = compact ? 10 : 11
+  const lineGap = compact ? 13 : 14
 
   return (
-    <text x={centerX} y={y} textAnchor="middle" fill={color}>
-      <tspan fontSize={compact ? 14 : 16} fontWeight={800} dy={0}>
-        {arrow}
+    <text x={centerX} y={topY} textAnchor="middle" fill={color}>
+      <tspan x={centerX} dy={0} fontSize={countSize} fontWeight={800}>
+        {arrow} {changeCount}
       </tspan>
-      {rest ? (
-        <tspan fontSize={compact ? 10 : 11} fontWeight={700} dx={3}>
-          {rest}
+      {pct ? (
+        <tspan x={centerX} dy={lineGap} fontSize={pctSize} fontWeight={700}>
+          {pct}
         </tspan>
       ) : null}
     </text>
@@ -100,7 +115,7 @@ export function createPeriodBBarLabels(
     index?: number
   }) {
     const row = chartData[props.index ?? -1]
-    if (!row) return null
+    if (!row || !row.changeDirection) return null
 
     const x = typeof props.x === "number" ? props.x : Number(props.x ?? 0)
     const y = typeof props.y === "number" ? props.y : Number(props.y ?? 0)
@@ -108,15 +123,16 @@ export function createPeriodBBarLabels(
     const height = typeof props.height === "number" ? props.height : Number(props.height ?? 0)
     const centerX = x + width / 2
 
+    // Zero-height bars are rendered on the axis tick instead.
+    if (row.periodB === 0) return null
+
     if (placement === "aboveTotal") {
-      const totalOffset = 10
-      const changeOffset = 34
+      const totalOffset = 8
+      const changeTopOffset = row.changePct != null || row.changeDirection === "flat" ? 40 : 24
 
       return (
         <g>
-          {row.changeDirection
-            ? renderChangeLabelText(centerX, y - changeOffset, row)
-            : null}
+          {renderStackedChangeLabel(centerX, y - changeTopOffset, row)}
           <text
             x={centerX}
             y={y - totalOffset}
@@ -131,11 +147,13 @@ export function createPeriodBBarLabels(
       )
     }
 
-    if (!row.changeDirection) return null
+    const stackedHeight = row.changePct != null || row.changeDirection === "flat" ? 28 : 16
+    const insideY =
+      height >= stackedHeight + 8
+        ? y + height - stackedHeight
+        : y + height + (row.changePct != null || row.changeDirection === "flat" ? 18 : 12)
 
-    const labelY = height >= 18 ? y + height - 8 : y + height + 14
-
-    return renderChangeLabelText(centerX, labelY, row)
+    return renderStackedChangeLabel(centerX, insideY, row, height < 40)
   }
 }
 
@@ -147,7 +165,7 @@ export function createPeriodBChangeLabel(chartData: ComparativeBarRow[]) {
 export function ComparativeChangeTickLabel({
   row,
   dy,
-  layout = "inline",
+  layout = "stacked",
 }: {
   row: ComparativeBarRow
   dy: number
@@ -156,12 +174,15 @@ export function ComparativeChangeTickLabel({
   if (!row.changeDirection) return null
 
   if (layout === "stacked") {
+    const pctLineCount = row.changePct != null || row.changeDirection === "flat" ? 1 : 0
+    const totalY = dy + 16 + pctLineCount * 14
+
     return (
       <g>
-        {renderChangeLabelText(0, dy, row, true)}
+        {renderStackedChangeLabel(0, dy, row, true)}
         <text
           x={0}
-          y={dy + 18}
+          y={totalY}
           textAnchor="middle"
           className="fill-foreground"
           fontSize={10}
@@ -173,11 +194,5 @@ export function ComparativeChangeTickLabel({
     )
   }
 
-  const { color, text } = formatComparativeChangeLabel(row)
-
-  return (
-    <text x={0} y={0} dy={dy} textAnchor="middle" fill={color} fontSize={11} fontWeight={700}>
-      {text}
-    </text>
-  )
+  return renderStackedChangeLabel(0, dy, row, true)
 }
