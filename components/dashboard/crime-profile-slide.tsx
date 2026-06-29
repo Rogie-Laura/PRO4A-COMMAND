@@ -18,7 +18,7 @@ import { buildCrimePpoBreakdownItems, CRIME_PPO_PIE_LABELS, getCrimePpoPieColor 
 import type { CrimeFocusProfileData } from "@/lib/crime-profile"
 import { cn } from "@/lib/utils"
 
-const CRIME_PROFILE_PAGE_HEIGHT_VAR = "--crime-profile-page-height"
+const PROFILE_CHART_CLASS = "aspect-auto h-full min-h-0 w-full"
 
 const CASE_STATUS_COLORS = [
   "hsl(142 71% 45%)",
@@ -54,10 +54,10 @@ function FrameSection({
         className,
       )}
     >
-      <div className="shrink-0 border-b bg-muted/25 px-2 py-1.5">
-        <p className="truncate text-[10px] font-semibold uppercase tracking-wide sm:text-[11px]">{title}</p>
+      <div className="shrink-0 border-b bg-muted/25 px-1.5 py-1">
+        <p className="truncate text-[9px] font-semibold uppercase tracking-wide sm:text-[10px]">{title}</p>
       </div>
-      <div className="relative min-h-0 flex-1 overflow-hidden p-1 sm:p-1.5">{children}</div>
+      <div className="relative min-h-0 flex-1 overflow-hidden p-0.5 sm:p-1">{children}</div>
     </div>
   )
 }
@@ -131,29 +131,29 @@ function CrimeProfileFrame({
   )
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-6 grid-rows-6 gap-1 sm:gap-1.5">
+    <div className="grid h-full min-h-0 grid-cols-6 grid-rows-6 gap-0.5 sm:gap-1">
       <FrameSection title="Previous vs Review" className="col-span-2 row-span-6">
         {comparisonRows.length === 0 ? (
           <EmptyChartNote />
         ) : (
-          <ChartContainer config={comparativeBarChartConfig} className="h-full min-h-0 w-full">
+          <ChartContainer config={comparativeBarChartConfig} className={PROFILE_CHART_CLASS}>
             <BarChart
               data={comparisonRows}
-              margin={{ top: isMobile ? 48 : 56, right: 4, left: 0, bottom: 0 }}
+              margin={{ top: isMobile ? 32 : 40, right: 4, left: 0, bottom: 0 }}
               barCategoryGap="30%"
-              barGap={6}
+              barGap={4}
             >
               <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
-              <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={10} />
-              <YAxis tickLine={false} axisLine={false} width={28} fontSize={10} allowDecimals={false} />
+              <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={9} />
+              <YAxis tickLine={false} axisLine={false} width={24} fontSize={9} allowDecimals={false} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Legend wrapperStyle={{ fontSize: 10 }} />
+              <Legend wrapperStyle={{ fontSize: 9 }} />
               <Bar
                 dataKey="periodA"
                 name="Previous"
                 fill="var(--color-periodA)"
-                radius={[3, 3, 0, 0]}
-                maxBarSize={isMobile ? 36 : 44}
+                radius={[2, 2, 0, 0]}
+                maxBarSize={isMobile ? 28 : 36}
               >
                 <LabelList dataKey="periodA" content={<ComparativeBarTotalLabel />} />
               </Bar>
@@ -161,8 +161,8 @@ function CrimeProfileFrame({
                 dataKey="periodB"
                 name="In review"
                 fill="var(--color-periodB)"
-                radius={[3, 3, 0, 0]}
-                maxBarSize={isMobile ? 36 : 44}
+                radius={[2, 2, 0, 0]}
+                maxBarSize={isMobile ? 28 : 36}
               >
                 <LabelList dataKey="periodB" content={periodBChangeLabel} />
               </Bar>
@@ -177,22 +177,22 @@ function CrimeProfileFrame({
         ) : (
           <ChartContainer
             config={{ count: { label: "Incidents", color: "var(--chart-2)" } }}
-            className="h-full min-h-0 w-full"
+            className={PROFILE_CHART_CLASS}
           >
             <BarChart
               data={typeofPlaceData}
               layout="vertical"
-              margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
+              margin={{ top: 0, right: 12, left: 0, bottom: 0 }}
             >
               <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/50" />
-              <XAxis type="number" tickLine={false} axisLine={false} allowDecimals={false} fontSize={9} />
+              <XAxis type="number" tickLine={false} axisLine={false} allowDecimals={false} fontSize={8} />
               <YAxis
                 type="category"
                 dataKey="shortLabel"
                 tickLine={false}
                 axisLine={false}
-                width={isMobile ? 68 : 88}
-                fontSize={8}
+                width={isMobile ? 60 : 76}
+                fontSize={7}
               />
               <ChartTooltip
                 content={
@@ -201,8 +201,8 @@ function CrimeProfileFrame({
                   />
                 }
               />
-              <Bar dataKey="count" fill="var(--color-count)" radius={[0, 3, 3, 0]} maxBarSize={12}>
-                <LabelList dataKey="count" position="right" fontSize={8} />
+              <Bar dataKey="count" fill="var(--color-count)" radius={[0, 2, 2, 0]} maxBarSize={10}>
+                <LabelList dataKey="count" position="right" fontSize={7} />
               </Bar>
             </BarChart>
           </ChartContainer>
@@ -215,7 +215,7 @@ function CrimeProfileFrame({
         ) : (
           <div className="flex h-full min-h-0 flex-col">
             <div className="min-h-0 flex-1">
-              <ChartContainer config={ppoChartConfig} className="h-full min-h-0 w-full">
+              <ChartContainer config={ppoChartConfig} className={PROFILE_CHART_CLASS}>
                 <PieChart>
                   <ChartTooltip
                     content={
@@ -233,8 +233,8 @@ function CrimeProfileFrame({
                     data={ppoPieSlices}
                     dataKey="count"
                     nameKey="name"
-                    innerRadius="38%"
-                    outerRadius="72%"
+                    innerRadius="34%"
+                    outerRadius="68%"
                     paddingAngle={2}
                     strokeWidth={0}
                   >
@@ -245,9 +245,9 @@ function CrimeProfileFrame({
                 </PieChart>
               </ChartContainer>
             </div>
-            <div className="shrink-0 grid grid-cols-3 gap-x-1 gap-y-0.5 border-t border-border/40 pt-1 text-[8px] leading-tight sm:text-[9px]">
-              {ppoPieData.map((item) => (
-                <div key={item.name} className="flex min-w-0 items-center gap-1">
+            <div className="shrink-0 grid grid-cols-3 gap-x-0.5 gap-y-0 border-t border-border/40 px-0.5 pt-0.5 text-[7px] leading-tight sm:text-[8px]">
+              {ppoPieData.slice(0, 5).map((item) => (
+                <div key={item.name} className="flex min-w-0 items-center gap-0.5">
                   <span
                     className="size-1.5 shrink-0 rounded-full"
                     style={{ backgroundColor: item.color }}
@@ -267,25 +267,25 @@ function CrimeProfileFrame({
         ) : (
           <ChartContainer
             config={{ count: { label: "Incidents", color: "var(--chart-3)" } }}
-            className="h-full min-h-0 w-full"
+            className={PROFILE_CHART_CLASS}
           >
-            <BarChart data={caseStatusData} margin={{ top: 8, right: 2, left: 0, bottom: 0 }}>
+            <BarChart data={caseStatusData} margin={{ top: 4, right: 2, left: 0, bottom: 0 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
               <XAxis
                 dataKey="name"
                 tickLine={false}
                 axisLine={false}
                 interval={0}
-                fontSize={8}
-                tickFormatter={(value) => truncateLabel(String(value), isMobile ? 8 : 10)}
+                fontSize={7}
+                tickFormatter={(value) => truncateLabel(String(value), isMobile ? 7 : 9)}
               />
-              <YAxis tickLine={false} axisLine={false} width={24} allowDecimals={false} fontSize={9} />
+              <YAxis tickLine={false} axisLine={false} width={20} allowDecimals={false} fontSize={8} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={isMobile ? 28 : 36}>
+              <Bar dataKey="count" radius={[2, 2, 0, 0]} maxBarSize={isMobile ? 22 : 28}>
                 {caseStatusData.map((item, index) => (
                   <Cell key={item.name} fill={CASE_STATUS_COLORS[index % CASE_STATUS_COLORS.length]} />
                 ))}
-                <LabelList dataKey="count" position="top" fontSize={8} />
+                <LabelList dataKey="count" position="top" fontSize={7} />
               </Bar>
             </BarChart>
           </ChartContainer>
@@ -304,7 +304,7 @@ function EmptyChartNote() {
 }
 
 const CRIME_PROFILE_PAGE_CLASS =
-  "box-border flex h-[var(--crime-profile-page-height,calc(100dvh-3.5rem))] shrink-0 snap-start snap-always flex-col overflow-hidden"
+  "box-border flex h-[calc(100dvh-3.5rem-2rem)] max-h-[calc(100dvh-3.5rem-2rem)] shrink-0 snap-start snap-always flex-col overflow-hidden sm:h-[calc(100dvh-3.5rem-3rem)] sm:max-h-[calc(100dvh-3.5rem-3rem)]"
 
 function CrimeProfileFullPage({
   focusCrime,
@@ -322,27 +322,32 @@ function CrimeProfileFullPage({
   isMobile: boolean
 }) {
   const sectionRef = useRef<HTMLElement>(null)
-  const [shouldLoad, setShouldLoad] = useState(false)
+  const [shouldLoad, setShouldLoad] = useState(pageNumber === 1)
   const [profile, setProfile] = useState<CrimeFocusProfileData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
     const section = sectionRef.current
-    if (!section) return
+    if (!section || shouldLoad) return
 
+    const scrollRoot = document.querySelector("main")
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setShouldLoad(true)
         }
       },
-      { rootMargin: "240px 0px" },
+      {
+        root: scrollRoot,
+        rootMargin: "120px 0px",
+        threshold: 0.05,
+      },
     )
 
     observer.observe(section)
     return () => observer.disconnect()
-  }, [])
+  }, [shouldLoad])
 
   useEffect(() => {
     if (!shouldLoad) return
@@ -365,19 +370,19 @@ function CrimeProfileFullPage({
 
   return (
     <section ref={sectionRef} className={CRIME_PROFILE_PAGE_CLASS} aria-label={`Crime profile ${focusCrime}`}>
-      <Card className="flex h-full min-h-0 flex-col gap-0 overflow-hidden py-0">
-        <CardHeader className="shrink-0 border-b px-3 py-2 sm:px-4">
+      <Card className="flex h-full min-h-0 flex-col gap-0 overflow-hidden py-0 shadow-sm">
+        <CardHeader className="shrink-0 space-y-0 border-b px-2 py-1.5 sm:px-3">
           <div className="flex items-center justify-between gap-2">
-            <CardTitle className="truncate text-sm font-bold uppercase tracking-wide sm:text-base">
+            <CardTitle className="truncate text-xs font-bold uppercase tracking-wide sm:text-sm">
               Crime Profile — {focusCrime}
             </CardTitle>
-            <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground sm:text-xs">
+            <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground sm:text-[11px]">
               {pageNumber} / {totalPages}
             </span>
           </div>
         </CardHeader>
 
-        <CardContent className="min-h-0 flex-1 overflow-hidden p-2 sm:p-3">
+        <CardContent className="min-h-0 flex-1 overflow-hidden p-1 sm:p-1.5">
           {isPending && !profile ? (
             <Skeleton className="h-full rounded-md" />
           ) : error ? (
@@ -398,22 +403,9 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
     const main = document.querySelector("main")
     if (!main) return
 
-    const syncPageHeight = () => {
-      main.style.setProperty(CRIME_PROFILE_PAGE_HEIGHT_VAR, `${main.clientHeight}px`)
-    }
-
-    syncPageHeight()
     main.classList.add("snap-y", "snap-mandatory", "scroll-smooth")
-
-    const resizeObserver = new ResizeObserver(syncPageHeight)
-    resizeObserver.observe(main)
-    window.addEventListener("resize", syncPageHeight)
-
     return () => {
-      resizeObserver.disconnect()
-      window.removeEventListener("resize", syncPageHeight)
       main.classList.remove("snap-y", "snap-mandatory", "scroll-smooth")
-      main.style.removeProperty(CRIME_PROFILE_PAGE_HEIGHT_VAR)
     }
   }, [])
 
