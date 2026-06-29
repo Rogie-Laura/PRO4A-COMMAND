@@ -11,20 +11,19 @@ export async function MobilityPageContent() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <DataSyncBanner
           lastUpdated={data.lastUpdated}
-          sourceLabel="Mobility tab"
-          syncDescription="synced from Google Sheet (cached until you refresh)"
+          sourceLabel={
+            data.dataSource === "clearbook-upload" ? "Clearbook Excel upload" : "Mobility tab"
+          }
+          syncDescription={
+            data.dataSource === "clearbook-upload"
+              ? "synced from uploaded CLEARBOOK workbook"
+              : "synced from Google Sheet (cached until you refresh)"
+          }
         />
-        <MobilityRefreshButton />
+        {data.dataSource === "google-sheet" ? <MobilityRefreshButton /> : null}
       </div>
 
-      <TotalVehiclesSection
-        total={data.totalVehicles}
-        offices={data.officeBreakdown}
-        ownership={data.ownershipDistribution}
-        condition={data.conditionDistribution}
-        fleet={data.fleet}
-        dataReady={data.dataReady}
-      />
+      <TotalVehiclesSection analytics={data} />
     </div>
   )
 }

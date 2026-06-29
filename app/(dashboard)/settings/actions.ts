@@ -22,10 +22,17 @@ import {
 } from "@/lib/firearms-records"
 import { parseFirearmsXlsx } from "@/lib/firearms-xlsx-parser"
 import { HEALTH_ANALYTICS_CACHE_TAG } from "@/lib/health-analytics"
+import { MOBILITY_ANALYTICS_CACHE_TAG } from "@/lib/mobility-records"
+import {
+  getLatestMobilityUploadBatch,
+  replaceMobilityClearbook,
+} from "@/lib/mobility-records"
+import { parseMobilityClearbookXlsx } from "@/lib/mobility-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
 const MAX_FIREARMS_UPLOAD_BYTES = 5 * 1024 * 1024
+const MAX_MOBILITY_UPLOAD_BYTES = 10 * 1024 * 1024
 
 export async function getAccessTokensAction() {
   await requireSuperAdminSession()
@@ -228,5 +235,51 @@ export async function uploadFirearmsWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang firearms upload. Subukan ulit.")
+  }
+}
+
+export async function uploadMobilityClearbookAction(formData: FormData) {
+  try {
+    const session = await requireSuperAdminSession()
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_MOBILITY_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 10 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const clearbook = parseMobilityClearbookXlsx(buffer)
+    const result = await replaceMobilityClearbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      clearbook,
+    })
+
+    updateTag(MOBILITY_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/rlrdd")
+    revalidatePath("/mobility")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang Clearbook upload. Subukan ulit.")
   }
 }

@@ -9,21 +9,26 @@ export async function RlrddPageContent() {
     getMobilityAnalytics(),
   ])
 
-  const lastUpdated =
-    firearms.dataReady && firearms.lastUpdated > mobility.lastUpdated
-      ? firearms.lastUpdated
-      : mobility.lastUpdated
+  const lastUpdated = [firearms.lastUpdated, mobility.lastUpdated].sort().reverse()[0]
+  const sourceLabel =
+    firearms.dataReady && mobility.dataReady
+      ? "firearms.xlsx · Clearbook upload"
+      : firearms.dataReady
+        ? "firearms.xlsx upload"
+        : mobility.dataReady
+          ? "Clearbook Excel upload"
+          : "Google Sheet"
+  const syncDescription =
+    firearms.dataReady || mobility.dataReady
+      ? "synced from uploaded workbooks"
+      : "synced from Google Sheet (cached until you refresh)"
 
   return (
     <div className="space-y-4">
       <DataSyncBanner
         lastUpdated={lastUpdated}
-        sourceLabel={firearms.dataReady ? "firearms.xlsx upload" : "Mobility tab"}
-        syncDescription={
-          firearms.dataReady
-            ? "synced from uploaded firearms workbook"
-            : "synced from Google Sheet (cached until you refresh)"
-        }
+        sourceLabel={sourceLabel}
+        syncDescription={syncDescription}
       />
 
       <RlrddModulesCarousel firearms={firearms} mobility={mobility} />

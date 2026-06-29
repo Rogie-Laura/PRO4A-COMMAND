@@ -8,6 +8,7 @@ import {
   classifyVehicleOwnership,
 } from "@/lib/mobility-config"
 import { OFFICES } from "@/lib/office-config"
+import { loadLatestMobilityUploadAnalytics, MOBILITY_ANALYTICS_CACHE_TAG } from "@/lib/mobility-records"
 import type {
   MobilityAnalytics,
   VehicleCountItem,
@@ -236,6 +237,9 @@ function emptyAnalytics(): MobilityAnalytics {
   return {
     lastUpdated: new Date().toISOString(),
     dataReady: false,
+    dataSource: "google-sheet",
+    clearbookAsOf: null,
+    clearbookUnits: [],
     totalVehicles: {
       label: "Total Vehicles",
       value: "0",
@@ -261,7 +265,7 @@ function emptyAnalytics(): MobilityAnalytics {
   }
 }
 
-async function loadMobilityAnalytics(): Promise<MobilityAnalytics> {
+async function loadMobilityAnalyticsFromSheet(): Promise<MobilityAnalytics> {
   try {
     const probeCsv = await fetchMobilityProbeCsv()
     const probeRows = parseCsv(probeCsv)
@@ -285,6 +289,9 @@ async function loadMobilityAnalytics(): Promise<MobilityAnalytics> {
     return {
       lastUpdated: new Date().toISOString(),
       dataReady: true,
+      dataSource: "google-sheet",
+      clearbookAsOf: null,
+      clearbookUnits: [],
       totalVehicles: {
         label: "Total Vehicles",
         value: records.length.toLocaleString(),
@@ -300,9 +307,20 @@ async function loadMobilityAnalytics(): Promise<MobilityAnalytics> {
   }
 }
 
-export const MOBILITY_ANALYTICS_CACHE_TAG = "mobility-analytics"
+async function loadMobilityAnalytics(): Promise<MobilityAnalytics> {
+  try {
+    const uploaded = await loadLatestMobilityUploadAnalytics()
+    if (uploaded.dataReady) {
+      return uploaded
+    }
+  } catch {
+    // Fall back to Google Sheet when Supabase upload is unavailable.
+  }
 
-/** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
+  return loadMobilityAnalyticsFromSheet()
+}
+
+/** Cached until manual refresh or new upload — Supabase upload preferred over Google Sheet. */
 const getCachedMobilityAnalytics = unstable_cache(
   loadMobilityAnalytics,
   [MOBILITY_ANALYTICS_CACHE_TAG],
@@ -312,3 +330,5 @@ const getCachedMobilityAnalytics = unstable_cache(
 export async function getMobilityAnalytics(): Promise<MobilityAnalytics> {
   return getCachedMobilityAnalytics()
 }
+
+export { MOBILITY_ANALYTICS_CACHE_TAG } from "@/lib/mobility-records"

@@ -5,6 +5,7 @@ import { AccessTokenCard } from "@/components/settings/access-token-card"
 import { BmiUploadCard } from "@/components/settings/bmi-upload-card"
 import { CrimeUploadCard } from "@/components/settings/crime-upload-card"
 import { FirearmsUploadCard } from "@/components/settings/firearms-upload-card"
+import { MobilityUploadCard } from "@/components/settings/mobility-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
 import {
   Card,
@@ -22,6 +23,8 @@ import {
   getLatestFirearmsUploadBatch,
 } from "@/lib/firearms-records"
 import type { FirearmsUploadBatchInfo } from "@/lib/firearms-types"
+import { getLatestMobilityUploadBatch } from "@/lib/mobility-records"
+import type { MobilityUploadBatchInfo } from "@/lib/mobility-types"
 
 export const maxDuration = 300
 
@@ -42,6 +45,8 @@ export default async function SettingsPage() {
   let crimeUploadError: string | null = null
   let latestFirearmsBatch: FirearmsUploadBatchInfo | null = null
   let firearmsUploadError: string | null = null
+  let latestMobilityBatch: MobilityUploadBatchInfo | null = null
+  let mobilityUploadError: string | null = null
 
   if (canManageTokens) {
     try {
@@ -78,6 +83,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load firearms upload status from Supabase."
+    }
+
+    try {
+      latestMobilityBatch = await getLatestMobilityUploadBatch()
+    } catch (error) {
+      mobilityUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load mobility upload status from Supabase."
     }
   }
 
@@ -133,6 +147,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <FirearmsUploadCard latestBatch={latestFirearmsBatch} />
+            )}
+
+            {mobilityUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Vehicle Clearbook</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{mobilityUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260702140000_create_mobility_upload_batches.sql`
+                    kung wala pa ang `mobility_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <MobilityUploadCard latestBatch={latestMobilityBatch} />
             )}
 
             {tokenError ? (

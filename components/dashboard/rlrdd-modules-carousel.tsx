@@ -24,16 +24,7 @@ export function RlrddModulesCarousel({ firearms, mobility }: RlrddModulesCarouse
       id: "vehicles",
       label: "Vehicles",
       dotClassName: "bg-sky-500",
-      content: (
-        <TotalVehiclesSection
-          total={mobility.totalVehicles}
-          offices={mobility.officeBreakdown}
-          ownership={mobility.ownershipDistribution}
-          condition={mobility.conditionDistribution}
-          fleet={mobility.fleet}
-          dataReady={mobility.dataReady}
-        />
-      ),
+      content: <TotalVehiclesSection analytics={mobility} />,
     },
     {
       id: "camps-offices",
