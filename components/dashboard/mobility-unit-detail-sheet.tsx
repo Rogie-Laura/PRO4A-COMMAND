@@ -84,7 +84,7 @@ export function MobilityUnitDetailSheet({
 
               {vehicleTypes && vehicleTypes.vehicleTypes.length > 0 ? (
                 <section className="space-y-3">
-                  <h3 className="text-sm font-semibold">By Vehicle Type</h3>
+                  <h3 className="text-sm font-semibold">Land Assets by Type</h3>
                   <div className="overflow-x-auto rounded-lg border">
                     <table className="w-full min-w-[480px] text-sm">
                       <thead>
@@ -98,6 +98,61 @@ export function MobilityUnitDetailSheet({
                       </thead>
                       <tbody>
                         {vehicleTypes.vehicleTypes.map((item) => (
+                          <tr key={item.vehicleType} className="border-b last:border-0">
+                            <td className="px-3 py-2 font-medium">{item.vehicleType}</td>
+                            <td className="px-3 py-2 tabular-nums">
+                              {(
+                                item.breakdown.serviceable.organic +
+                                item.breakdown.serviceable.donated +
+                                item.breakdown.serviceable.loaned
+                              ).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums">
+                              {(
+                                item.breakdown.unserviceable.organic +
+                                item.breakdown.unserviceable.donated +
+                                item.breakdown.unserviceable.loaned
+                              ).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums">
+                              {(
+                                item.breakdown.ber.organic +
+                                item.breakdown.ber.donated +
+                                item.breakdown.ber.loaned
+                              ).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-2 tabular-nums text-primary">
+                              {item.breakdown.total.toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ) : null}
+
+              {vehicleTypes && vehicleTypes.waterVehicleTypes.length > 0 ? (
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold">Water Assets by Type</h3>
+                    <span className="text-sm font-bold tabular-nums text-primary">
+                      {vehicleTypes.waterTotal.toLocaleString()} total
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full min-w-[480px] text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/30 text-left text-xs text-muted-foreground">
+                          <th className="px-3 py-2 font-medium">Type</th>
+                          <th className="px-3 py-2 font-medium">SVC</th>
+                          <th className="px-3 py-2 font-medium">UNSVC</th>
+                          <th className="px-3 py-2 font-medium">BER</th>
+                          <th className="px-3 py-2 font-medium">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vehicleTypes.waterVehicleTypes.map((item) => (
                           <tr key={item.vehicleType} className="border-b last:border-0">
                             <td className="px-3 py-2 font-medium">{item.vehicleType}</td>
                             <td className="px-3 py-2 tabular-nums">

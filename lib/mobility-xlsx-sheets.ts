@@ -400,35 +400,58 @@ function readVehicleTypeBreakdown(row: unknown[]): VehicleTypeStatusBreakdown {
   }
 }
 
+function filterUnitVehicleTypes(items: UnitVehicleTypeItem[]) {
+  return items.filter(
+    (item) => item.vehicleType.toUpperCase() !== "TOTAL" && item.breakdown.total > 0,
+  )
+}
+
+function totalFromUnitVehicleTypes(
+  items: UnitVehicleTypeItem[],
+  filtered: UnitVehicleTypeItem[],
+) {
+  const totalRow = items.find((item) => item.vehicleType.toUpperCase() === "TOTAL")
+  return totalRow?.breakdown.total ?? filtered.reduce((sum, item) => sum + item.breakdown.total, 0)
+}
+
 export function parseUnitPpoSheet(rows: unknown[][], unitId: MobilityUnitId): UnitVehicleTypeBreakdown | null {
-  const vehicleTypes: UnitVehicleTypeItem[] = []
-  let inLandSection = false
+  const landTypes: UnitVehicleTypeItem[] = []
+  const waterTypes: UnitVehicleTypeItem[] = []
+  let section: "none" | "land" | "water" = "none"
 
   for (const row of rows) {
     if (!Array.isArray(row)) continue
     const label = String(readMobilityCell(row, 0) ?? "").trim()
     const upper = label.toUpperCase()
 
+    if (upper.includes("UNITS/OFFICE")) break
+
     if (upper.includes("LAND ASSET")) {
-      inLandSection = true
+      section = "land"
       continue
     }
-    if (upper.includes("WATER ASSET")) break
-    if (!inLandSection || !label) continue
-    if (upper.includes("TYPE")) continue
+    if (upper.includes("WATER ASSET")) {
+      section = "water"
+      continue
+    }
+    if (section === "none" || !label || upper.includes("TYPE")) continue
 
-    vehicleTypes.push({
+    const item = {
       vehicleType: label,
       breakdown: readVehicleTypeBreakdown(row),
-    })
+    }
+
+    if (section === "land") {
+      landTypes.push(item)
+    } else {
+      waterTypes.push(item)
+    }
   }
 
-  const filteredTypes = vehicleTypes.filter(
-    (item) => item.vehicleType.toUpperCase() !== "TOTAL" && item.breakdown.total > 0,
-  )
-  const totalRow = vehicleTypes.find((item) => item.vehicleType.toUpperCase() === "TOTAL")
+  const vehicleTypes = filterUnitVehicleTypes(landTypes)
+  const waterVehicleTypes = filterUnitVehicleTypes(waterTypes)
 
-  if (filteredTypes.length === 0) return null
+  if (vehicleTypes.length === 0) return null
 
   const presentation = getMobilityUnitPresentation(unitId)
 
@@ -436,9 +459,24 @@ export function parseUnitPpoSheet(rows: unknown[][], unitId: MobilityUnitId): Un
     unitId,
     label: presentation.label,
     asOf: parseAsOfFromRows(rows),
-    vehicleTypes: filteredTypes,
-    landTotal: totalRow?.breakdown.total ?? filteredTypes.reduce((sum, item) => sum + item.breakdown.total, 0),
-    waterTotal: 0,
+    vehicleTypes,
+    waterVehicleTypes,
+    landTotal: totalFromUnitVehicleTypes(landTypes, vehicleTypes),
+    waterTotal: totalFromUnitVehicleTypes(waterTypes, waterVehicleTypes),
+  }
+}
+
+function enrichUnitWaterFromQuicklook(
+  unitVehicleTypes: UnitVehicleTypeBreakdown[],
+  quicklook: QuicklookSummary | null,
+) {
+  if (!quicklook) return
+
+  for (const unit of unitVehicleTypes) {
+    const summary = quicklook.rows.find((row) => row.unitId === unit.unitId)
+    if (!summary || summary.water.total <= unit.waterTotal) continue
+
+    unit.waterTotal = summary.water.total
   }
 }
 
@@ -524,10 +562,13 @@ export function parseMobilityWorkbookSheets(workbook: XLSX.WorkBook) {
   const classificationRows = sheetRows(workbook, MOBILITY_WORKBOOK_SHEETS.perClassification)
   const wheelRows = sheetRows(workbook, MOBILITY_WORKBOOK_SHEETS.wheelCounts)
   const patrolRows = sheetRows(workbook, MOBILITY_WORKBOOK_SHEETS.patrolRecap)
+  const quicklook = quicklookRows ? parseQuicklookSheet(quicklookRows) : null
+
+  enrichUnitWaterFromQuicklook(unitVehicleTypes, quicklook)
 
   return {
     clearbook: parseClearbookSheet(clearbookRows),
-    quicklook: quicklookRows ? parseQuicklookSheet(quicklookRows) : null,
+    quicklook,
     perClassification: classificationRows ? parsePerClassificationSheet(classificationRows) : null,
     wheelCounts: wheelRows ? parseWheelCountSheet(wheelRows) : null,
     patrolRecap: patrolRows ? parsePatrolRecapSheet(patrolRows) : null,

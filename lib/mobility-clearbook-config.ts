@@ -21,7 +21,7 @@ export const MOBILITY_UNIT_PPO_SHEETS: Record<MobilityUnitId, string> = {
   BATANGAS: "Batangas PPO",
   RIZAL: "Rizal PPO",
   QUEZON: "Quezon PPO",
-  RMFB: "RMFB",
+  RMFB: "RMFB Quicklook",
 }
 
 export const MOBILITY_STATION_SHEETS: Partial<Record<MobilityUnitId, string>> = {

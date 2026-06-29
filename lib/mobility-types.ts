@@ -117,6 +117,7 @@ export type UnitVehicleTypeBreakdown = {
   label: string
   asOf: string | null
   vehicleTypes: UnitVehicleTypeItem[]
+  waterVehicleTypes: UnitVehicleTypeItem[]
   landTotal: number
   waterTotal: number
 }
