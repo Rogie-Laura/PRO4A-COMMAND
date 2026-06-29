@@ -16,6 +16,13 @@ import {
 } from "@/components/ui/card"
 import type { FirearmsUploadBatchInfo } from "@/lib/firearms-types"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
+import {
+  UPLOAD_CARD_CLASS,
+  UPLOAD_DROPZONE_CLASS,
+  UPLOAD_EMPTY_STATE_CLASS,
+  UPLOAD_STATUS_BOX_CLASS,
+} from "@/components/settings/upload-card-styles"
+import { cn } from "@/lib/utils"
 
 type FirearmsUploadCardProps = {
   latestBatch: FirearmsUploadBatchInfo | null
@@ -68,7 +75,7 @@ export function FirearmsUploadCard({ latestBatch, compact = false }: FirearmsUpl
   }
 
   return (
-    <Card className={compact ? "border-primary/25 bg-primary/5" : undefined}>
+    <Card className={cn(UPLOAD_CARD_CLASS, compact && "shadow-sm")}>
       <CardHeader className={compact ? "pb-3" : undefined}>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheetIcon className="size-5 text-primary" />
@@ -81,7 +88,7 @@ export function FirearmsUploadCard({ latestBatch, compact = false }: FirearmsUpl
       </CardHeader>
       <CardContent className="space-y-4">
         {batch ? (
-          <div className="rounded-lg border bg-muted/15 p-4 text-sm">
+          <div className={UPLOAD_STATUS_BOX_CLASS}>
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-medium">Latest upload</p>
               <Badge variant="outline">{batch.filename}</Badge>
@@ -92,12 +99,12 @@ export function FirearmsUploadCard({ latestBatch, compact = false }: FirearmsUpl
             </p>
           </div>
         ) : (
-          <p className="rounded-lg border border-dashed px-4 py-5 text-center text-sm text-muted-foreground">
+          <p className={UPLOAD_EMPTY_STATE_CLASS}>
             Wala pang na-upload na firearms summary. Pumili ng firearms.xlsx file sa ibaba.
           </p>
         )}
 
-        <div className="space-y-3 rounded-lg border border-dashed p-4">
+        <div className={UPLOAD_DROPZONE_CLASS}>
           <label className="block space-y-2 text-sm">
             <span className="font-medium">Choose file (.xlsx)</span>
             <input

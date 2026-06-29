@@ -16,6 +16,12 @@ import {
 import { BMI_CATEGORIES } from "@/lib/bmi-config"
 import type { BmiUploadBatchInfo } from "@/lib/bmi-records"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
+import {
+  UPLOAD_CARD_CLASS,
+  UPLOAD_DROPZONE_CLASS,
+  UPLOAD_EMPTY_STATE_CLASS,
+  UPLOAD_STATUS_BOX_CLASS,
+} from "@/components/settings/upload-card-styles"
 
 type BmiUploadCardProps = {
   latestBatch: BmiUploadBatchInfo | null
@@ -78,7 +84,7 @@ export function BmiUploadCard({ latestBatch }: BmiUploadCardProps) {
   }
 
   return (
-    <Card>
+    <Card className={UPLOAD_CARD_CLASS}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheetIcon className="size-5 text-primary" />
@@ -92,7 +98,7 @@ export function BmiUploadCard({ latestBatch }: BmiUploadCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {batch ? (
-          <div className="rounded-lg border bg-muted/15 p-4 text-sm">
+          <div className={UPLOAD_STATUS_BOX_CLASS}>
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-medium">Latest upload</p>
               <Badge variant="outline">{batch.recordCount.toLocaleString()} records</Badge>
@@ -104,13 +110,13 @@ export function BmiUploadCard({ latestBatch }: BmiUploadCardProps) {
             </p>
           </div>
         ) : (
-          <p className="rounded-lg border border-dashed px-4 py-5 text-center text-sm text-muted-foreground">
+          <p className={UPLOAD_EMPTY_STATE_CLASS}>
             Wala pang na-upload na BMI records. Gagamitin muna ang Google Sheet fallback sa Health
             & BMI page.
           </p>
         )}
 
-        <div className="space-y-3 rounded-lg border border-dashed p-4">
+        <div className={UPLOAD_DROPZONE_CLASS}>
           <label className="block space-y-2 text-sm">
             <span className="font-medium">Excel file (.xlsx)</span>
             <input

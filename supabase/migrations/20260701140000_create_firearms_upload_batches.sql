@@ -10,3 +10,6 @@ CREATE INDEX IF NOT EXISTS firearms_upload_batches_created_at_idx
   ON public.firearms_upload_batches (created_at DESC);
 
 ALTER TABLE public.firearms_upload_batches ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON public.firearms_upload_batches FROM anon, authenticated;
+GRANT ALL ON public.firearms_upload_batches TO service_role;
