@@ -18,8 +18,6 @@ import { buildCrimePpoBreakdownItems, CRIME_PPO_PIE_LABELS, getCrimePpoPieColor 
 import type { CrimeFocusProfileData } from "@/lib/crime-profile"
 import { cn } from "@/lib/utils"
 
-const CRIME_PROFILE_PAGE_HEIGHT_VAR = "--crime-profile-page-height"
-
 const PROFILE_CHART_CLASS = "aspect-auto h-full min-h-0 w-full"
 
 const CASE_STATUS_COLORS = [
@@ -306,18 +304,20 @@ function EmptyChartNote() {
 }
 
 const CRIME_PROFILE_PAGE_CLASS =
-  "box-border flex h-[var(--crime-profile-page-height,calc(100dvh-3.5rem-2rem))] max-h-[var(--crime-profile-page-height,calc(100dvh-3.5rem-2rem))] shrink-0 snap-start snap-always flex-col overflow-hidden sm:h-[var(--crime-profile-page-height,calc(100dvh-3.5rem-3rem))] sm:max-h-[var(--crime-profile-page-height,calc(100dvh-3.5rem-3rem))]"
+  "box-border flex h-[calc(100dvh-5rem)] shrink-0 snap-start snap-always flex-col overflow-hidden"
 
 function CrimeProfileFullPage({
   focusCrime,
   periodA,
   periodB,
   isMobile,
+  pageHeight,
 }: {
   focusCrime: string
   periodA: CrimePeriodRange
   periodB: CrimePeriodRange
   isMobile: boolean
+  pageHeight: number | null
 }) {
   const sectionRef = useRef<HTMLElement>(null)
   const [shouldLoad, setShouldLoad] = useState(focusCrime === INDEX_FOCUS_CRIME_ORDER[0])
@@ -367,7 +367,12 @@ function CrimeProfileFullPage({
   }, [shouldLoad, focusCrime, periodA, periodB])
 
   return (
-    <section ref={sectionRef} className={CRIME_PROFILE_PAGE_CLASS} aria-label={`Crime profile ${focusCrime}`}>
+    <section
+      ref={sectionRef}
+      className={CRIME_PROFILE_PAGE_CLASS}
+      style={pageHeight ? { height: pageHeight, maxHeight: pageHeight } : undefined}
+      aria-label={`Crime profile ${focusCrime}`}
+    >
       <Card className="flex h-full min-h-0 flex-col gap-0 overflow-hidden py-0 shadow-sm">
         <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-1.5 sm:p-2">
           <CardTitle className="shrink-0 border-b pb-1 text-xs font-bold uppercase tracking-wide sm:text-sm">
@@ -392,6 +397,8 @@ function CrimeProfileFullPage({
 }
 
 export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePagesProps) {
+  const [pageHeight, setPageHeight] = useState<number | null>(null)
+
   useEffect(() => {
     const main = document.querySelector("main")
     if (!main) return
@@ -400,8 +407,7 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
       const styles = getComputedStyle(main)
       const paddingTop = Number.parseFloat(styles.paddingTop) || 0
       const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0
-      const pageHeight = Math.max(main.clientHeight - paddingTop - paddingBottom, 320)
-      main.style.setProperty(CRIME_PROFILE_PAGE_HEIGHT_VAR, `${pageHeight}px`)
+      setPageHeight(Math.max(main.clientHeight - paddingTop - paddingBottom, 360))
     }
 
     syncPageHeight()
@@ -415,7 +421,6 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
       resizeObserver.disconnect()
       window.removeEventListener("resize", syncPageHeight)
       main.classList.remove("snap-y", "snap-mandatory")
-      main.style.removeProperty(CRIME_PROFILE_PAGE_HEIGHT_VAR)
     }
   }, [])
 
@@ -428,6 +433,7 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
           periodA={periodA}
           periodB={periodB}
           isMobile={isMobile}
+          pageHeight={pageHeight}
         />
       ))}
     </div>
