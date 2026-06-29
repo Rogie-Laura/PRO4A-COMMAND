@@ -102,7 +102,7 @@ export function AppSidebar({ role: _role }: AppSidebarProps) {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {MAIN_NAV.map((link) => (
+              {MAIN_NAV.filter((link) => !link.hidden).map((link) => (
                 <NavLinkItem
                   key={link.href}
                   link={link}

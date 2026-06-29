@@ -23,6 +23,8 @@ export type NavLink = {
   description?: string
   /** Additional routes that should highlight this nav item as active. */
   activePaths?: string[]
+  /** Temporarily hide from sidebar navigation. */
+  hidden?: boolean
 }
 
 export const MAIN_NAV: NavLink[] = [
@@ -41,7 +43,7 @@ export const MAIN_NAV: NavLink[] = [
     activePaths: ["/rlrdd", "/mobility", "/firearms", "/camps-offices"],
   },
   { title: "RCADD", href: "/rcadd", icon: Users },
-  { title: "RCD", href: "/rcd", icon: FileText },
+  { title: "RCD", href: "/rcd", icon: FileText, hidden: true },
   {
     title: "RIDMD",
     href: "/ridmd",
@@ -63,7 +65,7 @@ export const MAIN_NAV: NavLink[] = [
     activePaths: ["/ict-equipment-inventory"],
   },
   { title: "Health and BMI", href: "/health-and-bmi", icon: HeartPulse },
-  { title: "Station Profiles", href: "/station-profiles", icon: MapPinned },
+  { title: "Station Profiles", href: "/station-profiles", icon: MapPinned, hidden: true },
   { title: "Settings", href: "/settings", icon: Settings },
 ]
 
