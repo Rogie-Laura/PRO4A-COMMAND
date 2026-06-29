@@ -9,7 +9,7 @@ import {
   comparativeBarChartConfig,
   createPeriodBChangeLabel,
 } from "@/components/dashboard/crime-comparative-chart-utils"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 import { buildCountChangeMetrics, type CrimePeriodRange } from "@/lib/crime-comparative"
@@ -17,6 +17,8 @@ import { INDEX_FOCUS_CRIME_ORDER } from "@/lib/crime-config"
 import { buildCrimePpoBreakdownItems, CRIME_PPO_PIE_LABELS, getCrimePpoPieColor } from "@/lib/crime-ppo-config"
 import type { CrimeFocusProfileData } from "@/lib/crime-profile"
 import { cn } from "@/lib/utils"
+
+const CRIME_PROFILE_PAGE_HEIGHT_VAR = "--crime-profile-page-height"
 
 const PROFILE_CHART_CLASS = "aspect-auto h-full min-h-0 w-full"
 
@@ -304,25 +306,21 @@ function EmptyChartNote() {
 }
 
 const CRIME_PROFILE_PAGE_CLASS =
-  "box-border flex h-[calc(100dvh-3.5rem-2rem)] max-h-[calc(100dvh-3.5rem-2rem)] shrink-0 snap-start snap-always flex-col overflow-hidden sm:h-[calc(100dvh-3.5rem-3rem)] sm:max-h-[calc(100dvh-3.5rem-3rem)]"
+  "box-border flex h-[var(--crime-profile-page-height,calc(100dvh-3.5rem-2rem))] max-h-[var(--crime-profile-page-height,calc(100dvh-3.5rem-2rem))] shrink-0 snap-start snap-always flex-col overflow-hidden sm:h-[var(--crime-profile-page-height,calc(100dvh-3.5rem-3rem))] sm:max-h-[var(--crime-profile-page-height,calc(100dvh-3.5rem-3rem))]"
 
 function CrimeProfileFullPage({
   focusCrime,
-  pageNumber,
-  totalPages,
   periodA,
   periodB,
   isMobile,
 }: {
   focusCrime: string
-  pageNumber: number
-  totalPages: number
   periodA: CrimePeriodRange
   periodB: CrimePeriodRange
   isMobile: boolean
 }) {
   const sectionRef = useRef<HTMLElement>(null)
-  const [shouldLoad, setShouldLoad] = useState(pageNumber === 1)
+  const [shouldLoad, setShouldLoad] = useState(focusCrime === INDEX_FOCUS_CRIME_ORDER[0])
   const [profile, setProfile] = useState<CrimeFocusProfileData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -371,27 +369,22 @@ function CrimeProfileFullPage({
   return (
     <section ref={sectionRef} className={CRIME_PROFILE_PAGE_CLASS} aria-label={`Crime profile ${focusCrime}`}>
       <Card className="flex h-full min-h-0 flex-col gap-0 overflow-hidden py-0 shadow-sm">
-        <CardHeader className="shrink-0 space-y-0 border-b px-2 py-1.5 sm:px-3">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="truncate text-xs font-bold uppercase tracking-wide sm:text-sm">
-              Crime Profile — {focusCrime}
-            </CardTitle>
-            <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground sm:text-[11px]">
-              {pageNumber} / {totalPages}
-            </span>
-          </div>
-        </CardHeader>
+        <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-1.5 sm:p-2">
+          <CardTitle className="shrink-0 border-b pb-1 text-xs font-bold uppercase tracking-wide sm:text-sm">
+            Crime Profile — {focusCrime}
+          </CardTitle>
 
-        <CardContent className="min-h-0 flex-1 overflow-hidden p-1 sm:p-1.5">
-          {isPending && !profile ? (
-            <Skeleton className="h-full rounded-md" />
-          ) : error ? (
-            <p className="flex h-full items-center justify-center text-sm text-destructive">{error}</p>
-          ) : profile ? (
-            <CrimeProfileFrame profile={profile} isMobile={isMobile} />
-          ) : (
-            <Skeleton className="h-full rounded-md" />
-          )}
+          <div className="min-h-0 flex-1 overflow-hidden pt-1">
+            {isPending && !profile ? (
+              <Skeleton className="h-full rounded-md" />
+            ) : error ? (
+              <p className="flex h-full items-center justify-center text-sm text-destructive">{error}</p>
+            ) : profile ? (
+              <CrimeProfileFrame profile={profile} isMobile={isMobile} />
+            ) : (
+              <Skeleton className="h-full rounded-md" />
+            )}
+          </div>
         </CardContent>
       </Card>
     </section>
@@ -403,20 +396,35 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
     const main = document.querySelector("main")
     if (!main) return
 
-    main.classList.add("snap-y", "snap-mandatory", "scroll-smooth")
+    const syncPageHeight = () => {
+      const styles = getComputedStyle(main)
+      const paddingTop = Number.parseFloat(styles.paddingTop) || 0
+      const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0
+      const pageHeight = Math.max(main.clientHeight - paddingTop - paddingBottom, 320)
+      main.style.setProperty(CRIME_PROFILE_PAGE_HEIGHT_VAR, `${pageHeight}px`)
+    }
+
+    syncPageHeight()
+    main.classList.add("snap-y", "snap-mandatory")
+
+    const resizeObserver = new ResizeObserver(syncPageHeight)
+    resizeObserver.observe(main)
+    window.addEventListener("resize", syncPageHeight)
+
     return () => {
-      main.classList.remove("snap-y", "snap-mandatory", "scroll-smooth")
+      resizeObserver.disconnect()
+      window.removeEventListener("resize", syncPageHeight)
+      main.classList.remove("snap-y", "snap-mandatory")
+      main.style.removeProperty(CRIME_PROFILE_PAGE_HEIGHT_VAR)
     }
   }, [])
 
   return (
     <div className="space-y-0">
-      {INDEX_FOCUS_CRIME_ORDER.map((crime, index) => (
+      {INDEX_FOCUS_CRIME_ORDER.map((crime) => (
         <CrimeProfileFullPage
           key={crime}
           focusCrime={crime}
-          pageNumber={index + 1}
-          totalPages={INDEX_FOCUS_CRIME_ORDER.length}
           periodA={periodA}
           periodB={periodB}
           isMobile={isMobile}
