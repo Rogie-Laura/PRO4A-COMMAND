@@ -304,7 +304,7 @@ function EmptyChartNote() {
 }
 
 const CRIME_PROFILE_PAGE_CLASS =
-  "box-border flex h-[calc(100dvh-5rem)] shrink-0 snap-start snap-always flex-col overflow-hidden"
+  "box-border flex h-full shrink-0 snap-start snap-always flex-col overflow-hidden"
 
 function CrimeProfileFullPage({
   focusCrime,
@@ -329,7 +329,7 @@ function CrimeProfileFullPage({
     const section = sectionRef.current
     if (!section || shouldLoad) return
 
-    const scrollRoot = document.querySelector("main")
+    const scrollRoot = section.closest("[data-crime-profile-scroller]")
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -338,8 +338,8 @@ function CrimeProfileFullPage({
       },
       {
         root: scrollRoot,
-        rootMargin: "120px 0px",
-        threshold: 0.05,
+        rootMargin: "200px 0px",
+        threshold: 0.01,
       },
     )
 
@@ -401,31 +401,33 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
 
   useEffect(() => {
     const main = document.querySelector("main")
-    if (!main) return
 
     const syncPageHeight = () => {
-      const styles = getComputedStyle(main)
-      const paddingTop = Number.parseFloat(styles.paddingTop) || 0
-      const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0
-      setPageHeight(Math.max(main.clientHeight - paddingTop - paddingBottom, 360))
+      const styles = main ? getComputedStyle(main) : null
+      const paddingTop = styles ? Number.parseFloat(styles.paddingTop) || 0 : 0
+      const paddingBottom = styles ? Number.parseFloat(styles.paddingBottom) || 0 : 0
+      const available = (main?.clientHeight ?? window.innerHeight) - paddingTop - paddingBottom
+      setPageHeight(Math.max(available, 360))
     }
 
     syncPageHeight()
-    main.classList.add("snap-y", "snap-mandatory")
 
-    const resizeObserver = new ResizeObserver(syncPageHeight)
-    resizeObserver.observe(main)
+    const resizeObserver = main ? new ResizeObserver(syncPageHeight) : null
+    if (resizeObserver && main) resizeObserver.observe(main)
     window.addEventListener("resize", syncPageHeight)
 
     return () => {
-      resizeObserver.disconnect()
+      resizeObserver?.disconnect()
       window.removeEventListener("resize", syncPageHeight)
-      main.classList.remove("snap-y", "snap-mandatory")
     }
   }, [])
 
   return (
-    <div className="space-y-0">
+    <div
+      data-crime-profile-scroller
+      className="h-[calc(100dvh-5rem)] snap-y snap-mandatory overflow-y-auto overscroll-contain rounded-xl [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      style={pageHeight ? { height: pageHeight } : undefined}
+    >
       {INDEX_FOCUS_CRIME_ORDER.map((crime) => (
         <CrimeProfileFullPage
           key={crime}
