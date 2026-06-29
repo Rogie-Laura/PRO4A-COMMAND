@@ -1,11 +1,9 @@
 import { FirearmsSourceChart } from "@/components/dashboard/firearms-source-chart"
 import { MobilityClassificationSection } from "@/components/dashboard/mobility-classification-section"
 import { MobilityConditionChart } from "@/components/dashboard/mobility-condition-chart"
-import { MobilityPatrolRecapSection } from "@/components/dashboard/mobility-patrol-recap-section"
 import { MobilityQuicklookSection } from "@/components/dashboard/mobility-quicklook-section"
 import { MobilityUnitCards } from "@/components/dashboard/mobility-unit-cards"
 import { MobilityWheelCountSection } from "@/components/dashboard/mobility-wheel-count-section"
-import { VehicleFleetCards } from "@/components/dashboard/vehicle-fleet-cards"
 import {
   Card,
   CardContent,
@@ -76,10 +74,6 @@ export function MobilityClearbookSection({ data }: MobilityClearbookSectionProps
       ) : null}
 
       {workbook?.quicklook ? <MobilityQuicklookSection data={workbook.quicklook} /> : null}
-
-      {workbook?.patrolRecap ? <MobilityPatrolRecapSection data={workbook.patrolRecap} /> : null}
-
-      {data.fleet.byType.length > 0 ? <VehicleFleetCards fleet={data.fleet} /> : null}
     </div>
   )
 }
