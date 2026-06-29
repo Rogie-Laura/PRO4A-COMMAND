@@ -304,20 +304,18 @@ function EmptyChartNote() {
 }
 
 const CRIME_PROFILE_PAGE_CLASS =
-  "box-border flex h-full shrink-0 snap-start snap-always flex-col overflow-hidden"
+  "box-border flex h-[440px] flex-col overflow-hidden sm:h-[480px]"
 
 function CrimeProfileFullPage({
   focusCrime,
   periodA,
   periodB,
   isMobile,
-  pageHeight,
 }: {
   focusCrime: string
   periodA: CrimePeriodRange
   periodB: CrimePeriodRange
   isMobile: boolean
-  pageHeight: number | null
 }) {
   const sectionRef = useRef<HTMLElement>(null)
   const [shouldLoad, setShouldLoad] = useState(focusCrime === INDEX_FOCUS_CRIME_ORDER[0])
@@ -329,7 +327,6 @@ function CrimeProfileFullPage({
     const section = sectionRef.current
     if (!section || shouldLoad) return
 
-    const scrollRoot = section.closest("[data-crime-profile-scroller]")
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -337,8 +334,7 @@ function CrimeProfileFullPage({
         }
       },
       {
-        root: scrollRoot,
-        rootMargin: "200px 0px",
+        rootMargin: "300px 0px",
         threshold: 0.01,
       },
     )
@@ -370,7 +366,6 @@ function CrimeProfileFullPage({
     <section
       ref={sectionRef}
       className={CRIME_PROFILE_PAGE_CLASS}
-      style={pageHeight ? { height: pageHeight, maxHeight: pageHeight } : undefined}
       aria-label={`Crime profile ${focusCrime}`}
     >
       <Card className="flex h-full min-h-0 flex-col gap-0 overflow-hidden py-0 shadow-sm">
@@ -397,37 +392,8 @@ function CrimeProfileFullPage({
 }
 
 export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePagesProps) {
-  const [pageHeight, setPageHeight] = useState<number | null>(null)
-
-  useEffect(() => {
-    const main = document.querySelector("main")
-
-    const syncPageHeight = () => {
-      const styles = main ? getComputedStyle(main) : null
-      const paddingTop = styles ? Number.parseFloat(styles.paddingTop) || 0 : 0
-      const paddingBottom = styles ? Number.parseFloat(styles.paddingBottom) || 0 : 0
-      const available = (main?.clientHeight ?? window.innerHeight) - paddingTop - paddingBottom
-      setPageHeight(Math.max(available, 360))
-    }
-
-    syncPageHeight()
-
-    const resizeObserver = main ? new ResizeObserver(syncPageHeight) : null
-    if (resizeObserver && main) resizeObserver.observe(main)
-    window.addEventListener("resize", syncPageHeight)
-
-    return () => {
-      resizeObserver?.disconnect()
-      window.removeEventListener("resize", syncPageHeight)
-    }
-  }, [])
-
   return (
-    <div
-      data-crime-profile-scroller
-      className="h-[calc(100dvh-5rem)] snap-y snap-mandatory overflow-y-auto overscroll-contain rounded-xl [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-      style={pageHeight ? { height: pageHeight } : undefined}
-    >
+    <div className="space-y-4">
       {INDEX_FOCUS_CRIME_ORDER.map((crime) => (
         <CrimeProfileFullPage
           key={crime}
@@ -435,7 +401,6 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
           periodA={periodA}
           periodB={periodB}
           isMobile={isMobile}
-          pageHeight={pageHeight}
         />
       ))}
     </div>
