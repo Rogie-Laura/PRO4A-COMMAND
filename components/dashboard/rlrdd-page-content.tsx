@@ -1,10 +1,20 @@
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { RlrddModulesCarousel } from "@/components/dashboard/rlrdd-modules-carousel"
-import { getFirearmsAnalytics } from "@/lib/firearms-records"
+import { FirearmsUploadCard } from "@/components/settings/firearms-upload-card"
+import { getSession } from "@/lib/auth/get-session"
+import { isSuperAdmin } from "@/lib/auth/roles"
+import { getFirearmsAnalytics, getLatestFirearmsUploadBatch } from "@/lib/firearms-records"
 import { getMobilityAnalytics } from "@/lib/mobility-analytics"
 
 export async function RlrddPageContent() {
-  const [firearms, mobility] = await Promise.all([getFirearmsAnalytics(), getMobilityAnalytics()])
+  const session = await getSession()
+  const canUpload = session ? isSuperAdmin(session.role) : false
+
+  const [firearms, mobility, latestFirearmsBatch] = await Promise.all([
+    getFirearmsAnalytics(),
+    getMobilityAnalytics(),
+    canUpload ? getLatestFirearmsUploadBatch().catch(() => null) : Promise.resolve(null),
+  ])
 
   const lastUpdated =
     firearms.dataReady && firearms.lastUpdated > mobility.lastUpdated
@@ -23,7 +33,15 @@ export async function RlrddPageContent() {
         }
       />
 
+      {canUpload && !firearms.dataReady ? (
+        <FirearmsUploadCard latestBatch={latestFirearmsBatch} compact />
+      ) : null}
+
       <RlrddModulesCarousel firearms={firearms} mobility={mobility} />
+
+      {canUpload && firearms.dataReady ? (
+        <FirearmsUploadCard latestBatch={latestFirearmsBatch} compact />
+      ) : null}
     </div>
   )
 }

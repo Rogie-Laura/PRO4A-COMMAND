@@ -125,6 +125,10 @@ export default async function SettingsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-destructive">{firearmsUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260701140000_create_firearms_upload_batches.sql`
+                    kung wala pa ang `firearms_upload_batches` table.
+                  </p>
                 </CardContent>
               </Card>
             ) : (

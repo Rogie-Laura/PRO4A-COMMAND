@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react"
 
 import { uploadFirearmsWorkbookAction } from "@/app/(dashboard)/settings/actions"
@@ -18,9 +19,11 @@ import { formatPhilippinesDateTime } from "@/lib/format-datetime"
 
 type FirearmsUploadCardProps = {
   latestBatch: FirearmsUploadBatchInfo | null
+  compact?: boolean
 }
 
-export function FirearmsUploadCard({ latestBatch }: FirearmsUploadCardProps) {
+export function FirearmsUploadCard({ latestBatch, compact = false }: FirearmsUploadCardProps) {
+  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -53,6 +56,7 @@ export function FirearmsUploadCard({ latestBatch }: FirearmsUploadCardProps) {
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
         }
+        router.refresh()
       } catch (uploadError) {
         setError(
           uploadError instanceof Error
@@ -64,37 +68,50 @@ export function FirearmsUploadCard({ latestBatch }: FirearmsUploadCardProps) {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className={compact ? "border-primary/25 bg-primary/5" : undefined}>
+      <CardHeader className={compact ? "pb-3" : undefined}>
         <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheetIcon className="size-4" />
+          <FileSpreadsheetIcon className="size-5 text-primary" />
           Upload Firearms Summary
         </CardTitle>
         <CardDescription>
-          Excel workbook na may `SHORT FIREARMS` at `LONG FIREARMS` worksheets (firearms.xlsx).
+          Super Admin lang. Excel workbook na may `SHORT FIREARMS` at `LONG FIREARMS` worksheets
+          (firearms.xlsx).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {batch ? (
-          <div className="rounded-lg border bg-muted/20 p-3 text-sm">
+          <div className="rounded-lg border bg-muted/15 p-4 text-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">Latest upload</Badge>
-              <span className="font-medium">{batch.filename}</span>
+              <p className="font-medium">Latest upload</p>
+              <Badge variant="outline">{batch.filename}</Badge>
             </div>
-            <p className="mt-2 text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
+              {batch.uploadedByLabel ? `${batch.uploadedByLabel} · ` : ""}
               {formatPhilippinesDateTime(batch.createdAt)}
-              {batch.uploadedByLabel ? ` · ${batch.uploadedByLabel}` : ""}
             </p>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Walang na-upload na firearms workbook pa.</p>
+          <p className="rounded-lg border border-dashed px-4 py-5 text-center text-sm text-muted-foreground">
+            Wala pang na-upload na firearms summary. Pumili ng firearms.xlsx file sa ibaba.
+          </p>
         )}
 
-        <div className="space-y-2">
-          <input ref={fileInputRef} type="file" accept=".xlsx" className="block w-full text-sm" />
-          <Button type="button" onClick={handleUpload} disabled={isPending} className="w-full">
-            <UploadIcon className="size-4" />
-            {isPending ? "Ina-upload..." : "Upload firearms.xlsx"}
+        <div className="space-y-3 rounded-lg border border-dashed p-4">
+          <label className="block space-y-2 text-sm">
+            <span className="font-medium">Choose file (.xlsx)</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              disabled={isPending}
+              className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
+            />
+          </label>
+
+          <Button onClick={handleUpload} disabled={isPending} className="w-full sm:w-auto">
+            <UploadIcon />
+            {isPending ? "Ina-upload..." : "Upload to Supabase"}
           </Button>
         </div>
 
