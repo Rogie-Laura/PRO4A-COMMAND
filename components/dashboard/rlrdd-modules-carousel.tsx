@@ -22,7 +22,7 @@ export function RlrddModulesCarousel({ firearms, mobility }: RlrddModulesCarouse
     },
     {
       id: "vehicles",
-      label: "Vehicles",
+      label: "Mobility",
       dotClassName: "bg-sky-500",
       content: <TotalVehiclesSection analytics={mobility} />,
     },
@@ -37,7 +37,7 @@ export function RlrddModulesCarousel({ firearms, mobility }: RlrddModulesCarouse
   return (
     <SwipeCarousel
       slides={slides}
-      swipeHint="Swipe: Firearms · Vehicles · Camps and Offices"
+      navigation="toggle"
       ariaLabel="RLRDD modules"
     />
   )

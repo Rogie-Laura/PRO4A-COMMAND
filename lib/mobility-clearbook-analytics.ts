@@ -1,7 +1,8 @@
 import type {
   MobilityAnalytics,
-  ParsedMobilityClearbook,
+  ParsedMobilityWorkbook,
   VehicleChartPoint,
+  VehicleCountItem,
   VehicleOfficeBreakdownItem,
   VehicleSourceBreakdown,
   VehicleStatusBreakdown,
@@ -34,10 +35,53 @@ export function aggregateMobilityStatusBreakdown(
   )
 }
 
-export function buildMobilityAnalyticsFromClearbook(
-  clearbook: ParsedMobilityClearbook,
+function buildFleetByType(workbook: ParsedMobilityWorkbook): VehicleCountItem[] {
+  const totals = workbook.perClassification?.totals
+  if (!totals) return []
+
+  const grandTotal = workbook.clearbook.grandTotal || totals.total
+  const items = [
+    { name: "Patrol Vehicle", count: totals.patrolVehicle },
+    { name: "Service/Utility Vehicle", count: totals.serviceUtility },
+    { name: "Truck", count: totals.truck },
+    { name: "Bus", count: totals.bus },
+    { name: "Special Purpose Vehicle", count: totals.specialPurpose },
+    { name: "Motorcycle", count: totals.motorcycle },
+    { name: "Bike", count: totals.bike },
+  ]
+
+  return items
+    .filter((item) => item.count > 0)
+    .map((item) => ({
+      ...item,
+      percentage: grandTotal > 0 ? Math.round((item.count / grandTotal) * 1000) / 10 : 0,
+    }))
+}
+
+function buildOfficeBreakdown(workbook: ParsedMobilityWorkbook): VehicleOfficeBreakdownItem[] {
+  const stationMap = new Map(workbook.unitStations.map((item) => [item.unitId, item.stations]))
+
+  return workbook.clearbook.units.map((unit) => ({
+    subUnit: unit.subUnit,
+    label: unit.label,
+    shortLabel: unit.shortLabel,
+    logo: unit.logo,
+    count: unit.total,
+    colorClass: unit.colorClass,
+    stations: (stationMap.get(unit.unitId) ?? []).map((station) => ({
+      station: station.station,
+      count: station.total,
+      operational: station.status.svc,
+      nonOperational: station.status.unsvc + station.status.ber,
+    })),
+  }))
+}
+
+export function buildMobilityAnalyticsFromWorkbook(
+  workbook: ParsedMobilityWorkbook,
   lastUpdated = new Date().toISOString(),
 ): MobilityAnalytics {
+  const { clearbook } = workbook
   const source = aggregateMobilitySourceBreakdown(clearbook.units)
   const status = aggregateMobilityStatusBreakdown(clearbook.units)
 
@@ -53,15 +97,7 @@ export function buildMobilityAnalyticsFromClearbook(
     { name: "BER", count: status.ber },
   ]
 
-  const officeBreakdown: VehicleOfficeBreakdownItem[] = clearbook.units.map((unit) => ({
-    subUnit: unit.subUnit,
-    label: unit.label,
-    shortLabel: unit.shortLabel,
-    logo: unit.logo,
-    count: unit.total,
-    colorClass: unit.colorClass,
-    stations: [],
-  }))
+  const fleetByType = buildFleetByType(workbook)
 
   return {
     lastUpdated,
@@ -69,6 +105,14 @@ export function buildMobilityAnalyticsFromClearbook(
     dataSource: "clearbook-upload",
     clearbookAsOf: clearbook.asOf,
     clearbookUnits: clearbook.units,
+    workbook: {
+      quicklook: workbook.quicklook,
+      perClassification: workbook.perClassification,
+      wheelCounts: workbook.wheelCounts,
+      patrolRecap: workbook.patrolRecap,
+      unitVehicleTypes: workbook.unitVehicleTypes,
+      unitStations: workbook.unitStations,
+    },
     totalVehicles: {
       label: "Total Vehicles",
       value: clearbook.grandTotal.toLocaleString(),
@@ -76,13 +120,13 @@ export function buildMobilityAnalyticsFromClearbook(
         ? `CLEARBOOK as of ${clearbook.asOf}`
         : "PRO CALABARZON CLEARBOOK summary",
     },
-    officeBreakdown,
+    officeBreakdown: buildOfficeBreakdown(workbook),
     ownershipDistribution,
     conditionDistribution,
     fleet: {
       operational: status.svc,
       nonOperational: status.unsvc + status.ber,
-      byType: [],
+      byType: fleetByType,
       byStatus: conditionDistribution.map((item) => ({
         name: item.name,
         count: item.count,
@@ -93,4 +137,12 @@ export function buildMobilityAnalyticsFromClearbook(
       })),
     },
   }
+}
+
+/** @deprecated Use buildMobilityAnalyticsFromWorkbook */
+export function buildMobilityAnalyticsFromClearbook(
+  clearbook: ParsedMobilityWorkbook["clearbook"],
+  lastUpdated = new Date().toISOString(),
+): MobilityAnalytics {
+  return buildMobilityAnalyticsFromWorkbook({ clearbook, quicklook: null, perClassification: null, wheelCounts: null, patrolRecap: null, unitVehicleTypes: [], unitStations: [] }, lastUpdated)
 }

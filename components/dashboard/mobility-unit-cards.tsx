@@ -1,18 +1,28 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
-import { MobilityUnitStatusDialog } from "@/components/dashboard/mobility-unit-status-dialog"
+import { MobilityUnitDetailSheet } from "@/components/dashboard/mobility-unit-detail-sheet"
 import { OfficeLogo } from "@/components/dashboard/office-logo"
-import type { VehicleUnitBreakdownItem } from "@/lib/mobility-types"
+import type { MobilityWorkbookAnalytics, VehicleUnitBreakdownItem } from "@/lib/mobility-types"
 
 type MobilityUnitCardsProps = {
   units: VehicleUnitBreakdownItem[]
+  workbook: MobilityWorkbookAnalytics | null
 }
 
-export function MobilityUnitCards({ units }: MobilityUnitCardsProps) {
+export function MobilityUnitCards({ units, workbook }: MobilityUnitCardsProps) {
   const [selectedUnit, setSelectedUnit] = useState<VehicleUnitBreakdownItem | null>(null)
   const [open, setOpen] = useState(false)
+
+  const vehicleTypeMap = useMemo(
+    () => new Map(workbook?.unitVehicleTypes.map((item) => [item.unitId, item]) ?? []),
+    [workbook],
+  )
+  const stationMap = useMemo(
+    () => new Map(workbook?.unitStations.map((item) => [item.unitId, item]) ?? []),
+    [workbook],
+  )
 
   function handleUnitClick(unit: VehicleUnitBreakdownItem) {
     setSelectedUnit(unit)
@@ -52,7 +62,13 @@ export function MobilityUnitCards({ units }: MobilityUnitCardsProps) {
         ))}
       </div>
 
-      <MobilityUnitStatusDialog unit={selectedUnit} open={open} onOpenChange={handleOpenChange} />
+      <MobilityUnitDetailSheet
+        unit={selectedUnit}
+        vehicleTypes={selectedUnit ? vehicleTypeMap.get(selectedUnit.unitId) ?? null : null}
+        stations={selectedUnit ? stationMap.get(selectedUnit.unitId) ?? null : null}
+        open={open}
+        onOpenChange={handleOpenChange}
+      />
     </>
   )
 }

@@ -14,6 +14,30 @@ export const MOBILITY_UNIT_ORDER = [
 
 export type MobilityUnitId = (typeof MOBILITY_UNIT_ORDER)[number]
 
+export const MOBILITY_UNIT_PPO_SHEETS: Record<MobilityUnitId, string> = {
+  RHQ: "RHQ Quicklook",
+  CAVITE: "Cavite PPO",
+  LAGUNA: "Laguna PPO",
+  BATANGAS: "Batangas PPO",
+  RIZAL: "Rizal PPO",
+  QUEZON: "Quezon PPO",
+  RMFB: "RMFB",
+}
+
+export const MOBILITY_STATION_SHEETS: Partial<Record<MobilityUnitId, string>> = {
+  CAVITE: "Cavite Per Station",
+  LAGUNA: "Laguna Per Station",
+  BATANGAS: "Batangas Per Station",
+}
+
+export const MOBILITY_WORKBOOK_SHEETS = {
+  clearbook: MOBILITY_CLEARBOOK_SHEET_NAME,
+  quicklook: "QUICKLOOK",
+  perClassification: "Per Classification",
+  wheelCounts: "2-4-6 wheeled",
+  patrolRecap: "Sheet3",
+} as const
+
 const officeByShort = new Map(
   OFFICES.map((office) => [office.shortLabel.toUpperCase(), office] as const),
 )

@@ -1,10 +1,10 @@
 import { unstable_cache } from "next/cache"
 
-import { buildMobilityAnalyticsFromClearbook } from "@/lib/mobility-clearbook-analytics"
+import { buildMobilityAnalyticsFromWorkbook } from "@/lib/mobility-clearbook-analytics"
 import type {
   MobilityAnalytics,
   MobilityUploadBatchInfo,
-  ParsedMobilityClearbook,
+  ParsedMobilityWorkbook,
 } from "@/lib/mobility-types"
 import { createAdminClient } from "@/lib/supabase/admin"
 
@@ -13,7 +13,7 @@ export const MOBILITY_ANALYTICS_CACHE_TAG = "mobility-analytics"
 type ReplaceMobilityClearbookInput = {
   filename: string
   uploadedByLabel: string
-  clearbook: ParsedMobilityClearbook
+  workbook: ParsedMobilityWorkbook
 }
 
 export type ReplaceMobilityClearbookResult = {
@@ -91,6 +91,7 @@ export async function loadLatestMobilityUploadAnalytics(): Promise<MobilityAnaly
       dataSource: "google-sheet",
       clearbookAsOf: null,
       clearbookUnits: [],
+      workbook: null,
       totalVehicles: {
         label: "Total Vehicles",
         value: "0",
@@ -132,10 +133,10 @@ export async function getMobilityUploadAnalytics(): Promise<MobilityAnalytics> {
 export async function replaceMobilityClearbook({
   filename,
   uploadedByLabel,
-  clearbook,
+  workbook,
 }: ReplaceMobilityClearbookInput): Promise<ReplaceMobilityClearbookResult> {
   const supabase = createAdminClient()
-  const analytics = buildMobilityAnalyticsFromClearbook(clearbook)
+  const analytics = buildMobilityAnalyticsFromWorkbook(workbook)
 
   const { data: batch, error: batchError } = await supabase
     .from("mobility_upload_batches")

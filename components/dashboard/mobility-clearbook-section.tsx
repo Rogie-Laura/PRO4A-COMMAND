@@ -1,6 +1,11 @@
 import { FirearmsSourceChart } from "@/components/dashboard/firearms-source-chart"
+import { MobilityClassificationSection } from "@/components/dashboard/mobility-classification-section"
 import { MobilityConditionChart } from "@/components/dashboard/mobility-condition-chart"
+import { MobilityPatrolRecapSection } from "@/components/dashboard/mobility-patrol-recap-section"
+import { MobilityQuicklookSection } from "@/components/dashboard/mobility-quicklook-section"
 import { MobilityUnitCards } from "@/components/dashboard/mobility-unit-cards"
+import { MobilityWheelCountSection } from "@/components/dashboard/mobility-wheel-count-section"
+import { VehicleFleetCards } from "@/components/dashboard/vehicle-fleet-cards"
 import {
   Card,
   CardContent,
@@ -20,6 +25,7 @@ type MobilityClearbookSectionProps = {
 
 export function MobilityClearbookSection({ data }: MobilityClearbookSectionProps) {
   const units = data.clearbookUnits
+  const workbook = data.workbook
 
   return (
     <div className="space-y-4">
@@ -43,11 +49,11 @@ export function MobilityClearbookSection({ data }: MobilityClearbookSectionProps
           <CardHeader className="border-b px-4 py-3">
             <CardTitle className="text-sm">Vehicle Distribution</CardTitle>
             <CardDescription className="text-xs">
-              RHQ · Cavite · Laguna · Batangas · Rizal · Quezon · RMFB
+              Tap unit for status, vehicle types, and station breakdown
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4">
-            <MobilityUnitCards units={units} />
+            <MobilityUnitCards units={units} workbook={workbook} />
           </CardContent>
         </Card>
       </div>
@@ -59,6 +65,21 @@ export function MobilityClearbookSection({ data }: MobilityClearbookSectionProps
         />
         <MobilityConditionChart status={aggregateMobilityStatusBreakdown(units)} />
       </div>
+
+      {workbook?.perClassification ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <MobilityClassificationSection data={workbook.perClassification} />
+          {workbook.wheelCounts ? (
+            <MobilityWheelCountSection data={workbook.wheelCounts} />
+          ) : null}
+        </div>
+      ) : null}
+
+      {workbook?.quicklook ? <MobilityQuicklookSection data={workbook.quicklook} /> : null}
+
+      {workbook?.patrolRecap ? <MobilityPatrolRecapSection data={workbook.patrolRecap} /> : null}
+
+      {data.fleet.byType.length > 0 ? <VehicleFleetCards fleet={data.fleet} /> : null}
     </div>
   )
 }

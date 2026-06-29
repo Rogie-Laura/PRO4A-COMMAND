@@ -80,8 +80,8 @@ export function MobilityUploadCard({ latestBatch }: MobilityUploadCardProps) {
           Upload Vehicle Clearbook
         </CardTitle>
         <CardDescription>
-          Super Admin lang. Excel workbook na may `CLEARBOOK` worksheet (Clearbook and Quicklook
-          file).
+          Super Admin lang. Clearbook and Quicklook workbook — parses CLEARBOOK, QUICKLOOK, Per
+          Classification, 2-4-6 wheeled, patrol recap, PPO, and per-station sheets.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

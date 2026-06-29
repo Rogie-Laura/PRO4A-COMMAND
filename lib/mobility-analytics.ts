@@ -240,6 +240,7 @@ function emptyAnalytics(): MobilityAnalytics {
     dataSource: "google-sheet",
     clearbookAsOf: null,
     clearbookUnits: [],
+    workbook: null,
     totalVehicles: {
       label: "Total Vehicles",
       value: "0",
@@ -292,6 +293,7 @@ async function loadMobilityAnalyticsFromSheet(): Promise<MobilityAnalytics> {
       dataSource: "google-sheet",
       clearbookAsOf: null,
       clearbookUnits: [],
+      workbook: null,
       totalVehicles: {
         label: "Total Vehicles",
         value: records.length.toLocaleString(),

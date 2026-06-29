@@ -27,7 +27,7 @@ import {
   getLatestMobilityUploadBatch,
   replaceMobilityClearbook,
 } from "@/lib/mobility-records"
-import { parseMobilityClearbookXlsx } from "@/lib/mobility-xlsx-parser"
+import { parseMobilityWorkbookXlsx } from "@/lib/mobility-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -260,11 +260,11 @@ export async function uploadMobilityClearbookAction(formData: FormData) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
-    const clearbook = parseMobilityClearbookXlsx(buffer)
+    const workbook = parseMobilityWorkbookXlsx(buffer)
     const result = await replaceMobilityClearbook({
       filename: file.name,
       uploadedByLabel: session.label,
-      clearbook,
+      workbook,
     })
 
     updateTag(MOBILITY_ANALYTICS_CACHE_TAG)
