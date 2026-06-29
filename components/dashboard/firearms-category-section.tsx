@@ -46,13 +46,16 @@ export function FirearmsCategorySection({ category, dataReady }: FirearmsCategor
             </CardDescription>
           </CardHeader>
           <CardContent className="p-4">
-            <FirearmsUnitCards units={category.units} />
+            <FirearmsUnitCards units={category.units} categoryLabel={category.label} />
           </CardContent>
         </Card>
       </div>
 
-      {category.id === "short" && dataReady ? (
-        <FirearmsSourceChart source={aggregateFirearmsSourceBreakdown(category.units)} />
+      {dataReady ? (
+        <FirearmsSourceChart
+          source={aggregateFirearmsSourceBreakdown(category.units)}
+          categoryLabel={category.label}
+        />
       ) : null}
     </div>
   )

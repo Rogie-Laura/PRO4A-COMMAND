@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
-import { Cell, Pie, PieChart } from "recharts"
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -19,6 +19,7 @@ import type { FirearmsSourceBreakdown } from "@/lib/firearms-types"
 
 type FirearmsSourceChartProps = {
   source: FirearmsSourceBreakdown
+  categoryLabel: string
 }
 
 const SOURCE_ITEMS = [
@@ -27,7 +28,7 @@ const SOURCE_ITEMS = [
   { key: "loaned", label: "Loaned", color: "var(--chart-3)" },
 ] as const
 
-export function FirearmsSourceChart({ source }: FirearmsSourceChartProps) {
+export function FirearmsSourceChart({ source, categoryLabel }: FirearmsSourceChartProps) {
   const data = useMemo(
     () =>
       SOURCE_ITEMS.map((item) => ({
@@ -58,7 +59,9 @@ export function FirearmsSourceChart({ source }: FirearmsSourceChartProps) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base sm:text-lg">Source Breakdown</CardTitle>
-        <CardDescription>Short firearms by acquisition source (Organic · Donated · Loaned)</CardDescription>
+        <CardDescription>
+          {categoryLabel} by acquisition source (Organic · Donated · Loaned)
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {total === 0 ? (
@@ -66,49 +69,59 @@ export function FirearmsSourceChart({ source }: FirearmsSourceChartProps) {
             Walang source breakdown data pa.
           </p>
         ) : (
-          <div className="grid items-center gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(180px,220px)]">
-            <ChartContainer
-              config={chartConfig}
-              className="mx-auto aspect-square h-[220px] w-full max-w-[280px]"
-            >
-              <PieChart>
-                <ChartTooltip content={<ChartTooltipContent hideLabel nameKey="name" />} />
-                <Pie
-                  data={data}
-                  dataKey="count"
-                  nameKey="name"
-                  innerRadius={52}
-                  outerRadius={96}
-                  paddingAngle={2}
-                  strokeWidth={0}
-                >
+          <div className="space-y-4">
+            <ChartContainer config={chartConfig} className="aspect-auto h-[240px] w-full">
+              <BarChart data={data} margin={{ top: 20, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={10}
+                  fontSize={12}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  fontSize={12}
+                  width={48}
+                />
+                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={56}>
                   {data.map((item) => (
                     <Cell key={item.name} fill={item.fill} />
                   ))}
-                </Pie>
-              </PieChart>
+                  <LabelList
+                    dataKey="count"
+                    position="top"
+                    className="fill-foreground text-xs font-semibold tabular-nums"
+                    formatter={(value) =>
+                      typeof value === "number" ? value.toLocaleString() : String(value)
+                    }
+                  />
+                </Bar>
+              </BarChart>
             </ChartContainer>
 
-            <div className="space-y-2">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 border-t pt-3 text-sm">
               {data.map((item) => {
                 const percentage = total > 0 ? Math.round((item.count / total) * 1000) / 10 : 0
 
                 return (
-                  <div key={item.name} className="flex items-center justify-between gap-3 text-sm">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span
-                        className="size-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: item.fill }}
-                      />
-                      <span className="font-medium">{item.name}</span>
-                    </div>
-                    <span className="shrink-0 tabular-nums text-muted-foreground">
+                  <div key={item.name} className="flex items-center gap-2">
+                    <span
+                      className="size-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: item.fill }}
+                    />
+                    <span className="font-medium">{item.name}</span>
+                    <span className="tabular-nums text-muted-foreground">
                       {item.count.toLocaleString()} · {percentage}%
                     </span>
                   </div>
                 )
               })}
-              <div className="flex items-center justify-between border-t pt-2 text-sm font-semibold">
+              <div className="flex items-center gap-2 font-semibold">
                 <span>Total</span>
                 <span className="tabular-nums text-primary">{total.toLocaleString()}</span>
               </div>
