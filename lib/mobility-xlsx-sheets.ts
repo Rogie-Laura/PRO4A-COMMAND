@@ -174,7 +174,9 @@ export function parseQuicklookSheet(rows: unknown[][]): QuicklookSummary | null 
       section = "water"
       continue
     }
-    if (upper === "TOTAL" && section === "land") break
+    if (upper === "TOTAL" || upper === "GRAND TOTAL") {
+      continue
+    }
 
     const unitId = normalizeMobilityUnitKey(label)
     if (!unitId) continue
