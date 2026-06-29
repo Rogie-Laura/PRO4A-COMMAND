@@ -14,17 +14,11 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Skeleton } from "@/components/ui/skeleton"
 import { buildCountChangeMetrics, type CrimePeriodRange } from "@/lib/crime-comparative"
 import { INDEX_FOCUS_CRIME_ORDER } from "@/lib/crime-config"
-import { buildCrimePpoBreakdownItems, CRIME_PPO_PIE_LABELS } from "@/lib/crime-ppo-config"
+import { buildCrimePpoBreakdownItems, CRIME_PPO_PIE_LABELS, getCrimePpoPieColor } from "@/lib/crime-ppo-config"
 import type { CrimeFocusProfileData } from "@/lib/crime-profile"
 import { cn } from "@/lib/utils"
 
-const PIE_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-]
+const CRIME_PROFILE_PAGE_HEIGHT_VAR = "--crime-profile-page-height"
 
 const CASE_STATUS_COLORS = [
   "hsl(142 71% 45%)",
@@ -104,7 +98,7 @@ function CrimeProfileFrame({
 
   const ppoPieData = useMemo(() => {
     const items = buildCrimePpoBreakdownItems(profile.ppoDistribution, profile.comparison.periodB)
-    return items.map((item, index) => {
+    return items.map((item) => {
       const pieLabel =
         CRIME_PPO_PIE_LABELS[item.csvName as keyof typeof CRIME_PPO_PIE_LABELS] ?? item.shortLabel
 
@@ -113,7 +107,7 @@ function CrimeProfileFrame({
         fullName: item.label,
         count: item.count,
         percentage: item.percentage,
-        colorIndex: index,
+        color: getCrimePpoPieColor(item.csvName),
       }
     })
   }, [profile.ppoDistribution, profile.comparison.periodB])
@@ -129,7 +123,7 @@ function CrimeProfileFrame({
           item.name,
           {
             label: item.fullName,
-            color: PIE_COLORS[item.colorIndex % PIE_COLORS.length],
+            color: item.color,
           },
         ]),
       ),
@@ -245,10 +239,7 @@ function CrimeProfileFrame({
                     strokeWidth={0}
                   >
                     {ppoPieSlices.map((item) => (
-                      <Cell
-                        key={item.name}
-                        fill={PIE_COLORS[item.colorIndex % PIE_COLORS.length]}
-                      />
+                      <Cell key={item.name} fill={item.color} />
                     ))}
                   </Pie>
                 </PieChart>
@@ -259,7 +250,7 @@ function CrimeProfileFrame({
                 <div key={item.name} className="flex min-w-0 items-center gap-1">
                   <span
                     className="size-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: PIE_COLORS[item.colorIndex % PIE_COLORS.length] }}
+                    style={{ backgroundColor: item.color }}
                   />
                   <span className="shrink-0 font-semibold">{item.name}</span>
                   <span className="truncate text-muted-foreground tabular-nums">{item.count}</span>
@@ -313,7 +304,7 @@ function EmptyChartNote() {
 }
 
 const CRIME_PROFILE_PAGE_CLASS =
-  "box-border flex h-[calc(100svh-3.5rem-2rem)] shrink-0 snap-start snap-always flex-col sm:h-[calc(100svh-3.5rem-3rem)]"
+  "box-border flex h-[var(--crime-profile-page-height,calc(100dvh-3.5rem))] shrink-0 snap-start snap-always flex-col overflow-hidden"
 
 function CrimeProfileFullPage({
   focusCrime,
@@ -407,18 +398,27 @@ export function CrimeProfilePages({ periodA, periodB, isMobile }: CrimeProfilePa
     const main = document.querySelector("main")
     if (!main) return
 
+    const syncPageHeight = () => {
+      main.style.setProperty(CRIME_PROFILE_PAGE_HEIGHT_VAR, `${main.clientHeight}px`)
+    }
+
+    syncPageHeight()
     main.classList.add("snap-y", "snap-mandatory", "scroll-smooth")
+
+    const resizeObserver = new ResizeObserver(syncPageHeight)
+    resizeObserver.observe(main)
+    window.addEventListener("resize", syncPageHeight)
+
     return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener("resize", syncPageHeight)
       main.classList.remove("snap-y", "snap-mandatory", "scroll-smooth")
+      main.style.removeProperty(CRIME_PROFILE_PAGE_HEIGHT_VAR)
     }
   }, [])
 
   return (
     <div className="space-y-0">
-      <div
-        className="pointer-events-none h-px shrink-0 snap-start snap-always opacity-0"
-        aria-hidden
-      />
       {INDEX_FOCUS_CRIME_ORDER.map((crime, index) => (
         <CrimeProfileFullPage
           key={crime}

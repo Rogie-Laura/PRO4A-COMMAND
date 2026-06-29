@@ -26,6 +26,20 @@ export const CRIME_PPO_PIE_LABELS: Record<(typeof CRIME_PPO_ORDER)[number], stri
   "QUEZON PPO": "QPPO",
 }
 
+/** Fixed pie colors per PPO for focus crime profile charts. */
+export const CRIME_PPO_PIE_COLORS: Record<(typeof CRIME_PPO_ORDER)[number], string> = {
+  "CAVITE PPO": "hsl(0 84% 60%)",
+  "LAGUNA PPO": "hsl(48 96% 53%)",
+  "BATANGAS PPO": "hsl(25 95% 53%)",
+  "RIZAL PPO": "hsl(217 91% 60%)",
+  "QUEZON PPO": "hsl(142 71% 45%)",
+}
+
+export function getCrimePpoPieColor(csvName: string): string {
+  const key = csvName.trim().toUpperCase() as (typeof CRIME_PPO_ORDER)[number]
+  return CRIME_PPO_PIE_COLORS[key] ?? "hsl(var(--chart-1))"
+}
+
 export type CrimePpoBreakdownItem = {
   csvName: string
   label: string
