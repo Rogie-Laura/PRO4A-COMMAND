@@ -1,6 +1,24 @@
 import { getFirearmsUnitPresentation, FIREARMS_UNIT_ORDER } from "@/lib/firearms-config"
-import type { FirearmsAnalytics, FirearmsCategorySummary } from "@/lib/firearms-types"
+import type {
+  FirearmsAnalytics,
+  FirearmsCategorySummary,
+  FirearmsSourceBreakdown,
+  FirearmsUnitBreakdownItem,
+} from "@/lib/firearms-types"
 import type { ParsedFirearmsWorkbook } from "@/lib/firearms-xlsx-parser"
+
+export function aggregateFirearmsSourceBreakdown(
+  units: FirearmsUnitBreakdownItem[],
+): FirearmsSourceBreakdown {
+  return units.reduce(
+    (totals, unit) => ({
+      organic: totals.organic + unit.source.organic,
+      donated: totals.donated + unit.source.donated,
+      loaned: totals.loaned + unit.source.loaned,
+    }),
+    { organic: 0, donated: 0, loaned: 0 },
+  )
+}
 
 function emptyCategory(id: "short" | "long", label: string): FirearmsCategorySummary {
   return {

@@ -1,3 +1,4 @@
+import { FirearmsSourceChart } from "@/components/dashboard/firearms-source-chart"
 import { FirearmsUnitCards } from "@/components/dashboard/firearms-unit-cards"
 import {
   Card,
@@ -6,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { aggregateFirearmsSourceBreakdown } from "@/lib/firearms-analytics"
 import type { FirearmsCategorySummary } from "@/lib/firearms-types"
 
 type FirearmsCategorySectionProps = {
@@ -48,6 +50,10 @@ export function FirearmsCategorySection({ category, dataReady }: FirearmsCategor
           </CardContent>
         </Card>
       </div>
+
+      {category.id === "short" && dataReady ? (
+        <FirearmsSourceChart source={aggregateFirearmsSourceBreakdown(category.units)} />
+      ) : null}
     </div>
   )
 }
