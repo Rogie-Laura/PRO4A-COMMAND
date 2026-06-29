@@ -4,6 +4,7 @@ import { InstallAppCard } from "@/components/pwa/install-app-card"
 import { AccessTokenCard } from "@/components/settings/access-token-card"
 import { BmiUploadCard } from "@/components/settings/bmi-upload-card"
 import { CrimeUploadCard } from "@/components/settings/crime-upload-card"
+import { FirearmsUploadCard } from "@/components/settings/firearms-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
 import {
   Card,
@@ -17,6 +18,10 @@ import { getSession } from "@/lib/auth/get-session"
 import { isSuperAdmin } from "@/lib/auth/roles"
 import { getLatestBmiUploadBatch, type BmiUploadBatchInfo } from "@/lib/bmi-records"
 import { getLatestCrimeUploadBatch, type CrimeUploadBatchInfo } from "@/lib/crime-records"
+import {
+  getLatestFirearmsUploadBatch,
+} from "@/lib/firearms-records"
+import type { FirearmsUploadBatchInfo } from "@/lib/firearms-types"
 
 export const maxDuration = 300
 
@@ -35,6 +40,8 @@ export default async function SettingsPage() {
   let bmiUploadError: string | null = null
   let latestCrimeBatch: CrimeUploadBatchInfo | null = null
   let crimeUploadError: string | null = null
+  let latestFirearmsBatch: FirearmsUploadBatchInfo | null = null
+  let firearmsUploadError: string | null = null
 
   if (canManageTokens) {
     try {
@@ -62,6 +69,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load crime upload status from Supabase."
+    }
+
+    try {
+      latestFirearmsBatch = await getLatestFirearmsUploadBatch()
+    } catch (error) {
+      firearmsUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load firearms upload status from Supabase."
     }
   }
 
@@ -99,6 +115,20 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <CrimeUploadCard latestBatch={latestCrimeBatch} />
+            )}
+
+            {firearmsUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Firearms Summary</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{firearmsUploadError}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <FirearmsUploadCard latestBatch={latestFirearmsBatch} />
             )}
 
             {tokenError ? (

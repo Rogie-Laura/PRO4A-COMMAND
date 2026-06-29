@@ -15,10 +15,17 @@ import { parseBmiXlsx } from "@/lib/bmi-xlsx-parser"
 import { CRIME_ANALYTICS_CACHE_TAG } from "@/lib/crime-analytics"
 import { getLatestCrimeUploadBatch, replaceCrimeRecords } from "@/lib/crime-records"
 import { parseCrimeXlsx } from "@/lib/crime-xlsx-parser"
+import { FIREARMS_ANALYTICS_CACHE_TAG } from "@/lib/firearms-analytics"
+import {
+  getLatestFirearmsUploadBatch,
+  replaceFirearmsWorkbook,
+} from "@/lib/firearms-records"
+import { parseFirearmsXlsx } from "@/lib/firearms-xlsx-parser"
 import { HEALTH_ANALYTICS_CACHE_TAG } from "@/lib/health-analytics"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
+const MAX_FIREARMS_UPLOAD_BYTES = 5 * 1024 * 1024
 
 export async function getAccessTokensAction() {
   await requireSuperAdminSession()
@@ -176,5 +183,50 @@ export async function uploadCrimeRecordsAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang crime stats upload. Subukan ulit.")
+  }
+}
+
+export async function uploadFirearmsWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireSuperAdminSession()
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_FIREARMS_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 5 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseFirearmsXlsx(buffer)
+    const result = await replaceFirearmsWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(FIREARMS_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/rlrdd")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang firearms upload. Subukan ulit.")
   }
 }
