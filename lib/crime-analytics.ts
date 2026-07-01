@@ -231,7 +231,7 @@ async function loadCrimeAnalytics(): Promise<CrimeAnalytics> {
   return emptyCrimeAnalytics()
 }
 
-export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v7"
+export const CRIME_ANALYTICS_CACHE_TAG = "crime-analytics-supabase-v8"
 
 const getCachedCrimeAnalytics = unstable_cache(loadCrimeAnalytics, [CRIME_ANALYTICS_CACHE_TAG], {
   revalidate: false,

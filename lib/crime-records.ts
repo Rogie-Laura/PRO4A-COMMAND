@@ -27,7 +27,7 @@ import { unstable_cache } from "next/cache"
 
 const INSERT_CHUNK_SIZE = 1000
 const FETCH_PAGE_SIZE = 1000
-const CRIME_COMPARE_CACHE_TAG = "crime-analytics-supabase-v7"
+const CRIME_COMPARE_CACHE_TAG = "crime-analytics-supabase-v8"
 
 export type CrimeUploadBatchInfo = {
   id: string

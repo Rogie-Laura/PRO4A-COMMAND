@@ -83,11 +83,37 @@ export function crimeNamesMatch(left: string, right: string) {
   return normalizeCrimeName(left).toUpperCase() === normalizeCrimeName(right).toUpperCase()
 }
 
+function resolveCirasFocusCrimeName(key: string): (typeof INDEX_FOCUS_CRIME_ORDER)[number] | null {
+  if (key.includes("ROBBERY")) return "Robbery"
+  if (key.includes("CARNAPPING") && (key.includes(" MC") || /\bMC\b/.test(key))) {
+    return "Carnapping MC"
+  }
+  if (key.includes("CARNAPPING") && (key.includes(" MV") || /\bMV\b/.test(key))) {
+    return "Carnapping MV"
+  }
+  if (key.includes("RAPE")) return "Rape"
+  if (key.includes("MURDER")) return "Murder"
+  if (key.includes("HOMICIDE") || key.includes("PARRICIDE") || key.includes("INFANTICIDE")) {
+    return "Homicide"
+  }
+  if (key.includes("PHYSICAL INJUR") || key.includes("PHY INJ") || key.includes("MALTREATMENT")) {
+    return "Physical Injury"
+  }
+  if (key.includes("THEFT")) return "Theft"
+  if (key.includes("SP COMPLEX") || key.includes("S.P. COMPLEX")) return "SP Complex"
+
+  return null
+}
+
 /** Maps raw DB/upload crime labels to a canonical focus crime name. */
 export function resolveCanonicalFocusCrimeName(raw: string): string | null {
   const key = normalizeCrimeName(raw).toUpperCase()
   if (!key) return null
-  return FOCUS_CRIME_ALIAS_MAP.get(key) ?? null
+
+  const exact = FOCUS_CRIME_ALIAS_MAP.get(key)
+  if (exact) return exact
+
+  return resolveCirasFocusCrimeName(key)
 }
 
 export function getIndexFocusCrimeCatalog(): string[] {
