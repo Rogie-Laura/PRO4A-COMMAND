@@ -19,6 +19,20 @@ export const CRIME_UPLOAD_HEADERS = [
   "casestatus",
 ] as const
 
+export const CRIME_INCIDENT_HEADERS = [
+  "ppo",
+  "stn",
+  "barangay",
+  "typeofplace",
+  "datereported",
+  "datecommitted",
+  "timecommitted",
+  "offense",
+  "column2",
+  "modus",
+  "casestatus",
+] as const
+
 export type ParsedCrimeRecord = {
   ppo: string
   stn: string
@@ -31,6 +45,7 @@ export type ParsedCrimeRecord = {
   crime: string
   category: string
   caseStatus: string
+  modus: string
 }
 
 export type ParsedCrimeWorkbook = {
@@ -39,6 +54,8 @@ export type ParsedCrimeWorkbook = {
   skippedInvalidCategoryRows: number
 }
 
+type CrimeUploadFormat = "legacy" | "incident"
+
 function normalizeHeader(value: unknown) {
   return String(value ?? "")
     .trim()
@@ -46,7 +63,8 @@ function normalizeHeader(value: unknown) {
     .replace(/\s+/g, "")
 }
 
-function readCell(row: unknown[], index: number) {
+function readCell(row: unknown[], index: number | undefined) {
+  if (index == null || index < 0) return undefined
   return row[index]
 }
 
@@ -120,14 +138,75 @@ function parseYear(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-function validateHeaders(headers: string[]) {
-  const normalized = headers.map(normalizeHeader)
-  const missing = CRIME_UPLOAD_HEADERS.filter((header) => !normalized.includes(header))
+function yearFromIsoDate(isoDate: string | null) {
+  if (!isoDate) return null
+  const year = Number.parseInt(isoDate.slice(0, 4), 10)
+  return Number.isFinite(year) ? year : null
+}
 
-  if (missing.length > 0) {
-    throw new Error(
-      `Invalid crime Excel format. Missing columns: ${missing.join(", ")}. Kailangan: ppo, stn, barangay, YEAR, typeofPlace, dateReported, dateCommitted, timeCommitted, crime, category, casestatus.`,
-    )
+function detectUploadFormat(headers: string[]): CrimeUploadFormat {
+  const hasLegacy = CRIME_UPLOAD_HEADERS.every((header) => headers.includes(header))
+  if (hasLegacy) return "legacy"
+
+  const hasIncident = CRIME_INCIDENT_HEADERS.every((header) => headers.includes(header))
+  if (hasIncident) return "incident"
+
+  throw new Error(
+    "Invalid crime Excel format. Kailangan ang legacy export (crime, category, YEAR) o ang CIRAS incident export (offense, Column2, modus, casestatus).",
+  )
+}
+
+function buildColumnIndex(headers: string[]) {
+  return Object.fromEntries(headers.map((header, index) => [header, index])) as Record<
+    string,
+    number
+  >
+}
+
+function parseCrimeRow(
+  row: unknown[],
+  columnIndex: Record<string, number>,
+  format: CrimeUploadFormat,
+): ParsedCrimeRecord | "skip" | "invalid-category" {
+  const ppo = String(readCell(row, columnIndex.ppo) ?? "").trim()
+  const crime =
+    format === "incident"
+      ? String(readCell(row, columnIndex.offense) ?? "").trim()
+      : String(readCell(row, columnIndex.crime) ?? "").trim()
+  const categoryRaw =
+    format === "incident"
+      ? String(readCell(row, columnIndex.column2) ?? "")
+      : String(readCell(row, columnIndex.category) ?? "")
+  const category = normalizeUploadCategory(categoryRaw)
+
+  if (!ppo || !crime) {
+    return "skip"
+  }
+
+  if (!category) {
+    return "invalid-category"
+  }
+
+  const dateCommitted = parseExcelDate(readCell(row, columnIndex.datecommitted))
+  const explicitYear =
+    format === "legacy" ? parseYear(readCell(row, columnIndex.year)) : null
+
+  return {
+    ppo,
+    stn: String(readCell(row, columnIndex.stn) ?? "").trim(),
+    barangay: String(readCell(row, columnIndex.barangay) ?? "").trim(),
+    year: explicitYear ?? yearFromIsoDate(dateCommitted),
+    typeofPlace: String(readCell(row, columnIndex.typeofplace) ?? "").trim(),
+    dateReported: parseExcelDate(readCell(row, columnIndex.datereported)),
+    dateCommitted,
+    timeCommitted: parseTimeValue(readCell(row, columnIndex.timecommitted)),
+    crime,
+    category,
+    caseStatus: normalizeCaseStatus(String(readCell(row, columnIndex.casestatus) ?? "")),
+    modus:
+      format === "incident"
+        ? String(readCell(row, columnIndex.modus) ?? "").trim()
+        : String(readCell(row, columnIndex.modus) ?? "").trim(),
   }
 }
 
@@ -151,9 +230,9 @@ export function parseCrimeXlsx(buffer: ArrayBuffer | Buffer): ParsedCrimeWorkboo
 
   const headerRow = rows[0] ?? []
   const headers = headerRow.map((cell) => normalizeHeader(cell))
-  validateHeaders(headers)
+  const format = detectUploadFormat(headers)
+  const columnIndex = buildColumnIndex(headers)
 
-  const columnIndex = Object.fromEntries(headers.map((header, index) => [header, index]))
   const records: ParsedCrimeRecord[] = []
   let skippedRows = 0
   let skippedInvalidCategoryRows = 0
@@ -164,34 +243,19 @@ export function parseCrimeXlsx(buffer: ArrayBuffer | Buffer): ParsedCrimeWorkboo
       continue
     }
 
-    const ppo = String(readCell(row, columnIndex.ppo) ?? "").trim()
-    const crime = String(readCell(row, columnIndex.crime) ?? "").trim()
-    const category = normalizeUploadCategory(String(readCell(row, columnIndex.category) ?? ""))
-
-    if (!ppo || !crime) {
+    const parsed = parseCrimeRow(row, columnIndex, format)
+    if (parsed === "skip") {
       skippedRows += 1
       continue
     }
 
-    if (!category) {
+    if (parsed === "invalid-category") {
       skippedRows += 1
       skippedInvalidCategoryRows += 1
       continue
     }
 
-    records.push({
-      ppo,
-      stn: String(readCell(row, columnIndex.stn) ?? "").trim(),
-      barangay: String(readCell(row, columnIndex.barangay) ?? "").trim(),
-      year: parseYear(readCell(row, columnIndex.year)),
-      typeofPlace: String(readCell(row, columnIndex.typeofplace) ?? "").trim(),
-      dateReported: parseExcelDate(readCell(row, columnIndex.datereported)),
-      dateCommitted: parseExcelDate(readCell(row, columnIndex.datecommitted)),
-      timeCommitted: parseTimeValue(readCell(row, columnIndex.timecommitted)),
-      crime,
-      category,
-      caseStatus: normalizeCaseStatus(String(readCell(row, columnIndex.casestatus) ?? "")),
-    })
+    records.push(parsed)
   }
 
   if (records.length === 0) {

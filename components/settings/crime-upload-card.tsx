@@ -96,10 +96,10 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
           Upload Crime Stats
         </CardTitle>
         <CardDescription>
-          Super Admin lang. PNP-CIRAS Excel export — kukunin ang ppo, stn, barangay, YEAR,
-          typeofPlace, dateReported, dateCommitted, timeCommitted, crime, category (INDEX o NON INDEX
-          lang), at casestatus. I-skip ang ibang category (hal. PSI). Maaaring tumagal ng ilang minuto
-          ang malaking file.
+          Super Admin lang. PNP-CIRAS incident export — kukunin ang INDEX at NON INDEX rows lang
+          (Column2), kasama ang modus, offense, ppo, stn, barangay, typeofPlace, dateReported,
+          dateCommitted, timeCommitted, at casestatus. I-skip ang QUASI at ibang category. Maaaring
+          tumagal ng ilang minuto ang malaking file.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -36,9 +36,8 @@ export async function RidmdContent() {
       {!data.dataReady ? (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 sm:max-w-xl">
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Walang crime data pa. Mag-upload sa Settings (Super Admin) gamit ang PNP-CIRAS Excel
-            export — kailangan ang ppo, stn, barangay, YEAR, typeofPlace, dateReported,
-            dateCommitted, timeCommitted, crime, at category.
+            Walang crime data pa. Mag-upload sa Settings (Super Admin) gamit ang PNP-CIRAS incident
+            export — INDEX at NON INDEX rows lang (Column2), kasama ang modus at offense.
           </CardContent>
         </Card>
       ) : (
