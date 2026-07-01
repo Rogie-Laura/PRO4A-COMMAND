@@ -62,15 +62,9 @@ export function formatCrimeDateRangeLabel(startIso: string, endIso: string) {
   return `${formatCrimeDateLabel(startIso)} – ${formatCrimeDateLabel(endIso)}`
 }
 
-export function getEffectiveCrimeDate(
-  dateCommitted: string | null,
-  dateReported: string | null,
-): string | null {
+export function getEffectiveCrimeDate(dateCommitted: string | null): string | null {
   const committed = dateCommitted?.trim()
-  if (committed) return committed.slice(0, 10)
-
-  const reported = dateReported?.trim()
-  return reported ? reported.slice(0, 10) : null
+  return committed ? committed.slice(0, 10) : null
 }
 
 export function parseCrimeDisplayDate(value: string | null | undefined): Date | null {

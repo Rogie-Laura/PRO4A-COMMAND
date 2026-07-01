@@ -89,7 +89,7 @@ function formatCrimePeriodDate(date: Date) {
 }
 
 function getRecordMonthKey(record: ParsedCrimeRecord): string | null {
-  const dateStr = record.dateCommitted || record.dateReported
+  const dateStr = record.dateCommitted
   if (!dateStr) return null
 
   const match = dateStr.match(/^(\d{4})-(\d{2})/)

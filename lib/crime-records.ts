@@ -1,4 +1,4 @@
-import { buildCrimeAnalyticsFromRecords } from "@/lib/crime-analytics"
+import { buildCrimeAnalyticsFromRecords, emptyCrimeAnalytics } from "@/lib/crime-analytics"
 import {
   buildFocusCrimeCatalogFromNames,
   crimeNamesMatch,
@@ -82,7 +82,6 @@ function toInsertRow(batchId: string, record: ParsedCrimeRecord) {
     barangay: record.barangay,
     year: record.year,
     typeof_place: record.typeofPlace,
-    date_reported: record.dateReported,
     date_committed: record.dateCommitted,
     time_committed: record.timeCommitted,
     crime: record.crime,
@@ -98,7 +97,6 @@ function mapStoredRecord(row: {
   barangay: string
   year: number | null
   typeof_place: string
-  date_reported: string | null
   date_committed: string | null
   time_committed: string
   crime: string
@@ -112,7 +110,6 @@ function mapStoredRecord(row: {
     barangay: row.barangay,
     year: row.year,
     typeofPlace: row.typeof_place,
-    dateReported: row.date_reported,
     dateCommitted: row.date_committed,
     timeCommitted: row.time_committed,
     crime: row.crime,
@@ -185,7 +182,7 @@ async function fetchCrimeRecordsForBatch(batchId: string): Promise<ParsedCrimeRe
     const { data, error } = await supabase
       .from("crime_records")
       .select(
-        "ppo, stn, barangay, year, typeof_place, date_reported, date_committed, time_committed, crime, category, case_status, modus",
+        "ppo, stn, barangay, year, typeof_place, date_committed, time_committed, crime, category, case_status, modus",
       )
       .eq("batch_id", batchId)
       .order("id", { ascending: true })
@@ -266,7 +263,6 @@ type IndexCrimeRangeRow = {
   typeofPlace: string
   caseStatus: string
   dateCommitted: string | null
-  dateReported: string | null
 }
 
 function buildPpoBreakdown(counts: Map<string, number>, total: number): CountItem[] {
@@ -286,7 +282,6 @@ function mapRangeRow(row: {
   typeof_place: string | null
   case_status: string | null
   date_committed: string | null
-  date_reported: string | null
 }): IndexCrimeRangeRow {
   return {
     ppo: row.ppo,
@@ -295,7 +290,6 @@ function mapRangeRow(row: {
     typeofPlace: row.typeof_place?.trim() ?? "",
     caseStatus: row.case_status?.trim() ?? "",
     dateCommitted: row.date_committed,
-    dateReported: row.date_reported,
   }
 }
 
@@ -312,12 +306,12 @@ async function fetchIndexCrimeRowsForRangeQuery(
   const supabase = createAdminClient()
   const rows: IndexCrimeRangeRow[] = []
   let from = 0
-  const dateOrFilter = `and(date_committed.gte.${startIso},date_committed.lte.${endIso}),and(date_committed.is.null,date_reported.gte.${startIso},date_reported.lte.${endIso})`
+  const dateOrFilter = `and(date_committed.gte.${startIso},date_committed.lte.${endIso})`
 
   while (true) {
     let query = supabase
       .from("crime_records")
-      .select("ppo, crime, category, typeof_place, case_status, date_committed, date_reported")
+      .select("ppo, crime, category, typeof_place, case_status, date_committed")
       .eq("batch_id", batchId)
       .ilike("category", "INDEX")
       .or(dateOrFilter)
@@ -358,7 +352,7 @@ function summarizeIndexCrimeRows(
   for (const row of rows) {
     if (!isIndexCrimeCategory(row.category)) continue
 
-    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted, row.dateReported)
+    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted)
     if (!effectiveDate || !isIsoDateInRange(effectiveDate, range.start, range.end)) {
       continue
     }
@@ -442,7 +436,7 @@ function summarizeFocusCrimeCounts(
     if (!isIndexCrimeCategory(row.category)) continue
     if (ppoKey && row.ppo.trim().toUpperCase() !== ppoKey) continue
 
-    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted, row.dateReported)
+    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted)
     if (!effectiveDate || !isIsoDateInRange(effectiveDate, range.start, range.end)) {
       continue
     }
@@ -644,7 +638,7 @@ function filterFocusCrimeRowsForRange(
     if (!isIndexCrimeCategory(row.category)) return false
     if (resolveCanonicalFocusCrimeName(row.crime) !== focusCrime) return false
 
-    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted, row.dateReported)
+    const effectiveDate = getEffectiveCrimeDate(row.dateCommitted)
     return Boolean(effectiveDate && isIsoDateInRange(effectiveDate, range.start, range.end))
   })
 }
@@ -797,6 +791,109 @@ export async function compareIndexCrimePeriods(
     ...result,
     periodA: { ...result.periodA, label: periodA.label },
     periodB: { ...result.periodB, label: periodB.label },
+  }
+}
+
+export async function beginCrimeUploadBatch(
+  filename: string,
+  uploadedByLabel: string,
+): Promise<CrimeUploadBatchInfo> {
+  const supabase = createAdminClient()
+
+  const { data: batch, error } = await supabase
+    .from("crime_upload_batches")
+    .insert({
+      filename,
+      uploaded_by_label: uploadedByLabel,
+      record_count: 0,
+      analytics: emptyCrimeAnalytics(filename),
+    })
+    .select("id, filename, uploaded_by_label, record_count, created_at")
+    .single()
+
+  if (error || !batch) {
+    throw new Error(error?.message ?? "Unable to create crime upload batch.")
+  }
+
+  return mapBatch(batch)
+}
+
+export async function appendCrimeRecordsChunk(batchId: string, records: ParsedCrimeRecord[]) {
+  if (records.length === 0) return
+
+  const supabase = createAdminClient()
+
+  for (let index = 0; index < records.length; index += INSERT_CHUNK_SIZE) {
+    const chunk = records.slice(index, index + INSERT_CHUNK_SIZE).map((record) =>
+      toInsertRow(batchId, record),
+    )
+
+    const { error } = await supabase.from("crime_records").insert(chunk)
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+}
+
+export async function abortCrimeUploadBatch(batchId: string) {
+  const supabase = createAdminClient()
+  await supabase.from("crime_upload_batches").delete().eq("id", batchId)
+}
+
+export async function finalizeCrimeUploadBatch(
+  batchId: string,
+): Promise<ReplaceCrimeRecordsResult> {
+  const supabase = createAdminClient()
+  const records = await fetchCrimeRecordsForBatch(batchId)
+
+  if (records.length === 0) {
+    await abortCrimeUploadBatch(batchId)
+    throw new Error("No valid crime records were saved for this upload.")
+  }
+
+  const { data: batch, error: batchError } = await supabase
+    .from("crime_upload_batches")
+    .select("id, filename, uploaded_by_label, record_count, created_at")
+    .eq("id", batchId)
+    .single()
+
+  if (batchError || !batch) {
+    throw new Error(batchError?.message ?? "Unable to load crime upload batch.")
+  }
+
+  const analytics = buildCrimeAnalyticsFromRecords(records, {
+    fileName: batch.filename,
+    lastUpdated: batch.created_at,
+  })
+
+  const { error: updateError } = await supabase
+    .from("crime_upload_batches")
+    .update({
+      record_count: records.length,
+      analytics,
+    })
+    .eq("id", batchId)
+
+  if (updateError) {
+    throw new Error(updateError.message)
+  }
+
+  const { error: cleanupError } = await supabase
+    .from("crime_upload_batches")
+    .delete()
+    .neq("id", batchId)
+
+  if (cleanupError) {
+    throw new Error(cleanupError.message)
+  }
+
+  return {
+    batch: mapBatch({ ...batch, record_count: records.length }),
+    insertedCount: records.length,
+    analytics: {
+      ...analytics,
+      lastUpdated: batch.created_at,
+    },
   }
 }
 

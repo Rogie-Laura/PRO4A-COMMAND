@@ -11,7 +11,6 @@ export const CRIME_UPLOAD_HEADERS = [
   "barangay",
   "year",
   "typeofplace",
-  "datereported",
   "datecommitted",
   "timecommitted",
   "crime",
@@ -24,7 +23,6 @@ export const CRIME_INCIDENT_HEADERS = [
   "stn",
   "barangay",
   "typeofplace",
-  "datereported",
   "datecommitted",
   "timecommitted",
   "offense",
@@ -39,7 +37,6 @@ export type ParsedCrimeRecord = {
   barangay: string
   year: number | null
   typeofPlace: string
-  dateReported: string | null
   dateCommitted: string | null
   timeCommitted: string
   crime: string
@@ -197,7 +194,6 @@ function parseCrimeRow(
     barangay: String(readCell(row, columnIndex.barangay) ?? "").trim(),
     year: explicitYear ?? yearFromIsoDate(dateCommitted),
     typeofPlace: String(readCell(row, columnIndex.typeofplace) ?? "").trim(),
-    dateReported: parseExcelDate(readCell(row, columnIndex.datereported)),
     dateCommitted,
     timeCommitted: parseTimeValue(readCell(row, columnIndex.timecommitted)),
     crime,

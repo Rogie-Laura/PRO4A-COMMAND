@@ -13,8 +13,15 @@ import type { AccessKeyRole } from "@/lib/auth/roles"
 import { getLatestBmiUploadBatch, replaceBmiRecords } from "@/lib/bmi-records"
 import { parseBmiXlsx } from "@/lib/bmi-xlsx-parser"
 import { CRIME_ANALYTICS_CACHE_TAG } from "@/lib/crime-analytics"
-import { getLatestCrimeUploadBatch, replaceCrimeRecords } from "@/lib/crime-records"
-import { parseCrimeXlsx } from "@/lib/crime-xlsx-parser"
+import {
+  abortCrimeUploadBatch,
+  appendCrimeRecordsChunk,
+  beginCrimeUploadBatch,
+  finalizeCrimeUploadBatch,
+  getLatestCrimeUploadBatch,
+  replaceCrimeRecords,
+} from "@/lib/crime-records"
+import { parseCrimeXlsx, type ParsedCrimeRecord } from "@/lib/crime-xlsx-parser"
 import { FIREARMS_ANALYTICS_CACHE_TAG } from "@/lib/firearms-analytics"
 import {
   getLatestFirearmsUploadBatch,
@@ -31,6 +38,7 @@ import { parseMobilityWorkbookXlsx } from "@/lib/mobility-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
+const MAX_CRIME_RECORDS_CHUNK = 500
 const MAX_FIREARMS_UPLOAD_BYTES = 5 * 1024 * 1024
 const MAX_MOBILITY_UPLOAD_BYTES = 10 * 1024 * 1024
 
@@ -141,6 +149,61 @@ export async function uploadBmiRecordsAction(formData: FormData) {
 
     throw new Error("Hindi natapos ang upload. Subukan ulit o bawasan ang laki ng file.")
   }
+}
+
+export async function beginCrimeUploadAction(filename: string) {
+  const session = await requireSuperAdminSession()
+  const trimmed = filename.trim()
+
+  if (!trimmed.toLowerCase().endsWith(".xlsx")) {
+    throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+  }
+
+  return beginCrimeUploadBatch(trimmed, session.label)
+}
+
+export async function appendCrimeRecordsChunkAction(
+  batchId: string,
+  records: ParsedCrimeRecord[],
+) {
+  await requireSuperAdminSession()
+
+  if (!batchId.trim()) {
+    throw new Error("Missing upload batch.")
+  }
+
+  if (records.length === 0) {
+    return
+  }
+
+  if (records.length > MAX_CRIME_RECORDS_CHUNK) {
+    throw new Error(`Too many records in one chunk (max ${MAX_CRIME_RECORDS_CHUNK}).`)
+  }
+
+  await appendCrimeRecordsChunk(batchId, records)
+}
+
+export async function abortCrimeUploadAction(batchId: string) {
+  await requireSuperAdminSession()
+  if (!batchId.trim()) return
+  await abortCrimeUploadBatch(batchId)
+}
+
+export async function finalizeCrimeUploadAction(batchId: string) {
+  await requireSuperAdminSession()
+
+  if (!batchId.trim()) {
+    throw new Error("Missing upload batch.")
+  }
+
+  const result = await finalizeCrimeUploadBatch(batchId)
+
+  updateTag(CRIME_ANALYTICS_CACHE_TAG)
+  revalidatePath("/settings")
+  revalidatePath("/ridmd")
+  revalidatePath("/crime-statistics")
+
+  return result
 }
 
 export async function uploadCrimeRecordsAction(formData: FormData) {

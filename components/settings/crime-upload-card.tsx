@@ -3,7 +3,12 @@
 import { useRef, useState, useTransition } from "react"
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react"
 
-import { uploadCrimeRecordsAction } from "@/app/(dashboard)/settings/actions"
+import {
+  abortCrimeUploadAction,
+  appendCrimeRecordsChunkAction,
+  beginCrimeUploadAction,
+  finalizeCrimeUploadAction,
+} from "@/app/(dashboard)/settings/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import type { CrimeUploadBatchInfo } from "@/lib/crime-records"
+import { parseCrimeXlsx, type ParsedCrimeRecord } from "@/lib/crime-xlsx-parser"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
 import {
   UPLOAD_CARD_CLASS,
@@ -21,6 +27,8 @@ import {
   UPLOAD_EMPTY_STATE_CLASS,
   UPLOAD_STATUS_BOX_CLASS,
 } from "@/components/settings/upload-card-styles"
+
+const UPLOAD_CHUNK_SIZE = 400
 
 type CrimeUploadCardProps = {
   latestBatch: CrimeUploadBatchInfo | null
@@ -35,12 +43,21 @@ type UploadSummary = {
   year: number | null
 }
 
+function chunkRecords(records: ParsedCrimeRecord[], size: number) {
+  const chunks: ParsedCrimeRecord[][] = []
+  for (let index = 0; index < records.length; index += size) {
+    chunks.push(records.slice(index, index + size))
+  }
+  return chunks
+}
+
 export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [summary, setSummary] = useState<UploadSummary | null>(null)
   const [batch, setBatch] = useState(latestBatch)
+  const [progress, setProgress] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function handleUpload() {
@@ -48,6 +65,7 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
     setError(null)
     setSuccess(null)
     setSummary(null)
+    setProgress(null)
 
     if (!file) {
       setError("Pumili muna ng Excel file (.xlsx).")
@@ -59,17 +77,35 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
       return
     }
 
-    const formData = new FormData()
-    formData.set("file", file)
-
     startTransition(async () => {
+      let batchId: string | null = null
+
       try {
-        const result = await uploadCrimeRecordsAction(formData)
+        setProgress("Binabasa ang Excel file...")
+        const parsed = parseCrimeXlsx(await file.arrayBuffer())
+
+        if (parsed.records.length === 0) {
+          throw new Error("Walang valid INDEX o NON INDEX rows sa file.")
+        }
+
+        const started = await beginCrimeUploadAction(file.name)
+        batchId = started.id
+
+        const chunks = chunkRecords(parsed.records, UPLOAD_CHUNK_SIZE)
+        for (let index = 0; index < chunks.length; index += 1) {
+          setProgress(`Sine-save ang records... (${index + 1}/${chunks.length})`)
+          await appendCrimeRecordsChunkAction(batchId, chunks[index]!)
+        }
+
+        setProgress("Tinatapos ang upload...")
+        const result = await finalizeCrimeUploadAction(batchId)
+        batchId = null
+
         setBatch(result.batch)
         setSummary({
           insertedCount: result.insertedCount,
-          skippedRows: result.skippedRows,
-          skippedInvalidCategoryRows: result.skippedInvalidCategoryRows,
+          skippedRows: parsed.skippedRows,
+          skippedInvalidCategoryRows: parsed.skippedInvalidCategoryRows,
           indexVolume: result.analytics.indexCrime.totalVolume,
           nonIndexVolume: result.analytics.nonIndexCrime.totalVolume,
           year: result.analytics.year,
@@ -81,9 +117,19 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
           fileInputRef.current.value = ""
         }
       } catch (uploadError) {
+        if (batchId) {
+          try {
+            await abortCrimeUploadAction(batchId)
+          } catch {
+            // Best-effort cleanup for partial uploads.
+          }
+        }
+
         setError(
           uploadError instanceof Error ? uploadError.message : "Hindi ma-upload ang crime stats.",
         )
+      } finally {
+        setProgress(null)
       }
     })
   }
@@ -97,9 +143,9 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
         </CardTitle>
         <CardDescription>
           Super Admin lang. PNP-CIRAS incident export — kukunin ang INDEX at NON INDEX rows lang
-          (Column2), kasama ang modus, offense, ppo, stn, barangay, typeofPlace, dateReported,
-          dateCommitted, timeCommitted, at casestatus. I-skip ang QUASI at ibang category. Maaaring
-          tumagal ng ilang minuto ang malaking file.
+          (Column2), kasama ang modus, offense, ppo, stn, barangay, typeofPlace, dateCommitted,
+          timeCommitted, at casestatus. I-skip ang QUASI at ibang category. Malaking file ay
+          pinoprocess sa browser bago i-upload nang pa-chunk.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -139,6 +185,7 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
           </Button>
         </div>
 
+        {progress ? <p className="text-sm text-muted-foreground">{progress}</p> : null}
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         {success ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p> : null}
 
