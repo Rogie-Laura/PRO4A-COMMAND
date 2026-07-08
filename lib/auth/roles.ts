@@ -9,6 +9,11 @@ export const ACCESS_KEY_ROLES = [
     label: "Officers Key",
     description: "Expires · dashboard only, no Settings",
   },
+  {
+    id: "division_uploader",
+    label: "Division Focal Person",
+    description: "Expires · scoped division access with file upload",
+  },
 ] as const
 
 export type AccessKeyRole = (typeof ACCESS_KEY_ROLES)[number]["id"]
@@ -23,8 +28,20 @@ export function isSuperAdmin(role: AccessKeyRole) {
   return role === "super_admin"
 }
 
+export function isDivisionUploader(role: AccessKeyRole) {
+  return role === "division_uploader"
+}
+
+export function isScopedUser(role: AccessKeyRole) {
+  return role === "division_uploader"
+}
+
 export function computeOfficerExpiresAt(days: number) {
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + days)
   return expiresAt.toISOString()
+}
+
+export function roleRequiresExpiration(role: AccessKeyRole) {
+  return role === "officer" || role === "division_uploader"
 }

@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
+import { canSessionAccessPath, getSessionHomeHref, normalizeDivisionScope } from "@/lib/auth/session-access"
+import type { AccessKeyRole } from "@/lib/auth/roles"
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth/session"
 
 const PUBLIC_PATHS = ["/login"]
@@ -14,6 +16,15 @@ function isPublicAsset(pathname: string) {
     pathname === "/sw.js" ||
     pathname === "/favicon.ico"
   )
+}
+
+function toAppSession(session: Awaited<ReturnType<typeof verifySessionToken>>) {
+  return {
+    apiKeyId: session.apiKeyId,
+    label: session.label,
+    role: session.role as AccessKeyRole,
+    divisionScope: normalizeDivisionScope(session.divisionScope),
+  }
 }
 
 export async function middleware(request: NextRequest) {
@@ -37,8 +48,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (session) {
+    const appSession = toAppSession(session)
+
     if (pathname === "/login") {
-      return NextResponse.redirect(new URL("/", request.url))
+      return NextResponse.redirect(new URL(getSessionHomeHref(appSession), request.url))
+    }
+
+    if (!canSessionAccessPath(appSession, pathname)) {
+      return NextResponse.redirect(new URL(getSessionHomeHref(appSession), request.url))
     }
 
     return NextResponse.next()

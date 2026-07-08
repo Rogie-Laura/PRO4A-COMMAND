@@ -9,6 +9,7 @@ import {
   getSessionCookieName,
   getSessionMaxAge,
 } from "@/lib/auth/session"
+import { getSessionHomeHref } from "@/lib/auth/get-session"
 
 export type LoginActionResult = {
   error?: string
@@ -37,6 +38,7 @@ export async function loginWithAccessKeyAction(
       validated.role,
       rememberDevice,
       validated.expires_at,
+      validated.division_scope,
     )
     const cookieStore = await cookies()
 
@@ -48,10 +50,15 @@ export async function loginWithAccessKeyAction(
       maxAge: getSessionMaxAge(validated.role, rememberDevice, validated.expires_at),
     })
 
+    const homeHref = getSessionHomeHref({
+      role: validated.role,
+      divisionScope: validated.division_scope,
+    })
+
     const safeNext =
       nextPath && nextPath.startsWith("/") && !nextPath.startsWith("/login")
         ? nextPath
-        : "/"
+        : homeHref
 
     redirect(safeNext)
   } catch (error) {

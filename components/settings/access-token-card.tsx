@@ -32,8 +32,11 @@ import { buildLoginUrl } from "@/lib/auth/login-url"
 import {
   ACCESS_KEY_ROLES,
   OFFICER_EXPIRATION_OPTIONS,
+  roleRequiresExpiration,
   type AccessKeyRole,
 } from "@/lib/auth/roles"
+import { DIVISION_UPLOAD_OPTIONS } from "@/lib/division-scope"
+import type { DivisionId } from "@/lib/division-scope"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
 import type { AccessTokenListItem } from "@/lib/access-tokens"
 import { cn } from "@/lib/utils"
@@ -42,8 +45,13 @@ type AccessTokenCardProps = {
   initialTokens: AccessTokenListItem[]
 }
 
-function roleLabel(role: AccessKeyRole) {
-  return role === "super_admin" ? "Super Admin" : "Officer"
+function roleLabel(role: AccessKeyRole, divisionScope?: DivisionId | null) {
+  if (role === "super_admin") return "Super Admin"
+  if (role === "division_uploader") {
+    const division = DIVISION_UPLOAD_OPTIONS.find((item) => item.id === divisionScope)
+    return division ? `Focal · ${division.label}` : "Focal Person"
+  }
+  return "Officer"
 }
 
 function expiryLabel(token: AccessTokenListItem) {
@@ -62,6 +70,7 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
   const [tokens, setTokens] = useState(initialTokens)
   const [label, setLabel] = useState("")
   const [role, setRole] = useState<AccessKeyRole>("officer")
+  const [divisionScope, setDivisionScope] = useState<DivisionId>("rlrdd")
   const [officerExpirationDays, setOfficerExpirationDays] = useState<number>(
     OFFICER_EXPIRATION_OPTIONS[1].days,
   )
@@ -86,7 +95,8 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
         const result = await createAccessTokenAction(
           label,
           role,
-          role === "officer" ? officerExpirationDays : undefined,
+          roleRequiresExpiration(role) ? officerExpirationDays : undefined,
+          role === "division_uploader" ? divisionScope : undefined,
         )
         setTokens((current) => [result.record, ...current])
         setLabel("")
@@ -151,7 +161,7 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
           </CardTitle>
           <CardDescription>
             Super Admin keys are lifetime with Settings access. Officer keys expire and cannot open
-            Settings.
+            Settings. Division focal tokens are scoped to one R-staff division with upload access.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -183,7 +193,7 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
                 </span>
               </label>
 
-              {role === "officer" ? (
+              {roleRequiresExpiration(role) ? (
                 <label className="space-y-2 text-sm">
                   <span className="font-medium">Expiration</span>
                   <select
@@ -205,6 +215,27 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
                 </div>
               )}
             </div>
+
+            {role === "division_uploader" ? (
+              <label className="space-y-2 text-sm">
+                <span className="font-medium">Division Scope</span>
+                <select
+                  value={divisionScope}
+                  onChange={(event) => setDivisionScope(event.target.value as DivisionId)}
+                  disabled={isPending}
+                  className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                >
+                  {DIVISION_UPLOAD_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="block text-xs text-muted-foreground">
+                  Focal person can access this division only, plus Upload File and theme settings.
+                </span>
+              </label>
+            ) : null}
 
             <Button onClick={handleCreate} disabled={isPending || !label.trim()}>
               {isPending ? "Creating..." : "Create Token"}
@@ -230,7 +261,7 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
                       <Badge
                         variant={token.role === "super_admin" ? "default" : "secondary"}
                       >
-                        {roleLabel(token.role)}
+                        {roleLabel(token.role, token.division_scope)}
                       </Badge>
                       <Badge variant={token.is_active ? "outline" : "secondary"}>
                         {token.is_active ? "Active" : "Revoked"}
@@ -292,7 +323,11 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {newTokenRole === "super_admin" ? "Super Admin Key Created" : "Officer Key Created"}
+              {newTokenRole === "super_admin"
+                ? "Super Admin Key Created"
+                : newTokenRole === "division_uploader"
+                  ? "Division Focal Token Created"
+                  : "Officer Key Created"}
             </DialogTitle>
             <DialogDescription>
               Save this key now. You can open the login QR again anytime from Settings.
@@ -319,7 +354,9 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
             <p className="text-xs text-muted-foreground">
               {newTokenRole === "super_admin"
                 ? "Lifetime key · Settings access · save in a secure note."
-                : "Officer key · dashboard only · Settings hidden · expires based on selected duration."}
+                : newTokenRole === "division_uploader"
+                  ? "Division focal key · scoped upload access · theme settings only · expires based on selected duration."
+                  : "Officer key · dashboard only · Settings hidden · expires based on selected duration."}
             </p>
           </DialogBody>
           <DialogFooter>

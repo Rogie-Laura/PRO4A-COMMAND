@@ -2,11 +2,19 @@ import { cookies } from "next/headers"
 
 import type { AccessKeyRole } from "@/lib/auth/roles"
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth/session"
+import {
+  canSessionAccessPath,
+  getSessionHomeHref,
+  normalizeDivisionScope,
+  type SessionAccessProfile,
+} from "@/lib/auth/session-access"
+import type { DivisionId } from "@/lib/division-scope"
 
-export type AppSession = {
+export type AppSession = SessionAccessProfile & {
   apiKeyId: string
   label: string
   role: AccessKeyRole
+  divisionScope: DivisionId | null
 }
 
 export async function getSession(): Promise<AppSession | null> {
@@ -18,7 +26,13 @@ export async function getSession(): Promise<AppSession | null> {
   }
 
   try {
-    return await verifySessionToken(token)
+    const session = await verifySessionToken(token)
+    return {
+      apiKeyId: session.apiKeyId,
+      label: session.label,
+      role: session.role,
+      divisionScope: normalizeDivisionScope(session.divisionScope),
+    }
   } catch {
     return null
   }
@@ -33,3 +47,23 @@ export async function requireSuperAdminSession() {
 
   return session
 }
+
+export async function requireDivisionUploadSession(divisionId: DivisionId) {
+  const session = await getSession()
+
+  if (!session) {
+    throw new Error("Sign in required.")
+  }
+
+  if (session.role === "super_admin") {
+    return session
+  }
+
+  if (session.role === "division_uploader" && session.divisionScope === divisionId) {
+    return session
+  }
+
+  throw new Error("Division upload access required.")
+}
+
+export { canSessionAccessPath, getSessionHomeHref }

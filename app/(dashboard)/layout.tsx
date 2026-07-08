@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/dashboard-shell"
 import { getSession } from "@/lib/auth/get-session"
+import { redirect } from "next/navigation"
 
 export default async function DashboardGroupLayout({
   children,
@@ -8,5 +9,9 @@ export default async function DashboardGroupLayout({
 }>) {
   const session = await getSession()
 
-  return <DashboardShell role={session?.role ?? "officer"}>{children}</DashboardShell>
+  if (!session) {
+    redirect("/login")
+  }
+
+  return <DashboardShell session={session}>{children}</DashboardShell>
 }

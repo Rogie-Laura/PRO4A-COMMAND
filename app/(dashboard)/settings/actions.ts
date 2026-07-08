@@ -8,8 +8,9 @@ import {
   listAccessTokens,
   revokeAccessToken,
 } from "@/lib/access-tokens"
-import { requireSuperAdminSession } from "@/lib/auth/get-session"
+import { requireSuperAdminSession, requireDivisionUploadSession } from "@/lib/auth/get-session"
 import type { AccessKeyRole } from "@/lib/auth/roles"
+import type { DivisionId } from "@/lib/division-scope"
 import { getLatestBmiUploadBatch, replaceBmiRecords } from "@/lib/bmi-records"
 import { parseBmiXlsx } from "@/lib/bmi-xlsx-parser"
 import { CRIME_ANALYTICS_CACHE_TAG } from "@/lib/crime-analytics"
@@ -51,6 +52,7 @@ export async function createAccessTokenAction(
   label: string,
   role: AccessKeyRole,
   officerExpirationDays?: number,
+  divisionScope?: string,
 ) {
   await requireSuperAdminSession()
 
@@ -68,6 +70,10 @@ export async function createAccessTokenAction(
     label: trimmed,
     role,
     officerExpirationDays,
+    divisionScope:
+      role === "division_uploader" && divisionScope
+        ? (divisionScope as DivisionId)
+        : null,
   })
   revalidatePath("/settings")
   return result
@@ -258,7 +264,7 @@ export async function uploadCrimeRecordsAction(formData: FormData) {
 
 export async function uploadFirearmsWorkbookAction(formData: FormData) {
   try {
-    const session = await requireSuperAdminSession()
+    const session = await requireDivisionUploadSession("rlrdd")
     const file = formData.get("file")
 
     if (!(file instanceof File)) {
@@ -288,6 +294,7 @@ export async function uploadFirearmsWorkbookAction(formData: FormData) {
     updateTag(FIREARMS_ANALYTICS_CACHE_TAG)
     revalidatePath("/settings")
     revalidatePath("/rlrdd")
+    revalidatePath("/rlrdd/upload")
 
     return {
       batch: result.batch,
@@ -303,7 +310,7 @@ export async function uploadFirearmsWorkbookAction(formData: FormData) {
 
 export async function uploadMobilityClearbookAction(formData: FormData) {
   try {
-    const session = await requireSuperAdminSession()
+    const session = await requireDivisionUploadSession("rlrdd")
     const file = formData.get("file")
 
     if (!(file instanceof File)) {
@@ -333,6 +340,7 @@ export async function uploadMobilityClearbookAction(formData: FormData) {
     updateTag(MOBILITY_ANALYTICS_CACHE_TAG)
     revalidatePath("/settings")
     revalidatePath("/rlrdd")
+    revalidatePath("/rlrdd/upload")
     revalidatePath("/mobility")
 
     return {

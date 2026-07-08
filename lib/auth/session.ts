@@ -1,6 +1,7 @@
 import { jwtVerify, SignJWT } from "jose"
 
 import type { AccessKeyRole } from "@/lib/auth/roles"
+import type { DivisionId } from "@/lib/division-scope"
 
 const COOKIE_NAME = "pro4a_session"
 const REMEMBER_DAYS = 90
@@ -46,15 +47,22 @@ export async function createSessionToken(
   role: AccessKeyRole,
   rememberDevice: boolean,
   keyExpiresAt: string | null,
+  divisionScope: DivisionId | null = null,
 ) {
   const days = getSessionDays(role, rememberDevice, keyExpiresAt)
 
-  return new SignJWT({ label, role })
+  return new SignJWT({ label, role, divisionScope })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(apiKeyId)
     .setIssuedAt()
     .setExpirationTime(`${days}d`)
     .sign(getSecret())
+}
+
+function parseSessionRole(value: unknown): AccessKeyRole {
+  if (value === "officer") return "officer"
+  if (value === "division_uploader") return "division_uploader"
+  return "super_admin"
 }
 
 export async function verifySessionToken(token: string) {
@@ -64,12 +72,15 @@ export async function verifySessionToken(token: string) {
     throw new Error("Invalid session.")
   }
 
-  const role = payload.role === "officer" ? "officer" : "super_admin"
+  const role = parseSessionRole(payload.role)
+  const divisionScope =
+    typeof payload.divisionScope === "string" ? (payload.divisionScope as DivisionId) : null
 
   return {
     apiKeyId: payload.sub,
     label: typeof payload.label === "string" ? payload.label : "Access Token",
-    role: role as AccessKeyRole,
+    role,
+    divisionScope,
   }
 }
 

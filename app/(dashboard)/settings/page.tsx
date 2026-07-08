@@ -36,6 +36,7 @@ export default async function SettingsPage() {
   }
 
   const canManageTokens = isSuperAdmin(session.role)
+  const isDivisionFocal = session.role === "division_uploader"
 
   let tokens: AccessTokenListItem[] = []
   let tokenError: string | null = null
@@ -99,7 +100,7 @@ export default async function SettingsPage() {
       <div className="mx-auto max-w-2xl space-y-4">
         <ThemeSettingsCard />
 
-        <InstallAppCard />
+        {!isDivisionFocal ? <InstallAppCard /> : null}
 
         {canManageTokens ? (
           <>

@@ -3,24 +3,24 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import type { AccessKeyRole } from "@/lib/auth/roles"
+import type { AppSession } from "@/lib/auth/get-session"
 
 type DashboardLayoutClientProps = {
   title: string
   description?: string
-  role: AccessKeyRole
+  session: AppSession
   children: React.ReactNode
 }
 
 export function DashboardLayoutClient({
   title,
   description,
-  role,
+  session,
   children,
 }: DashboardLayoutClientProps) {
   return (
     <SidebarProvider>
-      <AppSidebar role={role} />
+      <AppSidebar session={session} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <SidebarTrigger className="-ml-1" />

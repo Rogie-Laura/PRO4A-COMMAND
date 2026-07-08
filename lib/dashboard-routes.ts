@@ -42,6 +42,10 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
     description: "Personnel body mass index classification",
   },
   "/station-profiles": { title: "Station Profiles" },
+  "/rlrdd/upload": {
+    title: "Upload File",
+    description: "RLRDD Excel uploads for firearms and vehicle clearbook",
+  },
   "/settings": { title: "Settings" },
   "/reports": {
     title: "Reports",

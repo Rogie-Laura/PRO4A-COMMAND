@@ -4,8 +4,10 @@ import { encryptAccessToken, decryptAccessToken } from "@/lib/access-token-crypt
 import { buildLoginUrl } from "@/lib/auth/login-url"
 import {
   computeOfficerExpiresAt,
+  roleRequiresExpiration,
   type AccessKeyRole,
 } from "@/lib/auth/roles"
+import { isDivisionId, type DivisionId } from "@/lib/division-scope"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export type AccessTokenListItem = {
@@ -13,6 +15,7 @@ export type AccessTokenListItem = {
   label: string
   key_prefix: string
   role: AccessKeyRole
+  division_scope: DivisionId | null
   is_active: boolean
   created_at: string
   last_used_at: string | null
@@ -34,13 +37,19 @@ export function hashAccessToken(token: string) {
   return createHash("sha256").update(token).digest("hex")
 }
 
+function parseStoredRole(value: string | null | undefined): AccessKeyRole {
+  if (value === "officer") return "officer"
+  if (value === "division_uploader") return "division_uploader"
+  return "super_admin"
+}
+
 export async function listAccessTokens(): Promise<AccessTokenListItem[]> {
   const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from("api_keys")
     .select(
-      "id, label, key_prefix, role, is_active, created_at, last_used_at, expires_at, encrypted_key",
+      "id, label, key_prefix, role, division_scope, is_active, created_at, last_used_at, expires_at, encrypted_key",
     )
     .order("created_at", { ascending: false })
 
@@ -52,7 +61,8 @@ export async function listAccessTokens(): Promise<AccessTokenListItem[]> {
     id: row.id,
     label: row.label,
     key_prefix: row.key_prefix,
-    role: row.role === "officer" ? "officer" : "super_admin",
+    role: parseStoredRole(row.role),
+    division_scope: isDivisionId(row.division_scope) ? row.division_scope : null,
     is_active: row.is_active,
     created_at: row.created_at,
     last_used_at: row.last_used_at,
@@ -65,12 +75,14 @@ type CreateAccessTokenInput = {
   label: string
   role: AccessKeyRole
   officerExpirationDays?: number
+  divisionScope?: DivisionId | null
 }
 
 export async function createAccessToken({
   label,
   role,
   officerExpirationDays,
+  divisionScope = null,
 }: CreateAccessTokenInput) {
   const supabase = createAdminClient()
   const { token, key_prefix, key_hash } = generateAccessToken()
@@ -78,12 +90,18 @@ export async function createAccessToken({
 
   let expires_at: string | null = null
 
-  if (role === "officer") {
+  if (roleRequiresExpiration(role)) {
     if (!officerExpirationDays || officerExpirationDays <= 0) {
-      throw new Error("Officer key expiration is required.")
+      throw new Error("Key expiration is required.")
     }
 
     expires_at = computeOfficerExpiresAt(officerExpirationDays)
+  }
+
+  if (role === "division_uploader") {
+    if (!divisionScope || !isDivisionId(divisionScope)) {
+      throw new Error("Division scope is required for focal person tokens.")
+    }
   }
 
   const { data, error } = await supabase
@@ -95,9 +113,12 @@ export async function createAccessToken({
       role,
       expires_at,
       encrypted_key,
+      division_scope: role === "division_uploader" ? divisionScope : null,
       is_active: true,
     })
-    .select("id, label, key_prefix, role, is_active, created_at, last_used_at, expires_at, encrypted_key")
+    .select(
+      "id, label, key_prefix, role, division_scope, is_active, created_at, last_used_at, expires_at, encrypted_key",
+    )
     .single()
 
   if (error) {
@@ -110,7 +131,8 @@ export async function createAccessToken({
       id: data.id,
       label: data.label,
       key_prefix: data.key_prefix,
-      role: data.role === "officer" ? "officer" : "super_admin",
+      role: parseStoredRole(data.role),
+      division_scope: isDivisionId(data.division_scope) ? data.division_scope : null,
       is_active: data.is_active,
       created_at: data.created_at,
       last_used_at: data.last_used_at,
