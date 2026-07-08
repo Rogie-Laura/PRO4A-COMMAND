@@ -39,6 +39,7 @@ import { DIVISION_UPLOAD_OPTIONS } from "@/lib/division-scope"
 import type { DivisionId } from "@/lib/division-scope"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
 import type { AccessTokenListItem } from "@/lib/access-tokens"
+import { formatServerActionError } from "@/lib/server-action-errors"
 import { cn } from "@/lib/utils"
 
 type AccessTokenCardProps = {
@@ -104,7 +105,7 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
         setNewTokenRole(result.record.role)
         setCopied(false)
       } catch (createError) {
-        setError(createError instanceof Error ? createError.message : "Failed to create token.")
+        setError(formatServerActionError(createError, "Failed to create token."))
       }
     })
   }
@@ -121,7 +122,7 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
           ),
         )
       } catch (revokeError) {
-        setError(revokeError instanceof Error ? revokeError.message : "Failed to revoke token.")
+        setError(formatServerActionError(revokeError, "Failed to revoke token."))
       }
     })
   }
@@ -144,9 +145,7 @@ export function AccessTokenCard({ initialTokens }: AccessTokenCardProps) {
         const result = await getAccessTokenQrUrlAction(token.id)
         setViewQrUrl(result.loginUrl)
       } catch (qrError) {
-        setViewQrError(
-          qrError instanceof Error ? qrError.message : "Unable to load login QR.",
-        )
+        setViewQrError(formatServerActionError(qrError, "Unable to load login QR."))
       }
     })
   }

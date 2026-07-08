@@ -9,6 +9,7 @@ import { QrScanButton } from "@/components/auth/qr-scanner-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { normalizeAccessKeyInput } from "@/lib/auth/parse-access-key"
+import { formatServerActionError } from "@/lib/server-action-errors"
 
 function isNextRedirect(error: unknown) {
   return (
@@ -57,11 +58,7 @@ export function LoginScreen() {
           throw loginError
         }
 
-        setError(
-          loginError instanceof Error
-            ? loginError.message
-            : "Invalid access key.",
-        )
+        setError(formatServerActionError(loginError, "Invalid access key."))
       }
     })
   }
