@@ -24,8 +24,11 @@ export function canSessionAccessPath(session: SessionAccessProfile, pathname: st
 }
 
 export function getSessionHomeHref(session: SessionAccessProfile) {
-  if (session.role === "division_uploader" && session.divisionScope) {
-    return getDivisionDefaultHref(session.divisionScope)
+  if (session.role === "division_uploader") {
+    if (session.divisionScope) {
+      return getDivisionDefaultHref(session.divisionScope)
+    }
+    return "/login"
   }
 
   return "/"
