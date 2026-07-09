@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { PpoUperUploadCard } from "@/components/settings/ppo-uper-upload-card"
 import { UperUploadCard } from "@/components/settings/uper-upload-card"
 import {
   Card,
@@ -9,7 +10,9 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { getSession, requireDivisionUploadSession } from "@/lib/auth/get-session"
+import { getLatestPpoUperUploadBatch } from "@/lib/ppo-uper-records"
 import { getLatestUperUploadBatch } from "@/lib/uper-records"
+import type { PpoUperUploadBatchInfo } from "@/lib/ppo-uper-types"
 import type { UperUploadBatchInfo } from "@/lib/uper-types"
 
 export const maxDuration = 300
@@ -29,11 +32,20 @@ export default async function RpsmdUploadPage() {
 
   let latestBatch: UperUploadBatchInfo | null = null
   let uploadError: string | null = null
+  let latestPpoBatch: PpoUperUploadBatchInfo | null = null
+  let ppoUploadError: string | null = null
 
   try {
     latestBatch = await getLatestUperUploadBatch()
   } catch (error) {
     uploadError = error instanceof Error ? error.message : "Unable to load UPER upload status."
+  }
+
+  try {
+    latestPpoBatch = await getLatestPpoUperUploadBatch()
+  } catch (error) {
+    ppoUploadError =
+      error instanceof Error ? error.message : "Unable to load PPO UPER upload status."
   }
 
   return (
@@ -42,8 +54,7 @@ export default async function RpsmdUploadPage() {
         <CardHeader>
           <CardTitle className="text-base">RPSMD File Upload</CardTitle>
           <CardDescription>
-            Upload ang PRO 4A UPER from DPL workbook para sa Current Ranking at monthly trend sa
-            RPSMD dashboard.
+            Upload ang PRO 4A UPER from DPL at UPER of PPOs workbooks para sa RPSMD dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -56,7 +67,7 @@ export default async function RpsmdUploadPage() {
       {uploadError ? (
         <Card className="border-destructive/30">
           <CardHeader>
-            <CardTitle>Upload UPER Workbook</CardTitle>
+            <CardTitle>Upload PRO 4A UPER</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-destructive">{uploadError}</p>
@@ -64,6 +75,19 @@ export default async function RpsmdUploadPage() {
         </Card>
       ) : (
         <UperUploadCard latestBatch={latestBatch} compact />
+      )}
+
+      {ppoUploadError ? (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Upload UPER of PPOs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{ppoUploadError}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <PpoUperUploadCard latestBatch={latestPpoBatch} compact />
       )}
     </div>
   )

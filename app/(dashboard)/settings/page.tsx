@@ -6,6 +6,7 @@ import { BmiUploadCard } from "@/components/settings/bmi-upload-card"
 import { CrimeUploadCard } from "@/components/settings/crime-upload-card"
 import { FirearmsUploadCard } from "@/components/settings/firearms-upload-card"
 import { MobilityUploadCard } from "@/components/settings/mobility-upload-card"
+import { PpoUperUploadCard } from "@/components/settings/ppo-uper-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
 import { UperUploadCard } from "@/components/settings/uper-upload-card"
 import {
@@ -26,6 +27,8 @@ import {
 import type { FirearmsUploadBatchInfo } from "@/lib/firearms-types"
 import { getLatestMobilityUploadBatch } from "@/lib/mobility-records"
 import type { MobilityUploadBatchInfo } from "@/lib/mobility-types"
+import { getLatestPpoUperUploadBatch } from "@/lib/ppo-uper-records"
+import type { PpoUperUploadBatchInfo } from "@/lib/ppo-uper-types"
 import { getLatestUperUploadBatch } from "@/lib/uper-records"
 import type { UperUploadBatchInfo } from "@/lib/uper-types"
 
@@ -53,6 +56,8 @@ export default async function SettingsPage() {
   let mobilityUploadError: string | null = null
   let latestUperBatch: UperUploadBatchInfo | null = null
   let uperUploadError: string | null = null
+  let latestPpoUperBatch: PpoUperUploadBatchInfo | null = null
+  let ppoUperUploadError: string | null = null
 
   if (canManageTokens) {
     try {
@@ -107,6 +112,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load UPER upload status from Supabase."
+    }
+
+    try {
+      latestPpoUperBatch = await getLatestPpoUperUploadBatch()
+    } catch (error) {
+      ppoUperUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load PPO UPER upload status from Supabase."
     }
   }
 
@@ -198,6 +212,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <UperUploadCard latestBatch={latestUperBatch} />
+            )}
+
+            {ppoUperUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload UPER of PPOs</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{ppoUperUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260709150000_create_ppo_uper_upload_batches.sql`
+                    kung wala pa ang `ppo_uper_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <PpoUperUploadCard latestBatch={latestPpoUperBatch} />
             )}
 
             {tokenError ? (
