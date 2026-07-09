@@ -7,6 +7,7 @@ import { CrimeUploadCard } from "@/components/settings/crime-upload-card"
 import { FirearmsUploadCard } from "@/components/settings/firearms-upload-card"
 import { MobilityUploadCard } from "@/components/settings/mobility-upload-card"
 import { PpoUperUploadCard } from "@/components/settings/ppo-uper-upload-card"
+import { StationClassificationUploadCard } from "@/components/settings/station-classification-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
 import { UperUploadCard } from "@/components/settings/uper-upload-card"
 import {
@@ -29,6 +30,8 @@ import { getLatestMobilityUploadBatch } from "@/lib/mobility-records"
 import type { MobilityUploadBatchInfo } from "@/lib/mobility-types"
 import { getLatestPpoUperUploadBatch } from "@/lib/ppo-uper-records"
 import type { PpoUperUploadBatchInfo } from "@/lib/ppo-uper-types"
+import { getLatestStationClassificationUploadBatch } from "@/lib/station-classification-records"
+import type { StationClassificationUploadBatchInfo } from "@/lib/station-classification-types"
 import { getLatestUperUploadBatch } from "@/lib/uper-records"
 import type { UperUploadBatchInfo } from "@/lib/uper-types"
 
@@ -58,6 +61,8 @@ export default async function SettingsPage() {
   let uperUploadError: string | null = null
   let latestPpoUperBatch: PpoUperUploadBatchInfo | null = null
   let ppoUperUploadError: string | null = null
+  let latestStationClassificationBatch: StationClassificationUploadBatchInfo | null = null
+  let stationClassificationUploadError: string | null = null
 
   if (canManageTokens) {
     try {
@@ -121,6 +126,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load PPO UPER upload status from Supabase."
+    }
+
+    try {
+      latestStationClassificationBatch = await getLatestStationClassificationUploadBatch()
+    } catch (error) {
+      stationClassificationUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load station classification upload status from Supabase."
     }
   }
 
@@ -230,6 +244,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <PpoUperUploadCard latestBatch={latestPpoUperBatch} />
+            )}
+
+            {stationClassificationUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Classification of Stations</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{stationClassificationUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260709160000_create_station_classification_upload_batches.sql`
+                    kung wala pa ang `station_classification_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <StationClassificationUploadCard latestBatch={latestStationClassificationBatch} />
             )}
 
             {tokenError ? (

@@ -1,41 +1,48 @@
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { PpoUperRankingsCard } from "@/components/dashboard/ppo-uper-rankings-card"
+import { StationClassificationSection } from "@/components/dashboard/station-classification-section"
 import { UperCurrentRankingCard } from "@/components/dashboard/uper-current-ranking-card"
 import { Card, CardContent } from "@/components/ui/card"
 import { getPpoUperAnalytics } from "@/lib/ppo-uper-records"
+import { getStationClassificationAnalytics } from "@/lib/station-classification-records"
 import { getUperAnalytics } from "@/lib/uper-records"
 
 export async function RpsmdPageContent() {
-  const [analytics, ppoAnalytics] = await Promise.all([getUperAnalytics(), getPpoUperAnalytics()])
+  const [analytics, ppoAnalytics, stationClassification] = await Promise.all([
+    getUperAnalytics(),
+    getPpoUperAnalytics(),
+    getStationClassificationAnalytics(),
+  ])
 
   const lastUpdated =
-    [analytics.lastUpdated, ppoAnalytics.lastUpdated].filter(Boolean).sort().at(-1) ??
-    new Date().toISOString()
+    [analytics.lastUpdated, ppoAnalytics.lastUpdated, stationClassification.lastUpdated]
+      .filter(Boolean)
+      .sort()
+      .at(-1) ?? new Date().toISOString()
 
   const hasProData = analytics.dataReady
   const hasPpoData = ppoAnalytics.dataReady
+  const hasStationData = stationClassification.dataReady
+
+  const syncParts = [
+    hasProData ? `PRO 4A from ${analytics.fileName}` : null,
+    hasPpoData ? `PPO from ${ppoAnalytics.fileName}` : null,
+    hasStationData ? `Stations from ${stationClassification.fileName}` : null,
+  ].filter(Boolean)
 
   return (
     <div className="space-y-4">
       <DataSyncBanner
         lastUpdated={lastUpdated}
-        sourceLabel={
-          hasProData || hasPpoData ? "RPSMD UPER uploads" : "UPER upload"
-        }
+        sourceLabel={syncParts.length > 0 ? "RPSMD uploads" : "RPSMD upload"}
         syncDescription={
-          hasProData || hasPpoData
-            ? [
-                hasProData ? `PRO 4A from ${analytics.fileName}` : null,
-                hasPpoData ? `PPO from ${ppoAnalytics.fileName}` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")
-            : "Mag-upload ng PRO 4A UPER at UPER of PPOs sa Upload File"
+          syncParts.length > 0 ? syncParts.join(" · ") : "Mag-upload ng RPSMD workbooks sa Upload File"
         }
       />
 
       <UperCurrentRankingCard analytics={analytics} />
       <PpoUperRankingsCard analytics={ppoAnalytics} />
+      <StationClassificationSection analytics={stationClassification} />
 
       {hasProData && analytics.trend.length > 1 ? (
         <Card className="max-w-md border-muted-foreground/20 bg-muted/10">
@@ -51,7 +58,7 @@ export async function RpsmdPageContent() {
           <CardContent className="py-4 text-sm text-muted-foreground">
             PPO covered months:{" "}
             {ppoAnalytics.months.map((month) => month.monthLabel).join(" · ")}. Magdagdag ng bagong
-            sheet (hal. June 2026) sa UPER of PPOs workbook at i-upload ulit.
+            sheet sa UPER of PPOs workbook at i-upload ulit.
           </CardContent>
         </Card>
       ) : null}

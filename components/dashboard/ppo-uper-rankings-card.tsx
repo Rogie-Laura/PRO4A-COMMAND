@@ -105,7 +105,7 @@ export function PpoUperRankingsCard({ analytics }: PpoUperRankingsCardProps) {
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="pb-3 pr-3 font-medium">Rank</th>
                   <th className="pb-3 pr-3 font-medium">PPO</th>
-                  <th className="pb-3 pr-3 font-medium">Chief of Police</th>
+                  <th className="pb-3 pr-3 font-medium">Provincial Director</th>
                   <th className="pb-3 pr-3 font-medium">KRA</th>
                   <th className="pb-3 pr-3 font-medium">Behavior</th>
                   <th className="pb-3 pr-3 font-medium">Compliance</th>
