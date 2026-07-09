@@ -46,6 +46,10 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
     title: "Upload File",
     description: "RLRDD Excel uploads for firearms and vehicle clearbook",
   },
+  "/rpsmd/upload": {
+    title: "Upload File",
+    description: "RPSMD UPER workbook upload from DPL",
+  },
   "/settings": { title: "Settings" },
   "/reports": {
     title: "Reports",

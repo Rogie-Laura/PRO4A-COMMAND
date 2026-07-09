@@ -92,7 +92,8 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     label: "RPSMD",
     rNumber: 9,
     defaultHref: "/rpsmd",
-    allowedPaths: ["/rpsmd", "/settings"],
+    allowedPaths: ["/rpsmd", "/rpsmd/upload", "/settings"],
+    uploadPath: "/rpsmd/upload",
   },
   rictmd: {
     id: "rictmd",

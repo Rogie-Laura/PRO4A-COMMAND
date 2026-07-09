@@ -91,6 +91,14 @@ export const MAIN_NAV: NavLink[] = [
     divisionId: "rlrdd",
     uploadOnly: true,
   },
+  {
+    title: "Upload File",
+    href: "/rpsmd/upload",
+    icon: Upload,
+    activePaths: ["/rpsmd/upload"],
+    divisionId: "rpsmd",
+    uploadOnly: true,
+  },
   { title: "Settings", href: "/settings", icon: Settings },
 ]
 

@@ -7,6 +7,7 @@ import { CrimeUploadCard } from "@/components/settings/crime-upload-card"
 import { FirearmsUploadCard } from "@/components/settings/firearms-upload-card"
 import { MobilityUploadCard } from "@/components/settings/mobility-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
+import { UperUploadCard } from "@/components/settings/uper-upload-card"
 import {
   Card,
   CardContent,
@@ -25,6 +26,8 @@ import {
 import type { FirearmsUploadBatchInfo } from "@/lib/firearms-types"
 import { getLatestMobilityUploadBatch } from "@/lib/mobility-records"
 import type { MobilityUploadBatchInfo } from "@/lib/mobility-types"
+import { getLatestUperUploadBatch } from "@/lib/uper-records"
+import type { UperUploadBatchInfo } from "@/lib/uper-types"
 
 export const maxDuration = 300
 
@@ -48,6 +51,8 @@ export default async function SettingsPage() {
   let firearmsUploadError: string | null = null
   let latestMobilityBatch: MobilityUploadBatchInfo | null = null
   let mobilityUploadError: string | null = null
+  let latestUperBatch: UperUploadBatchInfo | null = null
+  let uperUploadError: string | null = null
 
   if (canManageTokens) {
     try {
@@ -93,6 +98,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load mobility upload status from Supabase."
+    }
+
+    try {
+      latestUperBatch = await getLatestUperUploadBatch()
+    } catch (error) {
+      uperUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load UPER upload status from Supabase."
     }
   }
 
@@ -166,6 +180,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <MobilityUploadCard latestBatch={latestMobilityBatch} />
+            )}
+
+            {uperUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload UPER Workbook</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{uperUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260709140000_create_uper_upload_batches.sql`
+                    kung wala pa ang `uper_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <UperUploadCard latestBatch={latestUperBatch} />
             )}
 
             {tokenError ? (
