@@ -1,9 +1,10 @@
 import Link from "next/link"
 import { ExternalLink, Siren } from "lucide-react"
 
-import { PoliceInterventionRefreshButton } from "@/components/dashboard/police-intervention-refresh-button"
-import { PatrolUnitCards } from "@/components/dashboard/patrol-unit-cards"
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
+import { PatrolUnitCards } from "@/components/dashboard/patrol-unit-cards"
+import { PoliceInterventionRefreshButton } from "@/components/dashboard/police-intervention-refresh-button"
+import { TerrorismThreatLevelCard } from "@/components/dashboard/terrorism-threat-level-card"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -14,20 +15,36 @@ import {
 } from "@/components/ui/card"
 import { getPatrollersMonitorUrl } from "@/lib/patrol-intervention-config"
 import { getPatrolInterventionAnalytics } from "@/lib/patrol-intervention-analytics"
+import { getTerrorismThreatAnalytics } from "@/lib/terrorism-threat-records"
 
 export async function PoliceInterventionContent() {
-  const data = await getPatrolInterventionAnalytics()
+  const [data, terrorismThreat] = await Promise.all([
+    getPatrolInterventionAnalytics(),
+    getTerrorismThreatAnalytics(),
+  ])
   const patrollersUrl = getPatrollersMonitorUrl()
+
+  const lastUpdated = [data.updated_at, terrorismThreat.lastUpdated]
+    .filter(Boolean)
+    .sort()
+    .at(-1)
+
+  const syncParts = [
+    data.ok && data.updated_at ? "Patrollers snapshot" : null,
+    terrorismThreat.dataReady ? `R2 from ${terrorismThreat.fileName}` : null,
+  ].filter(Boolean)
 
   return (
     <div className="space-y-4">
-      {data.ok && data.updated_at && (
+      {lastUpdated ? (
         <DataSyncBanner
-          lastUpdated={data.updated_at}
-          sourceLabel="Patrollers"
-          syncDescription="synced from Patrollers monitoring (cached until you refresh)"
+          lastUpdated={lastUpdated}
+          sourceLabel={syncParts.length > 0 ? "ROD data" : "ROD upload"}
+          syncDescription={
+            syncParts.length > 0 ? syncParts.join(" · ") : "Mag-upload ng R2 workbook sa Upload File"
+          }
         />
-      )}
+      ) : null}
 
       <Card className="border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card">
         <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -93,6 +110,8 @@ export async function PoliceInterventionContent() {
         dutyCounts={data.duty_counts}
         officeBreakdown={data.office_breakdown}
       />
+
+      <TerrorismThreatLevelCard analytics={terrorismThreat} />
     </div>
   )
 }

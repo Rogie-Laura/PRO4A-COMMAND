@@ -99,6 +99,14 @@ export const MAIN_NAV: NavLink[] = [
     divisionId: "rpsmd",
     uploadOnly: true,
   },
+  {
+    title: "Upload File",
+    href: "/police-intervention/upload",
+    icon: Upload,
+    activePaths: ["/police-intervention/upload"],
+    divisionId: "rod",
+    uploadOnly: true,
+  },
   { title: "Settings", href: "/settings", icon: Settings },
 ]
 

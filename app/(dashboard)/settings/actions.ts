@@ -53,6 +53,11 @@ import {
   replaceLegislativeAgendaWorkbook,
 } from "@/lib/legislative-agenda-records"
 import { parseLegislativeAgendaXlsx } from "@/lib/legislative-agenda-xlsx-parser"
+import {
+  TERRORISM_THREAT_ANALYTICS_CACHE_TAG,
+  replaceTerrorismThreatWorkbook,
+} from "@/lib/terrorism-threat-records"
+import { parseTerrorismThreatXlsx } from "@/lib/terrorism-threat-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -554,5 +559,51 @@ export async function uploadLegislativeAgendaWorkbookAction(formData: FormData) 
     }
 
     throw new Error("Hindi natapos ang legislative agenda upload. Subukan ulit.")
+  }
+}
+
+export async function uploadTerrorismThreatWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rod")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_UPER_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 5 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseTerrorismThreatXlsx(buffer)
+    const result = await replaceTerrorismThreatWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(TERRORISM_THREAT_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/police-intervention")
+    revalidatePath("/police-intervention/upload")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang terrorism threat upload. Subukan ulit.")
   }
 }

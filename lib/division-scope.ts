@@ -42,7 +42,8 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     label: "ROD",
     rNumber: 3,
     defaultHref: "/police-intervention",
-    allowedPaths: ["/police-intervention", "/settings"],
+    allowedPaths: ["/police-intervention", "/police-intervention/upload", "/settings"],
+    uploadPath: "/police-intervention/upload",
   },
   rlrdd: {
     id: "rlrdd",
