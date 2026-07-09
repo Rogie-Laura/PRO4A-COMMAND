@@ -65,7 +65,8 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     label: "RCADD",
     rNumber: 5,
     defaultHref: "/rcadd",
-    allowedPaths: ["/rcadd", "/settings"],
+    allowedPaths: ["/rcadd", "/rcadd/upload", "/settings"],
+    uploadPath: "/rcadd/upload",
   },
   rcd: {
     id: "rcd",

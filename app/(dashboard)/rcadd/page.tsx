@@ -1,5 +1,12 @@
-import { OfficePlaceholderPage } from "@/components/dashboard/office-placeholder-page"
+import { Suspense } from "react"
+
+import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
+import { RcaddPageContent } from "@/components/dashboard/rcadd-page-content"
 
 export default function RcaddPage() {
-  return <OfficePlaceholderPage title="RCADD" />
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <RcaddPageContent />
+    </Suspense>
+  )
 }

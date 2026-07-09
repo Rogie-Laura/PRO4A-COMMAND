@@ -10,6 +10,7 @@ import { PpoUperUploadCard } from "@/components/settings/ppo-uper-upload-card"
 import { LegislativeAgendaUploadCard } from "@/components/settings/legislative-agenda-upload-card"
 import { StationClassificationUploadCard } from "@/components/settings/station-classification-upload-card"
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
+import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
 import { UperUploadCard } from "@/components/settings/uper-upload-card"
 import {
@@ -38,6 +39,8 @@ import { getLatestStationClassificationUploadBatch } from "@/lib/station-classif
 import type { StationClassificationUploadBatchInfo } from "@/lib/station-classification-types"
 import { getLatestTerrorismThreatUploadBatch } from "@/lib/terrorism-threat-records"
 import type { TerrorismThreatUploadBatchInfo } from "@/lib/terrorism-threat-types"
+import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
+import type { RcaddUploadBatchInfo } from "@/lib/rcadd-accomplishment-types"
 import { getLatestUperUploadBatch } from "@/lib/uper-records"
 import type { UperUploadBatchInfo } from "@/lib/uper-types"
 
@@ -73,6 +76,8 @@ export default async function SettingsPage() {
   let legislativeAgendaUploadError: string | null = null
   let latestTerrorismThreatBatch: TerrorismThreatUploadBatchInfo | null = null
   let terrorismThreatUploadError: string | null = null
+  let latestRcaddBatch: RcaddUploadBatchInfo | null = null
+  let rcaddUploadError: string | null = null
 
   if (canManageTokens) {
     try {
@@ -163,6 +168,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load terrorism threat upload status from Supabase."
+    }
+
+    try {
+      latestRcaddBatch = await getLatestRcaddUploadBatch()
+    } catch (error) {
+      rcaddUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load RCADD upload status from Supabase."
     }
   }
 
@@ -326,6 +340,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <TerrorismThreatUploadCard latestBatch={latestTerrorismThreatBatch} />
+            )}
+
+            {rcaddUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload RCADD Workbook</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{rcaddUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260710140000_create_rcadd_accomplishment_upload_batches.sql`
+                    kung wala pa ang `rcadd_accomplishment_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <RcaddUploadCard latestBatch={latestRcaddBatch} />
             )}
 
             {tokenError ? (
