@@ -1,5 +1,12 @@
-import { OfficePlaceholderPage } from "@/components/dashboard/office-placeholder-page"
+import { Suspense } from "react"
+
+import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
+import { RidPageContent } from "@/components/dashboard/rid-page-content"
 
 export default function RidPage() {
-  return <OfficePlaceholderPage title="RID" />
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <RidPageContent />
+    </Suspense>
+  )
 }

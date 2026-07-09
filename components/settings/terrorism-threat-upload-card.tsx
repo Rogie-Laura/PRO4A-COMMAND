@@ -84,8 +84,7 @@ export function TerrorismThreatUploadCard({
           Upload R2 Workbook
         </CardTitle>
         <CardDescription>
-          R2 for PRO4A COMMAND Excel file na may Terrorism Threat Level sheet (Province, Threat
-          Level, Security Measure, Parameter).
+          R2 for PRO4A COMMAND Excel file na may Terrorism Threat Level sheet para sa RID dashboard.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

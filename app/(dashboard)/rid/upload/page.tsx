@@ -14,7 +14,7 @@ import type { TerrorismThreatUploadBatchInfo } from "@/lib/terrorism-threat-type
 
 export const maxDuration = 300
 
-export default async function PoliceInterventionUploadPage() {
+export default async function RidUploadPage() {
   const session = await getSession()
 
   if (!session) {
@@ -22,9 +22,9 @@ export default async function PoliceInterventionUploadPage() {
   }
 
   try {
-    await requireDivisionUploadSession("rod")
+    await requireDivisionUploadSession("rid")
   } catch {
-    redirect("/police-intervention")
+    redirect("/rid")
   }
 
   let latestBatch: TerrorismThreatUploadBatchInfo | null = null
@@ -41,10 +41,10 @@ export default async function PoliceInterventionUploadPage() {
     <div className="mx-auto max-w-2xl space-y-4">
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
         <CardHeader>
-          <CardTitle className="text-base">ROD File Upload</CardTitle>
+          <CardTitle className="text-base">RID File Upload</CardTitle>
           <CardDescription>
-            Upload ang R2 for PRO4A COMMAND workbook para sa Terrorism Threat Level sa Police
-            Intervention dashboard.
+            Upload ang R2 for PRO4A COMMAND workbook para sa Terrorism Threat Level sa RID
+            dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>

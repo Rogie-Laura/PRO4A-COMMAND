@@ -35,15 +35,15 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     label: "RID",
     rNumber: 2,
     defaultHref: "/rid",
-    allowedPaths: ["/rid", "/settings"],
+    allowedPaths: ["/rid", "/rid/upload", "/settings"],
+    uploadPath: "/rid/upload",
   },
   rod: {
     id: "rod",
     label: "ROD",
     rNumber: 3,
     defaultHref: "/police-intervention",
-    allowedPaths: ["/police-intervention", "/police-intervention/upload", "/settings"],
-    uploadPath: "/police-intervention/upload",
+    allowedPaths: ["/police-intervention", "/settings"],
   },
   rlrdd: {
     id: "rlrdd",

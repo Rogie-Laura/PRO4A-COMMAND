@@ -564,7 +564,7 @@ export async function uploadLegislativeAgendaWorkbookAction(formData: FormData) 
 
 export async function uploadTerrorismThreatWorkbookAction(formData: FormData) {
   try {
-    const session = await requireDivisionUploadSession("rod")
+    const session = await requireDivisionUploadSession("rid")
     const file = formData.get("file")
 
     if (!(file instanceof File)) {
@@ -593,8 +593,8 @@ export async function uploadTerrorismThreatWorkbookAction(formData: FormData) {
 
     updateTag(TERRORISM_THREAT_ANALYTICS_CACHE_TAG)
     revalidatePath("/settings")
-    revalidatePath("/police-intervention")
-    revalidatePath("/police-intervention/upload")
+    revalidatePath("/rid")
+    revalidatePath("/rid/upload")
 
     return {
       batch: result.batch,

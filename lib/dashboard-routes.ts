@@ -6,6 +6,10 @@ export type DashboardRouteMeta = {
 export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
   "/": { title: "RPRMD" },
   "/rid": { title: "RID" },
+  "/rid/upload": {
+    title: "Upload File",
+    description: "RID R2 workbook upload for terrorism threat level",
+  },
   "/rcadd": { title: "RCADD" },
   "/rcd": { title: "RCD" },
   "/rpsmd": { title: "RPSMD" },
@@ -29,10 +33,6 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
     description: "Year-over-year and period crime volume comparison",
   },
   "/police-intervention": { title: "Police Intervention" },
-  "/police-intervention/upload": {
-    title: "Upload File",
-    description: "ROD R2 workbook upload for terrorism threat level",
-  },
   "/trainings-and-education": {
     title: "Trainings and Education",
     description: "Regional training programs and education records",
