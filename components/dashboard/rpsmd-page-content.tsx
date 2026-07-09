@@ -1,21 +1,29 @@
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
+import { LegislativeAgendaSection } from "@/components/dashboard/legislative-agenda-section"
 import { PpoUperRankingsCard } from "@/components/dashboard/ppo-uper-rankings-card"
 import { StationClassificationSection } from "@/components/dashboard/station-classification-section"
 import { UperCurrentRankingCard } from "@/components/dashboard/uper-current-ranking-card"
 import { Card, CardContent } from "@/components/ui/card"
+import { getLegislativeAgendaAnalytics } from "@/lib/legislative-agenda-records"
 import { getPpoUperAnalytics } from "@/lib/ppo-uper-records"
 import { getStationClassificationAnalytics } from "@/lib/station-classification-records"
 import { getUperAnalytics } from "@/lib/uper-records"
 
 export async function RpsmdPageContent() {
-  const [analytics, ppoAnalytics, stationClassification] = await Promise.all([
+  const [analytics, ppoAnalytics, stationClassification, legislativeAgenda] = await Promise.all([
     getUperAnalytics(),
     getPpoUperAnalytics(),
     getStationClassificationAnalytics(),
+    getLegislativeAgendaAnalytics(),
   ])
 
   const lastUpdated =
-    [analytics.lastUpdated, ppoAnalytics.lastUpdated, stationClassification.lastUpdated]
+    [
+      analytics.lastUpdated,
+      ppoAnalytics.lastUpdated,
+      stationClassification.lastUpdated,
+      legislativeAgenda.lastUpdated,
+    ]
       .filter(Boolean)
       .sort()
       .at(-1) ?? new Date().toISOString()
@@ -23,11 +31,13 @@ export async function RpsmdPageContent() {
   const hasProData = analytics.dataReady
   const hasPpoData = ppoAnalytics.dataReady
   const hasStationData = stationClassification.dataReady
+  const hasLegislativeData = legislativeAgenda.dataReady
 
   const syncParts = [
     hasProData ? `PRO 4A from ${analytics.fileName}` : null,
     hasPpoData ? `PPO from ${ppoAnalytics.fileName}` : null,
     hasStationData ? `Stations from ${stationClassification.fileName}` : null,
+    hasLegislativeData ? `Legislative from ${legislativeAgenda.fileName}` : null,
   ].filter(Boolean)
 
   return (
@@ -43,6 +53,7 @@ export async function RpsmdPageContent() {
       <UperCurrentRankingCard analytics={analytics} />
       <PpoUperRankingsCard analytics={ppoAnalytics} />
       <StationClassificationSection analytics={stationClassification} />
+      <LegislativeAgendaSection analytics={legislativeAgenda} />
 
       {hasProData && analytics.trend.length > 1 ? (
         <Card className="max-w-md border-muted-foreground/20 bg-muted/10">

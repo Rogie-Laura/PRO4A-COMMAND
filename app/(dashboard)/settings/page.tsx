@@ -7,6 +7,7 @@ import { CrimeUploadCard } from "@/components/settings/crime-upload-card"
 import { FirearmsUploadCard } from "@/components/settings/firearms-upload-card"
 import { MobilityUploadCard } from "@/components/settings/mobility-upload-card"
 import { PpoUperUploadCard } from "@/components/settings/ppo-uper-upload-card"
+import { LegislativeAgendaUploadCard } from "@/components/settings/legislative-agenda-upload-card"
 import { StationClassificationUploadCard } from "@/components/settings/station-classification-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
 import { UperUploadCard } from "@/components/settings/uper-upload-card"
@@ -30,6 +31,8 @@ import { getLatestMobilityUploadBatch } from "@/lib/mobility-records"
 import type { MobilityUploadBatchInfo } from "@/lib/mobility-types"
 import { getLatestPpoUperUploadBatch } from "@/lib/ppo-uper-records"
 import type { PpoUperUploadBatchInfo } from "@/lib/ppo-uper-types"
+import { getLatestLegislativeAgendaUploadBatch } from "@/lib/legislative-agenda-records"
+import type { LegislativeAgendaUploadBatchInfo } from "@/lib/legislative-agenda-types"
 import { getLatestStationClassificationUploadBatch } from "@/lib/station-classification-records"
 import type { StationClassificationUploadBatchInfo } from "@/lib/station-classification-types"
 import { getLatestUperUploadBatch } from "@/lib/uper-records"
@@ -63,6 +66,8 @@ export default async function SettingsPage() {
   let ppoUperUploadError: string | null = null
   let latestStationClassificationBatch: StationClassificationUploadBatchInfo | null = null
   let stationClassificationUploadError: string | null = null
+  let latestLegislativeAgendaBatch: LegislativeAgendaUploadBatchInfo | null = null
+  let legislativeAgendaUploadError: string | null = null
 
   if (canManageTokens) {
     try {
@@ -135,6 +140,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load station classification upload status from Supabase."
+    }
+
+    try {
+      latestLegislativeAgendaBatch = await getLatestLegislativeAgendaUploadBatch()
+    } catch (error) {
+      legislativeAgendaUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load legislative agenda upload status from Supabase."
     }
   }
 
@@ -262,6 +276,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <StationClassificationUploadCard latestBatch={latestStationClassificationBatch} />
+            )}
+
+            {legislativeAgendaUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Legislative Agenda</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{legislativeAgendaUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260709170000_create_legislative_agenda_upload_batches.sql`
+                    kung wala pa ang `legislative_agenda_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <LegislativeAgendaUploadCard latestBatch={latestLegislativeAgendaBatch} />
             )}
 
             {tokenError ? (

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { LegislativeAgendaUploadCard } from "@/components/settings/legislative-agenda-upload-card"
 import { PpoUperUploadCard } from "@/components/settings/ppo-uper-upload-card"
 import { StationClassificationUploadCard } from "@/components/settings/station-classification-upload-card"
 import { UperUploadCard } from "@/components/settings/uper-upload-card"
@@ -11,9 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { getSession, requireDivisionUploadSession } from "@/lib/auth/get-session"
+import { getLatestLegislativeAgendaUploadBatch } from "@/lib/legislative-agenda-records"
 import { getLatestPpoUperUploadBatch } from "@/lib/ppo-uper-records"
 import { getLatestStationClassificationUploadBatch } from "@/lib/station-classification-records"
 import { getLatestUperUploadBatch } from "@/lib/uper-records"
+import type { LegislativeAgendaUploadBatchInfo } from "@/lib/legislative-agenda-types"
 import type { PpoUperUploadBatchInfo } from "@/lib/ppo-uper-types"
 import type { StationClassificationUploadBatchInfo } from "@/lib/station-classification-types"
 import type { UperUploadBatchInfo } from "@/lib/uper-types"
@@ -39,6 +42,8 @@ export default async function RpsmdUploadPage() {
   let ppoUploadError: string | null = null
   let latestStationBatch: StationClassificationUploadBatchInfo | null = null
   let stationUploadError: string | null = null
+  let latestLegislativeBatch: LegislativeAgendaUploadBatchInfo | null = null
+  let legislativeUploadError: string | null = null
 
   try {
     latestBatch = await getLatestUperUploadBatch()
@@ -60,14 +65,21 @@ export default async function RpsmdUploadPage() {
       error instanceof Error ? error.message : "Unable to load station classification upload status."
   }
 
+  try {
+    latestLegislativeBatch = await getLatestLegislativeAgendaUploadBatch()
+  } catch (error) {
+    legislativeUploadError =
+      error instanceof Error ? error.message : "Unable to load legislative agenda upload status."
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
         <CardHeader>
           <CardTitle className="text-base">RPSMD File Upload</CardTitle>
           <CardDescription>
-            Upload ang PRO 4A UPER, UPER of PPOs, at Classification of Stations workbooks para sa
-            RPSMD dashboard.
+            Upload ang PRO 4A UPER, UPER of PPOs, Classification of Stations, at Legislative Agenda
+            workbooks para sa RPSMD dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -114,6 +126,19 @@ export default async function RpsmdUploadPage() {
         </Card>
       ) : (
         <StationClassificationUploadCard latestBatch={latestStationBatch} compact />
+      )}
+
+      {legislativeUploadError ? (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Upload Legislative Agenda</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{legislativeUploadError}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <LegislativeAgendaUploadCard latestBatch={latestLegislativeBatch} compact />
       )}
     </div>
   )
