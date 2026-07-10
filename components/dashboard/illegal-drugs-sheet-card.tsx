@@ -14,6 +14,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { IllegalDrugsPpoRow, IllegalDrugsSheetSummary } from "@/lib/illegal-drugs-types"
+import {
+  ridDataCellClass,
+  ridDataHeaderClass,
+  ridDialogTableClass,
+  ridStickyLabelCellClass,
+  ridStickyLabelHeaderClass,
+  ridStickyLabelTotalCellClass,
+  ridTableWrapperClass,
+} from "@/components/dashboard/rid-table-styles"
 import { cn } from "@/lib/utils"
 
 type IllegalDrugsSheetCardProps = {
@@ -30,38 +39,34 @@ function CountBreakdownTable({ rows }: { rows: IllegalDrugsPpoRow[] }) {
   const totalRow = rows.find((row) => row.isTotal)
 
   return (
-    <div className="max-h-[min(60vh,28rem)] overflow-y-auto rounded-lg border bg-muted/10">
-      <table className="w-full min-w-[520px] text-sm">
-        <thead className="sticky top-0 bg-background/95 backdrop-blur">
-          <tr className="border-b text-left text-muted-foreground">
-            <th className="px-4 py-3 font-medium">PPO / Unit</th>
-            <th className="px-4 py-3 font-medium text-right">Arrested</th>
-            <th className="px-4 py-3 font-medium text-right">Surrendered</th>
-            <th className="px-4 py-3 font-medium text-right">DPO</th>
-            <th className="px-4 py-3 font-medium text-right">Total</th>
+    <div className={cn(ridTableWrapperClass, "max-h-[min(60vh,28rem)] bg-muted/10")}>
+      <table className={ridDialogTableClass}>
+        <thead className="sticky top-0 z-30 bg-background/95 backdrop-blur">
+          <tr className="border-b text-muted-foreground">
+            <th className={ridStickyLabelHeaderClass("bg-background/95")}>PPO / Unit</th>
+            <th className={ridDataHeaderClass()}>Arrested</th>
+            <th className={ridDataHeaderClass()}>Surrendered</th>
+            <th className={ridDataHeaderClass()}>DPO</th>
+            <th className={ridDataHeaderClass()}>Total</th>
           </tr>
         </thead>
         <tbody>
           {bodyRows.map((row) => (
             <tr key={row.ppo} className="border-b last:border-0">
-              <td className="px-4 py-3 font-medium">{row.ppo}</td>
-              <td className="px-4 py-3 text-right tabular-nums">{formatCount(row.arrested)}</td>
-              <td className="px-4 py-3 text-right tabular-nums">{formatCount(row.surrendered)}</td>
-              <td className="px-4 py-3 text-right tabular-nums">{formatCount(row.dpo)}</td>
-              <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                {formatCount(row.total)}
-              </td>
+              <td className={ridStickyLabelCellClass()}>{row.ppo}</td>
+              <td className={ridDataCellClass()}>{formatCount(row.arrested)}</td>
+              <td className={ridDataCellClass()}>{formatCount(row.surrendered)}</td>
+              <td className={ridDataCellClass()}>{formatCount(row.dpo)}</td>
+              <td className={ridDataCellClass("font-semibold")}>{formatCount(row.total)}</td>
             </tr>
           ))}
           {totalRow ? (
             <tr className="bg-muted/20 font-semibold">
-              <td className="px-4 py-3">{totalRow.ppo}</td>
-              <td className="px-4 py-3 text-right tabular-nums">{formatCount(totalRow.arrested)}</td>
-              <td className="px-4 py-3 text-right tabular-nums">
-                {formatCount(totalRow.surrendered)}
-              </td>
-              <td className="px-4 py-3 text-right tabular-nums">{formatCount(totalRow.dpo)}</td>
-              <td className="px-4 py-3 text-right tabular-nums">{formatCount(totalRow.total)}</td>
+              <td className={ridStickyLabelTotalCellClass()}>{totalRow.ppo}</td>
+              <td className={ridDataCellClass()}>{formatCount(totalRow.arrested)}</td>
+              <td className={ridDataCellClass()}>{formatCount(totalRow.surrendered)}</td>
+              <td className={ridDataCellClass()}>{formatCount(totalRow.dpo)}</td>
+              <td className={ridDataCellClass()}>{formatCount(totalRow.total)}</td>
             </tr>
           ) : null}
         </tbody>

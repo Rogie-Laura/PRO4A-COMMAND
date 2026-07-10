@@ -1,5 +1,14 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  ridDataCellClass,
+  ridDataHeaderClass,
+  ridStickyLabelCellClass,
+  ridStickyLabelHeaderClass,
+  ridStickyLabelTotalCellClass,
+  ridTableClass,
+  ridTableWrapperClass,
+} from "@/components/dashboard/rid-table-styles"
 import type { SurrenderedCtgfAnalytics, SurrenderedCtgfCountSet } from "@/lib/surrendered-ctgf-types"
 import { cn } from "@/lib/utils"
 
@@ -22,19 +31,13 @@ function CountCells({
 }) {
   return (
     <>
-      <td
-        className={cn(
-          "px-3 py-3 text-right tabular-nums",
-          sectionStart && "border-l",
-          emphasize && "font-semibold",
-        )}
-      >
+      <td className={ridDataCellClass(cn(sectionStart && "border-l", emphasize && "font-semibold"))}>
         {formatCount(counts.psr)}
       </td>
-      <td className={cn("px-3 py-3 text-right tabular-nums", emphasize && "font-semibold")}>
+      <td className={ridDataCellClass(emphasize ? "font-semibold" : undefined)}>
         {formatCount(counts.npsr)}
       </td>
-      <td className={cn("px-3 py-3 text-right tabular-nums", emphasize && "font-semibold")}>
+      <td className={ridDataCellClass(emphasize ? "font-semibold" : undefined)}>
         {formatCount(counts.total)}
       </td>
     </>
@@ -75,45 +78,45 @@ export function SurrenderedCtgfTable({ analytics }: SurrenderedCtgfTableProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto rounded-lg border bg-background/70">
-          <table className="w-full min-w-[960px] text-sm">
+        <div className={ridTableWrapperClass}>
+          <table className={ridTableClass}>
             <thead>
               <tr className="border-b bg-muted/30 text-center text-muted-foreground">
-                <th rowSpan={2} className="px-4 py-3 text-left font-medium align-middle">
+                <th rowSpan={2} className={ridStickyLabelHeaderClass("align-middle")}>
                   Province / Unit
                 </th>
-                <th colSpan={3} className="border-l px-3 py-2 font-medium">
+                <th colSpan={3} className={ridDataHeaderClass("border-l")}>
                   Arrested
                 </th>
-                <th colSpan={3} className="border-l px-3 py-2 font-medium">
+                <th colSpan={3} className={ridDataHeaderClass("border-l")}>
                   Died
                 </th>
-                <th colSpan={3} className="border-l px-3 py-2 font-medium">
+                <th colSpan={3} className={ridDataHeaderClass("border-l")}>
                   Surrendered
                 </th>
-                <th colSpan={3} className="border-l px-3 py-2 font-medium">
+                <th colSpan={3} className={ridDataHeaderClass("border-l")}>
                   Grand Total
                 </th>
               </tr>
-              <tr className="border-b bg-muted/20 text-center text-xs text-muted-foreground">
-                <th className="border-l px-3 py-2 font-medium">PSR</th>
-                <th className="px-3 py-2 font-medium">NPSR</th>
-                <th className="px-3 py-2 font-medium">Total</th>
-                <th className="border-l px-3 py-2 font-medium">PSR</th>
-                <th className="px-3 py-2 font-medium">NPSR</th>
-                <th className="px-3 py-2 font-medium">Total</th>
-                <th className="border-l px-3 py-2 font-medium">PSR</th>
-                <th className="px-3 py-2 font-medium">NPSR</th>
-                <th className="px-3 py-2 font-medium">Total</th>
-                <th className="border-l px-3 py-2 font-medium">PSR</th>
-                <th className="px-3 py-2 font-medium">NPSR</th>
-                <th className="px-3 py-2 font-medium">Total</th>
+              <tr className="border-b bg-muted/20 text-center text-muted-foreground">
+                <th className={ridDataHeaderClass("border-l")}>PSR</th>
+                <th className={ridDataHeaderClass()}>NPSR</th>
+                <th className={ridDataHeaderClass()}>Total</th>
+                <th className={ridDataHeaderClass("border-l")}>PSR</th>
+                <th className={ridDataHeaderClass()}>NPSR</th>
+                <th className={ridDataHeaderClass()}>Total</th>
+                <th className={ridDataHeaderClass("border-l")}>PSR</th>
+                <th className={ridDataHeaderClass()}>NPSR</th>
+                <th className={ridDataHeaderClass()}>Total</th>
+                <th className={ridDataHeaderClass("border-l")}>PSR</th>
+                <th className={ridDataHeaderClass()}>NPSR</th>
+                <th className={ridDataHeaderClass()}>Total</th>
               </tr>
             </thead>
             <tbody>
               {bodyRows.map((row) => (
                 <tr key={row.province} className="border-b last:border-0">
-                  <td className="px-4 py-3 font-medium">{row.province}</td>
+                  <td className={ridStickyLabelCellClass()}>{row.province}</td>
                   <CountCells counts={row.arrested} sectionStart />
                   <CountCells counts={row.died} sectionStart />
                   <CountCells counts={row.surrendered} sectionStart />
@@ -122,7 +125,7 @@ export function SurrenderedCtgfTable({ analytics }: SurrenderedCtgfTableProps) {
               ))}
               {totalRow ? (
                 <tr className="bg-muted/20 font-semibold">
-                  <td className="px-4 py-3">{totalRow.province}</td>
+                  <td className={ridStickyLabelTotalCellClass()}>{totalRow.province}</td>
                   <CountCells counts={totalRow.arrested} sectionStart emphasize />
                   <CountCells counts={totalRow.died} sectionStart emphasize />
                   <CountCells counts={totalRow.surrendered} sectionStart emphasize />
