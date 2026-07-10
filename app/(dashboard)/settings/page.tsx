@@ -11,6 +11,7 @@ import { LegislativeAgendaUploadCard } from "@/components/settings/legislative-a
 import { StationClassificationUploadCard } from "@/components/settings/station-classification-upload-card"
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
+import { EstablishmentUploadCard } from "@/components/settings/establishment-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
 import { UperUploadCard } from "@/components/settings/uper-upload-card"
 import {
@@ -41,6 +42,8 @@ import { getLatestTerrorismThreatUploadBatch } from "@/lib/terrorism-threat-reco
 import type { TerrorismThreatUploadBatchInfo } from "@/lib/terrorism-threat-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
 import type { RcaddUploadBatchInfo } from "@/lib/rcadd-accomplishment-types"
+import { getLatestEstablishmentUploadBatch } from "@/lib/establishment-records"
+import type { EstablishmentUploadBatchInfo } from "@/lib/establishment-types"
 import { getLatestUperUploadBatch } from "@/lib/uper-records"
 import type { UperUploadBatchInfo } from "@/lib/uper-types"
 
@@ -78,6 +81,8 @@ export default async function SettingsPage() {
   let terrorismThreatUploadError: string | null = null
   let latestRcaddBatch: RcaddUploadBatchInfo | null = null
   let rcaddUploadError: string | null = null
+  let latestEstablishmentBatch: EstablishmentUploadBatchInfo | null = null
+  let establishmentUploadError: string | null = null
 
   if (canManageTokens) {
     try {
@@ -177,6 +182,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load RCADD upload status from Supabase."
+    }
+
+    try {
+      latestEstablishmentBatch = await getLatestEstablishmentUploadBatch()
+    } catch (error) {
+      establishmentUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load establishment upload status from Supabase."
     }
   }
 
@@ -358,6 +372,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <RcaddUploadCard latestBatch={latestRcaddBatch} />
+            )}
+
+            {establishmentUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Establishments</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{establishmentUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260710160000_create_establishments.sql`
+                    kung wala pa ang `establishments` tables.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <EstablishmentUploadCard latestBatch={latestEstablishmentBatch} />
             )}
 
             {tokenError ? (

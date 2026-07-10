@@ -3,6 +3,7 @@ import { ExternalLink, Siren } from "lucide-react"
 
 import { PoliceInterventionRefreshButton } from "@/components/dashboard/police-intervention-refresh-button"
 import { PatrolUnitCards } from "@/components/dashboard/patrol-unit-cards"
+import { EstablishmentTypeCards } from "@/components/dashboard/establishment-type-cards"
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,9 +15,13 @@ import {
 } from "@/components/ui/card"
 import { getPatrollersMonitorUrl } from "@/lib/patrol-intervention-config"
 import { getPatrolInterventionAnalytics } from "@/lib/patrol-intervention-analytics"
+import { getEstablishmentAnalytics } from "@/lib/establishment-records"
 
 export async function PoliceInterventionContent() {
-  const data = await getPatrolInterventionAnalytics()
+  const [data, establishments] = await Promise.all([
+    getPatrolInterventionAnalytics(),
+    getEstablishmentAnalytics(),
+  ])
   const patrollersUrl = getPatrollersMonitorUrl()
 
   return (
@@ -93,6 +98,8 @@ export async function PoliceInterventionContent() {
         dutyCounts={data.duty_counts}
         officeBreakdown={data.office_breakdown}
       />
+
+      <EstablishmentTypeCards analytics={establishments} />
     </div>
   )
 }

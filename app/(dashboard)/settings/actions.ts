@@ -63,6 +63,11 @@ import {
   replaceRcaddWorkbook,
 } from "@/lib/rcadd-accomplishment-records"
 import { parseRcaddAccomplishmentXlsx } from "@/lib/rcadd-accomplishment-xlsx-parser"
+import {
+  ESTABLISHMENT_ANALYTICS_CACHE_TAG,
+  replaceEstablishmentWorkbook,
+} from "@/lib/establishment-records"
+import { parseEstablishmentXlsx } from "@/lib/establishment-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -70,6 +75,7 @@ const MAX_CRIME_RECORDS_CHUNK = 500
 const MAX_FIREARMS_UPLOAD_BYTES = 5 * 1024 * 1024
 const MAX_MOBILITY_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_UPER_UPLOAD_BYTES = 5 * 1024 * 1024
+const MAX_ESTABLISHMENT_UPLOAD_BYTES = 15 * 1024 * 1024
 
 export async function getAccessTokensAction() {
   await requireSuperAdminSession()
@@ -656,5 +662,52 @@ export async function uploadRcaddAccomplishmentWorkbookAction(formData: FormData
     }
 
     throw new Error("Hindi natapos ang RCADD accomplishment upload. Subukan ulit.")
+  }
+}
+
+export async function uploadEstablishmentWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rod")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_ESTABLISHMENT_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 15 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseEstablishmentXlsx(buffer)
+    const result = await replaceEstablishmentWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(ESTABLISHMENT_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/police-intervention")
+    revalidatePath("/police-intervention/upload")
+
+    return {
+      batch: result.batch,
+      insertedCount: result.insertedCount,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang establishment upload. Subukan ulit.")
   }
 }
