@@ -1,14 +1,7 @@
-import { Suspense } from "react"
+import { redirect } from "next/navigation"
 
-import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
-import { PersonnelStatsContent } from "@/components/dashboard/personnel-stats-content"
-
-export const maxDuration = 60
+import { APP_DEFAULT_HREF } from "@/lib/auth/session-access"
 
 export default function DashboardPage() {
-  return (
-    <Suspense fallback={<DashboardLoading />}>
-      <PersonnelStatsContent />
-    </Suspense>
-  )
+  redirect(APP_DEFAULT_HREF)
 }

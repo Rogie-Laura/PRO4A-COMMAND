@@ -36,13 +36,13 @@ export type NavLink = {
 }
 
 export const MAIN_NAV: NavLink[] = [
-  { title: "RPRMD", href: "/", icon: BarChart3, divisionId: "rprmd" },
   {
     title: "PRO4A Status",
     href: "/pro4a-status",
     icon: Activity,
     description: "Regional ranking, alert level, and terrorism threat status",
   },
+  { title: "RPRMD", href: "/rprmd", icon: BarChart3, divisionId: "rprmd" },
   { title: "RID", href: "/rid", icon: Search, divisionId: "rid" },
   {
     title: "ROD",

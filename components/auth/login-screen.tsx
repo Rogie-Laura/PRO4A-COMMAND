@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { normalizeAccessKeyInput } from "@/lib/auth/parse-access-key"
 import { formatServerActionError } from "@/lib/server-action-errors"
+import { APP_DEFAULT_HREF } from "@/lib/auth/session-access"
 
 function isNextRedirect(error: unknown) {
   return (
@@ -47,7 +48,7 @@ export function LoginScreen() {
     startTransition(async () => {
       try {
         const normalized = normalizeAccessKeyInput(keyValue)
-        const nextPath = searchParams.get("next") ?? "/"
+        const nextPath = searchParams.get("next") ?? APP_DEFAULT_HREF
         const result = await loginWithAccessKeyAction(normalized, rememberDevice, nextPath)
 
         if (result?.error) {

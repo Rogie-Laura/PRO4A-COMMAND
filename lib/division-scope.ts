@@ -27,8 +27,8 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     id: "rprmd",
     label: "RPRMD",
     rNumber: 1,
-    defaultHref: "/",
-    allowedPaths: ["/", "/pro4a-status", "/settings"],
+    defaultHref: "/rprmd",
+    allowedPaths: ["/rprmd", "/pro4a-status", "/settings"],
   },
   rid: {
     id: "rid",

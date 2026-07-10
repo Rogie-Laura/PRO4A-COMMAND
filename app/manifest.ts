@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "PRO4A",
     id: "/?source=pwa",
     description: "PRO CALABARZON personnel analytics dashboard",
-    start_url: "/",
+    start_url: "/pro4a-status",
     scope: "/",
     display: "standalone",
     background_color: COMMAND_BRAND_BG,
