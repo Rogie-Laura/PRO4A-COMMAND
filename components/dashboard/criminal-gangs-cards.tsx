@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type ReactNode } from "react"
-import { Shield, Siren, Target, Users } from "lucide-react"
+import { Siren, Target, Users } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,17 +17,12 @@ import type {
   CriminalGangsAnalytics,
   CriminalGangsCountRow,
   CriminalGangsGroupSummary,
-  CriminalGangsOverview,
 } from "@/lib/criminal-gangs-types"
 import { cn } from "@/lib/utils"
 
 type CriminalGangsCardsProps = {
   analytics: CriminalGangsAnalytics
 }
-
-type DialogMode =
-  | { type: "overview"; overview: CriminalGangsOverview }
-  | { type: "group"; group: CriminalGangsGroupSummary }
 
 function formatCount(value: number) {
   return value.toLocaleString("en-PH")
@@ -78,45 +73,8 @@ function GroupBreakdownTable({ rows }: { rows: CriminalGangsCountRow[] }) {
   )
 }
 
-function OverviewBreakdownTable({ overview }: { overview: CriminalGangsOverview }) {
-  const bodyRows = overview.unitRows.filter((row) => !row.isTotal)
-  const totalRow = overview.unitRows.find((row) => row.isTotal)
-
-  return (
-    <div className="max-h-[min(60vh,28rem)] overflow-y-auto rounded-lg border bg-muted/10">
-      <table className="w-full min-w-[420px] text-sm">
-        <thead className="sticky top-0 bg-background/95 backdrop-blur">
-          <tr className="border-b text-left text-muted-foreground">
-            <th className="px-4 py-3 font-medium">Unit</th>
-            <th className="px-4 py-3 font-medium text-right">Total Accomplishments</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bodyRows.map((row) => (
-            <tr key={row.unit} className="border-b last:border-0">
-              <td className="px-4 py-3 font-medium">{row.unit}</td>
-              <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                {formatCount(row.grandTotal)}
-              </td>
-            </tr>
-          ))}
-          {totalRow ? (
-            <tr className="bg-muted/20 font-semibold">
-              <td className="px-4 py-3">{totalRow.unit}</td>
-              <td className="px-4 py-3 text-right tabular-nums">
-                {formatCount(totalRow.grandTotal)}
-              </td>
-            </tr>
-          ) : null}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
 type SummaryCardProps = {
   title: string
-  description?: string
   total: number
   meta?: string
   icon: ReactNode
@@ -127,7 +85,6 @@ type SummaryCardProps = {
 
 function SummaryCard({
   title,
-  description,
   total,
   meta,
   icon,
@@ -148,7 +105,6 @@ function SummaryCard({
             {icon}
             {title}
           </CardTitle>
-          {description ? <CardDescription>{description}</CardDescription> : null}
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -175,11 +131,10 @@ function SummaryCard({
 }
 
 export function CriminalGangsCards({ analytics }: CriminalGangsCardsProps) {
-  const [dialogMode, setDialogMode] = useState<DialogMode | null>(null)
+  const [selectedGroup, setSelectedGroup] = useState<CriminalGangsGroupSummary | null>(null)
 
   if (
     !analytics.dataReady ||
-    !analytics.overview ||
     !analytics.drugGroups ||
     !analytics.gunForHireGroups ||
     !analytics.otherCriminalGroups
@@ -197,7 +152,7 @@ export function CriminalGangsCards({ analytics }: CriminalGangsCardsProps) {
     )
   }
 
-  const unitCount = analytics.overview.unitRows.filter((row) => !row.isTotal).length
+  const unitCount = analytics.drugGroups.unitRows.filter((row) => !row.isTotal).length
 
   return (
     <>
@@ -211,29 +166,14 @@ export function CriminalGangsCards({ analytics }: CriminalGangsCardsProps) {
           ) : null}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard
-            title="Criminal Gangs"
-            description="Total accomplishments across all groups"
-            total={analytics.overview.grandTotal}
-            meta={`${unitCount} units. I-click para makita ang breakdown.`}
-            icon={<Shield className="size-5" />}
-            accentClass="from-slate-500/10 border-slate-500/20"
-            onClick={() => setDialogMode({ type: "overview", overview: analytics.overview! })}
-            stats={[
-              { label: "Drug", value: analytics.overview.drugTotal },
-              { label: "GfH", value: analytics.overview.gunForHireTotal },
-              { label: "Other", value: analytics.overview.otherCriminalTotal },
-            ]}
-          />
-
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <SummaryCard
             title="Drug Groups"
             total={analytics.drugGroups.total}
             meta={`${unitCount} units. I-click para makita ang breakdown.`}
             icon={<Siren className="size-5 text-rose-600 dark:text-rose-400" />}
             accentClass="from-rose-500/10 border-rose-500/20"
-            onClick={() => setDialogMode({ type: "group", group: analytics.drugGroups! })}
+            onClick={() => setSelectedGroup(analytics.drugGroups!)}
             stats={[
               { label: "Arrested", value: analytics.drugGroups.arrested },
               { label: "Surrendered", value: analytics.drugGroups.surrendered },
@@ -247,7 +187,7 @@ export function CriminalGangsCards({ analytics }: CriminalGangsCardsProps) {
             meta={`${unitCount} units. I-click para makita ang breakdown.`}
             icon={<Target className="size-5 text-orange-600 dark:text-orange-400" />}
             accentClass="from-orange-500/10 border-orange-500/20"
-            onClick={() => setDialogMode({ type: "group", group: analytics.gunForHireGroups! })}
+            onClick={() => setSelectedGroup(analytics.gunForHireGroups!)}
             stats={[
               { label: "Arrested", value: analytics.gunForHireGroups.arrested },
               { label: "Surrendered", value: analytics.gunForHireGroups.surrendered },
@@ -261,9 +201,7 @@ export function CriminalGangsCards({ analytics }: CriminalGangsCardsProps) {
             meta={`${unitCount} units. I-click para makita ang breakdown.`}
             icon={<Users className="size-5 text-indigo-600 dark:text-indigo-400" />}
             accentClass="from-indigo-500/10 border-indigo-500/20"
-            onClick={() =>
-              setDialogMode({ type: "group", group: analytics.otherCriminalGroups! })
-            }
+            onClick={() => setSelectedGroup(analytics.otherCriminalGroups!)}
             stats={[
               { label: "Arrested", value: analytics.otherCriminalGroups.arrested },
               { label: "Surrendered", value: analytics.otherCriminalGroups.surrendered },
@@ -274,31 +212,20 @@ export function CriminalGangsCards({ analytics }: CriminalGangsCardsProps) {
       </div>
 
       <Dialog
-        open={dialogMode != null}
+        open={selectedGroup != null}
         onOpenChange={(open) => {
-          if (!open) setDialogMode(null)
+          if (!open) setSelectedGroup(null)
         }}
       >
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>
-              {dialogMode?.type === "overview"
-                ? analytics.title
-                : dialogMode?.group.label}
-            </DialogTitle>
+            <DialogTitle>{selectedGroup?.label}</DialogTitle>
             <DialogDescription>
-              {dialogMode?.type === "overview"
-                ? `${formatCount(dialogMode.overview.grandTotal)} total accomplishments · breakdown by unit`
-                : `${formatCount(dialogMode?.group.total ?? 0)} total · breakdown by unit`}
+              {formatCount(selectedGroup?.total ?? 0)} total · breakdown by unit
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            {dialogMode?.type === "overview" ? (
-              <OverviewBreakdownTable overview={dialogMode.overview} />
-            ) : null}
-            {dialogMode?.type === "group" ? (
-              <GroupBreakdownTable rows={dialogMode.group.unitRows} />
-            ) : null}
+            {selectedGroup ? <GroupBreakdownTable rows={selectedGroup.unitRows} /> : null}
           </DialogBody>
         </DialogContent>
       </Dialog>
