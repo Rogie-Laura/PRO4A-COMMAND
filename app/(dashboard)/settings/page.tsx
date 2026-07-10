@@ -10,6 +10,7 @@ import { PpoUperUploadCard } from "@/components/settings/ppo-uper-upload-card"
 import { LegislativeAgendaUploadCard } from "@/components/settings/legislative-agenda-upload-card"
 import { StationClassificationUploadCard } from "@/components/settings/station-classification-upload-card"
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
+import { AlertLevelSettingsCard } from "@/components/settings/alert-level-settings-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
 import { EstablishmentUploadCard } from "@/components/settings/establishment-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
@@ -46,6 +47,9 @@ import { getLatestEstablishmentUploadBatch } from "@/lib/establishment-records"
 import type { EstablishmentUploadBatchInfo } from "@/lib/establishment-types"
 import { getLatestUperUploadBatch } from "@/lib/uper-records"
 import type { UperUploadBatchInfo } from "@/lib/uper-types"
+import { canManageAlertLevel } from "@/lib/alert-level-access"
+import { getAlertLevelSetting } from "@/lib/alert-level-records"
+import type { AlertLevelId } from "@/lib/alert-level-types"
 
 export const maxDuration = 300
 
@@ -58,6 +62,7 @@ export default async function SettingsPage() {
 
   const canManageTokens = isSuperAdmin(session.role)
   const isDivisionFocal = session.role === "division_uploader"
+  const showAlertLevelSettings = canManageAlertLevel(session)
 
   let tokens: AccessTokenListItem[] = []
   let tokenError: string | null = null
@@ -83,6 +88,20 @@ export default async function SettingsPage() {
   let rcaddUploadError: string | null = null
   let latestEstablishmentBatch: EstablishmentUploadBatchInfo | null = null
   let establishmentUploadError: string | null = null
+  let alertLevel: AlertLevelId = "normal"
+  let alertLevelError: string | null = null
+
+  if (showAlertLevelSettings) {
+    try {
+      const setting = await getAlertLevelSetting()
+      alertLevel = setting.level
+    } catch (error) {
+      alertLevelError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load alert level settings from Supabase."
+    }
+  }
 
   if (canManageTokens) {
     try {
@@ -199,6 +218,26 @@ export default async function SettingsPage() {
         <ThemeSettingsCard />
 
         {!isDivisionFocal ? <InstallAppCard /> : null}
+
+        {showAlertLevelSettings ? (
+          alertLevelError ? (
+            <Card className="border-destructive/30">
+              <CardHeader>
+                <CardTitle>Alert Level</CardTitle>
+                <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-destructive">{alertLevelError}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  I-run muna ang Supabase migration `20260710180000_create_pro4a_alert_level_settings.sql`
+                  kung wala pa ang `pro4a_alert_level_settings` table.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <AlertLevelSettingsCard initialLevel={alertLevel} />
+          )
+        ) : null}
 
         {canManageTokens ? (
           <>

@@ -5,6 +5,10 @@ export type DashboardRouteMeta = {
 
 export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
   "/": { title: "RPRMD" },
+  "/pro4a-status": {
+    title: "PRO4A Status",
+    description: "Regional ranking, alert level, and terrorism threat status",
+  },
   "/rid": { title: "RID" },
   "/rid/upload": {
     title: "Upload File",

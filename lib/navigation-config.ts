@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import {
+  Activity,
   BarChart3,
   Car,
   FileText,
@@ -36,6 +37,12 @@ export type NavLink = {
 
 export const MAIN_NAV: NavLink[] = [
   { title: "RPRMD", href: "/", icon: BarChart3, divisionId: "rprmd" },
+  {
+    title: "PRO4A Status",
+    href: "/pro4a-status",
+    icon: Activity,
+    description: "Regional ranking, alert level, and terrorism threat status",
+  },
   { title: "RID", href: "/rid", icon: Search, divisionId: "rid" },
   {
     title: "ROD",

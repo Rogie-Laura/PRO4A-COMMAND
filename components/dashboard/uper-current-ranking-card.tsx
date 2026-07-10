@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils"
 
 type UperCurrentRankingCardProps = {
   analytics: UperAnalytics
+  compact?: boolean
 }
 
 const chartConfig = {
@@ -33,7 +34,7 @@ const chartConfig = {
   },
 }
 
-export function UperCurrentRankingCard({ analytics }: UperCurrentRankingCardProps) {
+export function UperCurrentRankingCard({ analytics, compact = false }: UperCurrentRankingCardProps) {
   const [open, setOpen] = useState(false)
   const current = analytics.current
 
@@ -48,7 +49,12 @@ export function UperCurrentRankingCard({ analytics }: UperCurrentRankingCardProp
 
   if (!analytics.dataReady || !current) {
     return (
-      <Card className="max-w-md border-dashed border-muted-foreground/25 bg-muted/10">
+      <Card
+        className={cn(
+          "border-dashed border-muted-foreground/25 bg-muted/10",
+          compact ? "h-full w-full" : "max-w-md",
+        )}
+      >
         <CardHeader>
           <CardTitle>Current Ranking</CardTitle>
           <CardDescription>
@@ -64,11 +70,12 @@ export function UperCurrentRankingCard({ analytics }: UperCurrentRankingCardProp
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="block max-w-md text-left"
+        className={cn("block text-left", compact ? "h-full w-full" : "max-w-md")}
       >
         <Card
           className={cn(
-            "border-sky-500/25 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-card transition hover:border-sky-500/40 hover:shadow-md",
+            "h-full border-sky-500/25 bg-gradient-to-br from-sky-500/15 via-sky-500/5 to-card transition hover:border-sky-500/40 hover:shadow-md",
+            compact && "w-full",
           )}
         >
           <CardHeader className="pb-2">

@@ -44,7 +44,7 @@ function isLinkAccessible(link: NavLink, session: AppSession) {
   }
 
   if (isDivisionUploader(session.role)) {
-    if (link.href === "/settings") return true
+    if (link.href === "/settings" || link.href === "/pro4a-status") return true
     return Boolean(link.divisionId && link.divisionId === session.divisionScope)
   }
 

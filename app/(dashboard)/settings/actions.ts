@@ -8,7 +8,7 @@ import {
   listAccessTokens,
   revokeAccessToken,
 } from "@/lib/access-tokens"
-import { requireSuperAdminSession, requireDivisionUploadSession } from "@/lib/auth/get-session"
+import { requireSuperAdminSession, requireDivisionUploadSession, requireAlertLevelManageSession } from "@/lib/auth/get-session"
 import type { AccessKeyRole } from "@/lib/auth/roles"
 import type { DivisionId } from "@/lib/division-scope"
 import { getLatestBmiUploadBatch, replaceBmiRecords } from "@/lib/bmi-records"
@@ -68,6 +68,12 @@ import {
   replaceEstablishmentWorkbook,
 } from "@/lib/establishment-records"
 import { parseEstablishmentXlsx } from "@/lib/establishment-xlsx-parser"
+import { isAlertLevelId } from "@/lib/alert-level-config"
+import {
+  ALERT_LEVEL_CACHE_TAG,
+  updateAlertLevelSetting,
+} from "@/lib/alert-level-records"
+import type { AlertLevelId } from "@/lib/alert-level-types"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -422,6 +428,7 @@ export async function uploadUperWorkbookAction(formData: FormData) {
     revalidatePath("/settings")
     revalidatePath("/rpsmd")
     revalidatePath("/rpsmd/upload")
+    revalidatePath("/pro4a-status")
 
     return {
       batch: result.batch,
@@ -606,6 +613,7 @@ export async function uploadTerrorismThreatWorkbookAction(formData: FormData) {
     revalidatePath("/settings")
     revalidatePath("/rid")
     revalidatePath("/rid/upload")
+    revalidatePath("/pro4a-status")
 
     return {
       batch: result.batch,
@@ -709,5 +717,29 @@ export async function uploadEstablishmentWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang establishment upload. Subukan ulit.")
+  }
+}
+
+export async function updateAlertLevelAction(level: AlertLevelId) {
+  try {
+    const session = await requireAlertLevelManageSession()
+
+    if (!isAlertLevelId(level)) {
+      throw new Error("Invalid alert level.")
+    }
+
+    const result = await updateAlertLevelSetting(level, session.label)
+
+    updateTag(ALERT_LEVEL_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/pro4a-status")
+
+    return result
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang alert level update. Subukan ulit.")
   }
 }
