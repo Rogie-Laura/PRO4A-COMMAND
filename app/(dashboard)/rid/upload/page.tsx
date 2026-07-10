@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 
 import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-upload-card"
+import { ForeignNationalUploadCard } from "@/components/settings/foreign-national-upload-card"
 import { IllegalDrugsUploadCard } from "@/components/settings/illegal-drugs-upload-card"
 import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctgf-upload-card"
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
@@ -13,10 +14,12 @@ import {
 } from "@/components/ui/card"
 import { getSession, requireDivisionUploadSession } from "@/lib/auth/get-session"
 import { getLatestCriminalGangsUploadBatch } from "@/lib/criminal-gangs-records"
+import { getLatestForeignNationalUploadBatch } from "@/lib/foreign-national-records"
 import { getLatestIllegalDrugsUploadBatch } from "@/lib/illegal-drugs-records"
 import { getLatestSurrenderedCtgfUploadBatch } from "@/lib/surrendered-ctgf-records"
 import { getLatestTerrorismThreatUploadBatch } from "@/lib/terrorism-threat-records"
 import type { CriminalGangsUploadBatchInfo } from "@/lib/criminal-gangs-types"
+import type { ForeignNationalUploadBatchInfo } from "@/lib/foreign-national-types"
 import type { IllegalDrugsUploadBatchInfo } from "@/lib/illegal-drugs-types"
 import type { SurrenderedCtgfUploadBatchInfo } from "@/lib/surrendered-ctgf-types"
 import type { TerrorismThreatUploadBatchInfo } from "@/lib/terrorism-threat-types"
@@ -40,10 +43,12 @@ export default async function RidUploadPage() {
   let latestCriminalGangsBatch: CriminalGangsUploadBatchInfo | null = null
   let latestSurrenderedCtgfBatch: SurrenderedCtgfUploadBatchInfo | null = null
   let latestTerrorismThreatBatch: TerrorismThreatUploadBatchInfo | null = null
+  let latestForeignNationalBatch: ForeignNationalUploadBatchInfo | null = null
   let illegalDrugsUploadError: string | null = null
   let criminalGangsUploadError: string | null = null
   let surrenderedCtgfUploadError: string | null = null
   let terrorismThreatUploadError: string | null = null
+  let foreignNationalUploadError: string | null = null
 
   try {
     latestIllegalDrugsBatch = await getLatestIllegalDrugsUploadBatch()
@@ -73,6 +78,13 @@ export default async function RidUploadPage() {
       error instanceof Error ? error.message : "Unable to load terrorism threat upload status."
   }
 
+  try {
+    latestForeignNationalBatch = await getLatestForeignNationalUploadBatch()
+  } catch (error) {
+    foreignNationalUploadError =
+      error instanceof Error ? error.message : "Unable to load foreign national upload status."
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
@@ -80,7 +92,8 @@ export default async function RidUploadPage() {
           <CardTitle className="text-base">RID File Upload</CardTitle>
           <CardDescription>
             Upload ang ILLEGAL DRUGS.xlsx, ACCOMPLISHMENTS ON CRIMINAL GANGS.xlsx, SURRENDERED
-            CTGs AND FAs.xlsx, at TERRORISM THREAT LEVEL.xlsx.
+            CTGs AND FAs.xlsx, Incident Report Involving Foreign National.xlsx, at TERRORISM THREAT
+            LEVEL.xlsx.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -140,6 +153,19 @@ export default async function RidUploadPage() {
         </Card>
       ) : (
         <TerrorismThreatUploadCard latestBatch={latestTerrorismThreatBatch} compact />
+      )}
+
+      {foreignNationalUploadError ? (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Upload Foreign National Incidents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{foreignNationalUploadError}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <ForeignNationalUploadCard latestBatch={latestForeignNationalBatch} compact />
       )}
     </div>
   )

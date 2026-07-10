@@ -1,17 +1,24 @@
 import { CriminalGangsCards } from "@/components/dashboard/criminal-gangs-cards"
+import { ForeignNationalTable } from "@/components/dashboard/foreign-national-table"
 import { IllegalDrugsCards } from "@/components/dashboard/illegal-drugs-cards"
 import { SurrenderedCtgfTable } from "@/components/dashboard/surrendered-ctgf-table"
 import { getCriminalGangsAnalytics } from "@/lib/criminal-gangs-records"
+import { getForeignNationalAnalytics } from "@/lib/foreign-national-records"
 import { getIllegalDrugsAnalytics } from "@/lib/illegal-drugs-records"
 import { getSurrenderedCtgfAnalytics } from "@/lib/surrendered-ctgf-records"
 
 export async function RidPageContent() {
-  const [illegalDrugsAnalytics, criminalGangsAnalytics, surrenderedCtgfAnalytics] =
-    await Promise.all([
-      getIllegalDrugsAnalytics(),
-      getCriminalGangsAnalytics(),
-      getSurrenderedCtgfAnalytics(),
-    ])
+  const [
+    illegalDrugsAnalytics,
+    criminalGangsAnalytics,
+    surrenderedCtgfAnalytics,
+    foreignNationalAnalytics,
+  ] = await Promise.all([
+    getIllegalDrugsAnalytics(),
+    getCriminalGangsAnalytics(),
+    getSurrenderedCtgfAnalytics(),
+    getForeignNationalAnalytics(),
+  ])
 
   return (
     <div className="space-y-6">
@@ -35,6 +42,10 @@ export async function RidPageContent() {
 
       <section className="space-y-4">
         <SurrenderedCtgfTable analytics={surrenderedCtgfAnalytics} />
+      </section>
+
+      <section className="space-y-4">
+        <ForeignNationalTable analytics={foreignNationalAnalytics} />
       </section>
     </div>
   )

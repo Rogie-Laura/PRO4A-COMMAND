@@ -89,6 +89,11 @@ import {
   replaceSurrenderedCtgfWorkbook,
 } from "@/lib/surrendered-ctgf-records"
 import { parseSurrenderedCtgfXlsx } from "@/lib/surrendered-ctgf-xlsx-parser"
+import {
+  FOREIGN_NATIONAL_ANALYTICS_CACHE_TAG,
+  replaceForeignNationalWorkbook,
+} from "@/lib/foreign-national-records"
+import { parseForeignNationalXlsx } from "@/lib/foreign-national-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -777,6 +782,52 @@ export async function uploadSurrenderedCtgfWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang surrendered CTGs upload. Subukan ulit.")
+  }
+}
+
+export async function uploadForeignNationalWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rid")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_UPER_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 5 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseForeignNationalXlsx(buffer)
+    const result = await replaceForeignNationalWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(FOREIGN_NATIONAL_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/rid")
+    revalidatePath("/rid/upload")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang foreign national upload. Subukan ulit.")
   }
 }
 

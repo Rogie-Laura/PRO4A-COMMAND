@@ -13,6 +13,7 @@ import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threa
 import { IllegalDrugsUploadCard } from "@/components/settings/illegal-drugs-upload-card"
 import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-upload-card"
 import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctgf-upload-card"
+import { ForeignNationalUploadCard } from "@/components/settings/foreign-national-upload-card"
 import { AlertLevelSettingsCard } from "@/components/settings/alert-level-settings-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
 import { EstablishmentUploadCard } from "@/components/settings/establishment-upload-card"
@@ -50,6 +51,8 @@ import { getLatestCriminalGangsUploadBatch } from "@/lib/criminal-gangs-records"
 import type { CriminalGangsUploadBatchInfo } from "@/lib/criminal-gangs-types"
 import { getLatestSurrenderedCtgfUploadBatch } from "@/lib/surrendered-ctgf-records"
 import type { SurrenderedCtgfUploadBatchInfo } from "@/lib/surrendered-ctgf-types"
+import { getLatestForeignNationalUploadBatch } from "@/lib/foreign-national-records"
+import type { ForeignNationalUploadBatchInfo } from "@/lib/foreign-national-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
 import type { RcaddUploadBatchInfo } from "@/lib/rcadd-accomplishment-types"
 import { getLatestEstablishmentUploadBatch } from "@/lib/establishment-records"
@@ -99,6 +102,8 @@ export default async function SettingsPage() {
   let criminalGangsUploadError: string | null = null
   let latestSurrenderedCtgfBatch: SurrenderedCtgfUploadBatchInfo | null = null
   let surrenderedCtgfUploadError: string | null = null
+  let latestForeignNationalBatch: ForeignNationalUploadBatchInfo | null = null
+  let foreignNationalUploadError: string | null = null
   let latestRcaddBatch: RcaddUploadBatchInfo | null = null
   let rcaddUploadError: string | null = null
   let latestEstablishmentBatch: EstablishmentUploadBatchInfo | null = null
@@ -234,6 +239,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load surrendered CTGs upload status from Supabase."
+    }
+
+    try {
+      latestForeignNationalBatch = await getLatestForeignNationalUploadBatch()
+    } catch (error) {
+      foreignNationalUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load foreign national upload status from Supabase."
     }
 
     try {
@@ -489,6 +503,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <SurrenderedCtgfUploadCard latestBatch={latestSurrenderedCtgfBatch} />
+            )}
+
+            {foreignNationalUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Foreign National Incidents</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{foreignNationalUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260710210000_create_foreign_national_upload_batches.sql`
+                    kung wala pa ang `foreign_national_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <ForeignNationalUploadCard latestBatch={latestForeignNationalBatch} />
             )}
 
             {rcaddUploadError ? (
