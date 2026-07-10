@@ -81,7 +81,7 @@ export function SurrenderedCtgfTable({ analytics }: SurrenderedCtgfTableProps) {
         <div className={ridTableWrapperClass}>
           <table className={ridTableClass}>
             <thead>
-              <tr className="border-b bg-muted/30 text-center text-muted-foreground">
+              <tr className="border-b bg-muted text-center text-muted-foreground">
                 <th rowSpan={2} className={ridStickyLabelHeaderClass("align-middle")}>
                   Province / Unit
                 </th>
@@ -98,7 +98,7 @@ export function SurrenderedCtgfTable({ analytics }: SurrenderedCtgfTableProps) {
                   Grand Total
                 </th>
               </tr>
-              <tr className="border-b bg-muted/20 text-center text-muted-foreground">
+              <tr className="border-b bg-muted text-center text-muted-foreground">
                 <th className={ridDataHeaderClass("border-l")}>PSR</th>
                 <th className={ridDataHeaderClass()}>NPSR</th>
                 <th className={ridDataHeaderClass()}>Total</th>

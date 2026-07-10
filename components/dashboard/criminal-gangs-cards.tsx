@@ -44,9 +44,9 @@ function GroupBreakdownTable({ rows }: { rows: CriminalGangsCountRow[] }) {
   return (
     <div className={cn(ridTableWrapperClass, "max-h-[min(60vh,28rem)] bg-muted/10")}>
       <table className={ridDialogTableClass}>
-        <thead className="sticky top-0 z-30 bg-background/95 backdrop-blur">
+        <thead className="sticky top-0 z-30 bg-muted">
           <tr className="border-b text-muted-foreground">
-            <th className={ridStickyLabelHeaderClass("bg-background/95")}>Unit</th>
+            <th className={ridStickyLabelHeaderClass()}>Unit</th>
             <th className={ridDataHeaderClass()}>Arrested</th>
             <th className={ridDataHeaderClass()}>Surrendered</th>
             <th className={ridDataHeaderClass()}>DPO</th>
