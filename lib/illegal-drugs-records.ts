@@ -11,7 +11,7 @@ import type {
 } from "@/lib/illegal-drugs-types"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export const ILLEGAL_DRUGS_ANALYTICS_CACHE_TAG = "illegal-drugs-analytics-v1"
+export const ILLEGAL_DRUGS_ANALYTICS_CACHE_TAG = "illegal-drugs-analytics-v2"
 
 type ReplaceIllegalDrugsWorkbookInput = {
   filename: string
