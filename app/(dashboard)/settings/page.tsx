@@ -11,6 +11,7 @@ import { LegislativeAgendaUploadCard } from "@/components/settings/legislative-a
 import { StationClassificationUploadCard } from "@/components/settings/station-classification-upload-card"
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
 import { IllegalDrugsUploadCard } from "@/components/settings/illegal-drugs-upload-card"
+import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-upload-card"
 import { AlertLevelSettingsCard } from "@/components/settings/alert-level-settings-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
 import { EstablishmentUploadCard } from "@/components/settings/establishment-upload-card"
@@ -44,6 +45,8 @@ import { getLatestTerrorismThreatUploadBatch } from "@/lib/terrorism-threat-reco
 import type { TerrorismThreatUploadBatchInfo } from "@/lib/terrorism-threat-types"
 import { getLatestIllegalDrugsUploadBatch } from "@/lib/illegal-drugs-records"
 import type { IllegalDrugsUploadBatchInfo } from "@/lib/illegal-drugs-types"
+import { getLatestCriminalGangsUploadBatch } from "@/lib/criminal-gangs-records"
+import type { CriminalGangsUploadBatchInfo } from "@/lib/criminal-gangs-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
 import type { RcaddUploadBatchInfo } from "@/lib/rcadd-accomplishment-types"
 import { getLatestEstablishmentUploadBatch } from "@/lib/establishment-records"
@@ -89,6 +92,8 @@ export default async function SettingsPage() {
   let terrorismThreatUploadError: string | null = null
   let latestIllegalDrugsBatch: IllegalDrugsUploadBatchInfo | null = null
   let illegalDrugsUploadError: string | null = null
+  let latestCriminalGangsBatch: CriminalGangsUploadBatchInfo | null = null
+  let criminalGangsUploadError: string | null = null
   let latestRcaddBatch: RcaddUploadBatchInfo | null = null
   let rcaddUploadError: string | null = null
   let latestEstablishmentBatch: EstablishmentUploadBatchInfo | null = null
@@ -206,6 +211,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load illegal drugs upload status from Supabase."
+    }
+
+    try {
+      latestCriminalGangsBatch = await getLatestCriminalGangsUploadBatch()
+    } catch (error) {
+      criminalGangsUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load criminal gangs upload status from Supabase."
     }
 
     try {
@@ -425,6 +439,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <IllegalDrugsUploadCard latestBatch={latestIllegalDrugsBatch} />
+            )}
+
+            {criminalGangsUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Criminal Gangs</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{criminalGangsUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260710194500_create_criminal_gangs_upload_batches.sql`
+                    kung wala pa ang `criminal_gangs_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <CriminalGangsUploadCard latestBatch={latestCriminalGangsBatch} />
             )}
 
             {rcaddUploadError ? (

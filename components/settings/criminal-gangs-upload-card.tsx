@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react"
 
-import { uploadIllegalDrugsWorkbookAction } from "@/app/(dashboard)/settings/actions"
+import { uploadCriminalGangsWorkbookAction } from "@/app/(dashboard)/settings/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,18 +22,18 @@ import {
 } from "@/components/settings/upload-card-styles"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
 import { formatServerActionError } from "@/lib/server-action-errors"
-import type { IllegalDrugsUploadBatchInfo } from "@/lib/illegal-drugs-types"
+import type { CriminalGangsUploadBatchInfo } from "@/lib/criminal-gangs-types"
 import { cn } from "@/lib/utils"
 
-type IllegalDrugsUploadCardProps = {
-  latestBatch: IllegalDrugsUploadBatchInfo | null
+type CriminalGangsUploadCardProps = {
+  latestBatch: CriminalGangsUploadBatchInfo | null
   compact?: boolean
 }
 
-export function IllegalDrugsUploadCard({
+export function CriminalGangsUploadCard({
   latestBatch,
   compact = false,
-}: IllegalDrugsUploadCardProps) {
+}: CriminalGangsUploadCardProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
@@ -52,7 +52,7 @@ export function IllegalDrugsUploadCard({
     }
 
     if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      setError("Excel (.xlsx) lang ang tinatanggap. Gamitin ang ILLEGAL DRUGS.xlsx.")
+      setError("Excel (.xlsx) lang ang tinatanggap. Gamitin ang ACCOMPLISHMENTS ON CRIMINAL GANGS.xlsx.")
       return
     }
 
@@ -61,16 +61,16 @@ export function IllegalDrugsUploadCard({
 
     startTransition(async () => {
       try {
-        const result = await uploadIllegalDrugsWorkbookAction(formData)
+        const result = await uploadCriminalGangsWorkbookAction(formData)
         setBatch(result.batch)
-        setSuccess("Na-upload ang ILLEGAL DRUGS workbook.")
+        setSuccess("Na-upload ang criminal gangs workbook.")
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
         }
         router.refresh()
       } catch (uploadError) {
         setError(
-          formatServerActionError(uploadError, "Hindi ma-upload ang illegal drugs workbook."),
+          formatServerActionError(uploadError, "Hindi ma-upload ang criminal gangs workbook."),
         )
       }
     })
@@ -81,10 +81,11 @@ export function IllegalDrugsUploadCard({
       <CardHeader className={compact ? "pb-3" : undefined}>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheetIcon className="size-5 text-primary" />
-          Upload Illegal Drugs
+          Upload Criminal Gangs
         </CardTitle>
         <CardDescription>
-          ILLEGAL DRUGS.xlsx — HVI at SLI summary tables.
+          ACCOMPLISHMENTS ON CRIMINAL GANGS.xlsx — Drug Groups, Gun-for-Hire, at Other Criminal
+          Groups.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -101,7 +102,8 @@ export function IllegalDrugsUploadCard({
           </div>
         ) : (
           <p className={UPLOAD_EMPTY_STATE_CLASS}>
-            Wala pang na-upload na illegal drugs file. Pumili ng ILLEGAL DRUGS.xlsx sa ibaba.
+            Wala pang na-upload na criminal gangs file. Pumili ng ACCOMPLISHMENTS ON CRIMINAL
+            GANGS.xlsx sa ibaba.
           </p>
         )}
 

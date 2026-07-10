@@ -13,7 +13,7 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
   "/rid": { title: "RID" },
   "/rid/upload": {
     title: "Upload File",
-    description: "RID illegal drugs and terrorism threat level uploads",
+    description: "RID illegal drugs, criminal gangs, and terrorism threat uploads",
   },
   "/rcadd": { title: "RCADD" },
   "/rcadd/upload": {

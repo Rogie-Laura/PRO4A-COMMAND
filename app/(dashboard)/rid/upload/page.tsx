@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-upload-card"
 import { IllegalDrugsUploadCard } from "@/components/settings/illegal-drugs-upload-card"
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
 import {
@@ -10,8 +11,10 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { getSession, requireDivisionUploadSession } from "@/lib/auth/get-session"
+import { getLatestCriminalGangsUploadBatch } from "@/lib/criminal-gangs-records"
 import { getLatestIllegalDrugsUploadBatch } from "@/lib/illegal-drugs-records"
 import { getLatestTerrorismThreatUploadBatch } from "@/lib/terrorism-threat-records"
+import type { CriminalGangsUploadBatchInfo } from "@/lib/criminal-gangs-types"
 import type { IllegalDrugsUploadBatchInfo } from "@/lib/illegal-drugs-types"
 import type { TerrorismThreatUploadBatchInfo } from "@/lib/terrorism-threat-types"
 
@@ -31,8 +34,10 @@ export default async function RidUploadPage() {
   }
 
   let latestIllegalDrugsBatch: IllegalDrugsUploadBatchInfo | null = null
+  let latestCriminalGangsBatch: CriminalGangsUploadBatchInfo | null = null
   let latestTerrorismThreatBatch: TerrorismThreatUploadBatchInfo | null = null
   let illegalDrugsUploadError: string | null = null
+  let criminalGangsUploadError: string | null = null
   let terrorismThreatUploadError: string | null = null
 
   try {
@@ -40,6 +45,13 @@ export default async function RidUploadPage() {
   } catch (error) {
     illegalDrugsUploadError =
       error instanceof Error ? error.message : "Unable to load illegal drugs upload status."
+  }
+
+  try {
+    latestCriminalGangsBatch = await getLatestCriminalGangsUploadBatch()
+  } catch (error) {
+    criminalGangsUploadError =
+      error instanceof Error ? error.message : "Unable to load criminal gangs upload status."
   }
 
   try {
@@ -55,7 +67,7 @@ export default async function RidUploadPage() {
         <CardHeader>
           <CardTitle className="text-base">RID File Upload</CardTitle>
           <CardDescription>
-            Upload ang ILLEGAL DRUGS.xlsx para sa HVI at SLI sa RID dashboard, at ang TERRORISM
+            Upload ang ILLEGAL DRUGS.xlsx, ACCOMPLISHMENTS ON CRIMINAL GANGS.xlsx, at TERRORISM
             THREAT LEVEL.xlsx para sa PRO4A Status.
           </CardDescription>
         </CardHeader>
@@ -77,6 +89,19 @@ export default async function RidUploadPage() {
         </Card>
       ) : (
         <IllegalDrugsUploadCard latestBatch={latestIllegalDrugsBatch} compact />
+      )}
+
+      {criminalGangsUploadError ? (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Upload Criminal Gangs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{criminalGangsUploadError}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <CriminalGangsUploadCard latestBatch={latestCriminalGangsBatch} compact />
       )}
 
       {terrorismThreatUploadError ? (
