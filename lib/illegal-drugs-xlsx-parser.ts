@@ -158,25 +158,39 @@ function parseSheet(
       break
     }
 
-    if (
-      !rowHasYellowDataHighlight(
-        sheet,
-        rowIndex,
-        header.arrestedColumn,
-        header.totalColumn,
-      )
-    ) {
+    const arrested = parseCount(row[header.arrestedColumn])
+    const surrendered = parseCount(row[header.surrenderedColumn])
+    const dpo = parseCount(row[header.dpoColumn])
+    const total = parseCount(row[header.totalColumn])
+    const isTotal = /^total\b/i.test(ppo)
+    const isYellow = rowHasYellowDataHighlight(
+      sheet,
+      rowIndex,
+      header.arrestedColumn,
+      header.totalColumn,
+    )
+
+    // Main summary table: rows up to TOTAL (yellow and non-yellow, e.g. HVI RPDEU).
+    // Breakdown section below is excluded by stopping after TOTAL.
+    const belongsToSummaryTable =
+      isYellow || isTotal || arrested > 0 || surrendered > 0 || dpo > 0 || total > 0
+
+    if (!belongsToSummaryTable) {
       continue
     }
 
     parsedRows.push({
       ppo,
-      arrested: parseCount(row[header.arrestedColumn]),
-      surrendered: parseCount(row[header.surrenderedColumn]),
-      dpo: parseCount(row[header.dpoColumn]),
-      total: parseCount(row[header.totalColumn]),
-      isTotal: /^total\b/i.test(ppo),
+      arrested,
+      surrendered,
+      dpo,
+      total,
+      isTotal,
     })
+
+    if (isTotal) {
+      break
+    }
   }
 
   if (parsedRows.length === 0) {
@@ -214,7 +228,7 @@ export function parseIllegalDrugsXlsx(buffer: ArrayBuffer | Buffer): ParsedIlleg
   }
 
   if (!hvi && !sli) {
-    throw new Error("Walang valid na yellow-highlighted rows sa HVI at SLI sheets.")
+    throw new Error("Walang valid na summary rows sa HVI at SLI sheets.")
   }
 
   return { hvi, sli }
