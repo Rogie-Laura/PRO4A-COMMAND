@@ -1,5 +1,7 @@
+export const TERRORISM_THREAT_REGION_LABEL = "CALABARZON REGION"
+
 export type TerrorismThreatRow = {
-  province: string
+  region: string
   threatLevel: string
   securityMeasure: string
   parameter: string

@@ -43,7 +43,7 @@ export default async function RidUploadPage() {
         <CardHeader>
           <CardTitle className="text-base">RID File Upload</CardTitle>
           <CardDescription>
-            Upload ang R2 for PRO4A COMMAND workbook para sa Terrorism Threat Level sa RID
+            Upload ang TERRORISM THREAT LEVEL.xlsx para sa CALABARZON REGION threat level sa RID
             dashboard.
           </CardDescription>
         </CardHeader>
@@ -57,7 +57,7 @@ export default async function RidUploadPage() {
       {uploadError ? (
         <Card className="border-destructive/30">
           <CardHeader>
-            <CardTitle>Upload R2 Workbook</CardTitle>
+            <CardTitle>Upload Threat Level File</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-destructive">{uploadError}</p>

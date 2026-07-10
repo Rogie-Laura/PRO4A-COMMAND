@@ -52,7 +52,7 @@ export function TerrorismThreatUploadCard({
     }
 
     if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      setError("Excel (.xlsx) lang ang tinatanggap. Gamitin ang R2 for PRO4A COMMAND workbook.")
+      setError("Excel (.xlsx) lang ang tinatanggap. Gamitin ang TERRORISM THREAT LEVEL.xlsx.")
       return
     }
 
@@ -81,10 +81,10 @@ export function TerrorismThreatUploadCard({
       <CardHeader className={compact ? "pb-3" : undefined}>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheetIcon className="size-5 text-primary" />
-          Upload R2 Workbook
+          Upload Threat Level File
         </CardTitle>
         <CardDescription>
-          R2 for PRO4A COMMAND Excel file na may Terrorism Threat Level sheet para sa RID dashboard.
+          TERRORISM THREAT LEVEL.xlsx para sa CALABARZON REGION threat level sa RID dashboard.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -101,7 +101,7 @@ export function TerrorismThreatUploadCard({
           </div>
         ) : (
           <p className={UPLOAD_EMPTY_STATE_CLASS}>
-            Wala pang na-upload na R2 workbook. Pumili ng R2 for PRO4A COMMAND.xlsx sa ibaba.
+            Wala pang na-upload na threat level file. Pumili ng TERRORISM THREAT LEVEL.xlsx sa ibaba.
           </p>
         )}
 

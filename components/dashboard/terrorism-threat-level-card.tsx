@@ -2,7 +2,11 @@ import { ShieldAlert } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { TerrorismThreatAnalytics } from "@/lib/terrorism-threat-types"
+import {
+  TERRORISM_THREAT_REGION_LABEL,
+  type TerrorismThreatAnalytics,
+  type TerrorismThreatRow,
+} from "@/lib/terrorism-threat-types"
 import { cn } from "@/lib/utils"
 
 type TerrorismThreatLevelCardProps = {
@@ -25,14 +29,27 @@ function threatBadgeClass(level: string) {
   return "border-primary/20 bg-primary/5"
 }
 
+function normalizeLegacyRow(row: TerrorismThreatRow & { province?: string }): TerrorismThreatRow {
+  return {
+    region: row.region || row.province || TERRORISM_THREAT_REGION_LABEL,
+    threatLevel: row.threatLevel,
+    securityMeasure: row.securityMeasure,
+    parameter: row.parameter,
+  }
+}
+
 export function TerrorismThreatLevelCard({ analytics }: TerrorismThreatLevelCardProps) {
-  if (!analytics.dataReady || analytics.rows.length === 0) {
+  const regionThreat = analytics.rows[0]
+    ? normalizeLegacyRow(analytics.rows[0] as TerrorismThreatRow & { province?: string })
+    : null
+
+  if (!analytics.dataReady || !regionThreat) {
     return (
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
         <CardHeader>
           <CardTitle>Terrorism Threat Level</CardTitle>
           <CardDescription>
-            Walang terrorism threat data pa. Mag-upload ng R2 for PRO4A COMMAND.xlsx sa Upload
+            Walang terrorism threat data pa. Mag-upload ng TERRORISM THREAT LEVEL.xlsx sa Upload
             File.
           </CardDescription>
         </CardHeader>
@@ -51,35 +68,40 @@ export function TerrorismThreatLevelCard({ analytics }: TerrorismThreatLevelCard
             </CardTitle>
             <CardDescription>{analytics.periodLabel}</CardDescription>
           </div>
-          <Badge variant="outline">{analytics.rows.length} provinces</Badge>
+          <Badge variant="outline" className="font-semibold">
+            {regionThreat.region}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="overflow-x-auto rounded-lg border bg-background/70">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead>
-              <tr className="border-b bg-muted/30 text-left text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Province</th>
-                <th className="px-4 py-3 font-medium">Threat Level</th>
-                <th className="px-4 py-3 font-medium">Security Measure</th>
-                <th className="px-4 py-3 font-medium">Parameter</th>
-              </tr>
-            </thead>
-            <tbody>
-              {analytics.rows.map((row) => (
-                <tr key={row.province} className="border-b align-top last:border-0">
-                  <td className="px-4 py-3 font-medium">{row.province}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline" className={cn("font-semibold", threatBadgeClass(row.threatLevel))}>
-                      {row.threatLevel}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 font-medium">{row.securityMeasure}</td>
-                  <td className="px-4 py-3 leading-relaxed text-muted-foreground">{row.parameter}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-red-500/15 bg-background/70 p-4 sm:col-span-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Threat Level
+            </p>
+            <Badge
+              variant="outline"
+              className={cn("mt-3 text-base font-semibold", threatBadgeClass(regionThreat.threatLevel))}
+            >
+              {regionThreat.threatLevel}
+            </Badge>
+          </div>
+
+          <div className="rounded-xl border border-border/60 bg-background/70 p-4 sm:col-span-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Security Measure
+            </p>
+            <p className="mt-3 text-base font-semibold leading-snug">{regionThreat.securityMeasure}</p>
+          </div>
+
+          <div className="rounded-xl border border-border/60 bg-background/70 p-4 sm:col-span-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Parameter
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              {regionThreat.parameter}
+            </p>
+          </div>
         </div>
 
         {analytics.note ? (

@@ -8,7 +8,7 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
   "/rid": { title: "RID" },
   "/rid/upload": {
     title: "Upload File",
-    description: "RID R2 workbook upload for terrorism threat level",
+    description: "RID terrorism threat level upload for CALABARZON REGION",
   },
   "/rcadd": { title: "RCADD" },
   "/rcadd/upload": {

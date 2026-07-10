@@ -1,11 +1,16 @@
 import * as XLSX from "xlsx"
 
-import type {
-  ParsedTerrorismThreatWorkbook,
-  TerrorismThreatRow,
+import {
+  TERRORISM_THREAT_REGION_LABEL,
+  type ParsedTerrorismThreatWorkbook,
+  type TerrorismThreatRow,
 } from "@/lib/terrorism-threat-types"
 
-const TERRORISM_THREAT_SHEET = "Terrorism Threat Level"
+const TERRORISM_THREAT_SHEET_NAMES = [
+  "THREAT LEVEL",
+  "Terrorism Threat Level",
+  "Threat Level",
+]
 
 function normalizeCell(value: unknown) {
   return String(value ?? "")
@@ -17,11 +22,18 @@ function normalizeHeader(value: unknown) {
   return normalizeCell(value).toLowerCase()
 }
 
-function splitProvinces(value: unknown) {
-  return String(value ?? "")
-    .split(/\r?\n/)
-    .map((part) => part.trim().replace(/\s+/g, " "))
-    .filter(Boolean)
+function findThreatSheet(workbook: XLSX.WorkBook) {
+  for (const preferredName of TERRORISM_THREAT_SHEET_NAMES) {
+    if (workbook.Sheets[preferredName]) {
+      return workbook.Sheets[preferredName]
+    }
+  }
+
+  const matchedName = workbook.SheetNames.find((name) =>
+    /threat\s*level/i.test(normalizeCell(name)),
+  )
+
+  return matchedName ? workbook.Sheets[matchedName] : undefined
 }
 
 function findHeaderRow(rows: unknown[][]) {
@@ -79,7 +91,7 @@ function findNote(rows: unknown[][]) {
   return ""
 }
 
-function expandThreatRows(
+function parseRegionThreatRow(
   row: unknown[],
   columnIndex: {
     province: number
@@ -87,30 +99,32 @@ function expandThreatRows(
     securityMeasure: number
     parameter: number
   },
-): TerrorismThreatRow[] {
-  const provinces = splitProvinces(row[columnIndex.province])
+): TerrorismThreatRow | null {
+  const provinceCell = normalizeCell(row[columnIndex.province])
   const threatLevel = normalizeCell(row[columnIndex.threatLevel])
   const securityMeasure = normalizeCell(row[columnIndex.securityMeasure])
   const parameter = normalizeCell(row[columnIndex.parameter])
 
-  if (provinces.length === 0 || !threatLevel) {
-    return []
+  if (!provinceCell || !threatLevel) {
+    return null
   }
 
-  return provinces.map((province) => ({
-    province,
+  return {
+    region: TERRORISM_THREAT_REGION_LABEL,
     threatLevel,
     securityMeasure,
     parameter,
-  }))
+  }
 }
 
 export function parseTerrorismThreatXlsx(buffer: ArrayBuffer | Buffer): ParsedTerrorismThreatWorkbook {
   const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true })
-  const sheet = workbook.Sheets[TERRORISM_THREAT_SHEET]
+  const sheet = findThreatSheet(workbook)
 
   if (!sheet) {
-    throw new Error(`Walang "${TERRORISM_THREAT_SHEET}" sheet sa workbook.`)
+    throw new Error(
+      'Walang "THREAT LEVEL" o "Terrorism Threat Level" sheet sa workbook.',
+    )
   }
 
   const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
@@ -122,11 +136,11 @@ export function parseTerrorismThreatXlsx(buffer: ArrayBuffer | Buffer): ParsedTe
   const header = findHeaderRow(rows)
   if (!header) {
     throw new Error(
-      "Hindi mahanap ang Terrorism Threat Level table. Dapat may Province, Threat Level, Security Measure, at Parameter columns.",
+      "Hindi mahanap ang threat level table. Dapat may Province, Threat Level, Security Measure, at Parameter columns.",
     )
   }
 
-  const parsedRows: TerrorismThreatRow[] = []
+  let regionThreat: TerrorismThreatRow | null = null
 
   for (const row of rows.slice(header.headerRowIndex + 1)) {
     if (!Array.isArray(row)) continue
@@ -135,16 +149,17 @@ export function parseTerrorismThreatXlsx(buffer: ArrayBuffer | Buffer): ParsedTe
     if (!firstCell) continue
     if (/^note:/i.test(firstCell)) break
 
-    parsedRows.push(...expandThreatRows(row, header.columnIndex))
+    regionThreat = parseRegionThreatRow(row, header.columnIndex)
+    if (regionThreat) break
   }
 
-  if (parsedRows.length === 0) {
-    throw new Error("Walang terrorism threat level rows sa workbook.")
+  if (!regionThreat) {
+    throw new Error("Walang valid na CALABARZON terrorism threat level row sa workbook.")
   }
 
   return {
     periodLabel: findPeriodLabel(rows),
-    rows: parsedRows,
+    rows: [regionThreat],
     note: findNote(rows),
   }
 }

@@ -9,11 +9,11 @@ export async function RidPageContent() {
     <div className="space-y-4">
       <DataSyncBanner
         lastUpdated={analytics.lastUpdated}
-        sourceLabel={analytics.dataReady ? "R2 workbook upload" : "R2 upload"}
+        sourceLabel={analytics.dataReady ? "Threat level upload" : "Threat level upload"}
         syncDescription={
           analytics.dataReady
             ? `synced from ${analytics.fileName}`
-            : "Mag-upload ng R2 for PRO4A COMMAND.xlsx sa Upload File"
+            : "Mag-upload ng TERRORISM THREAT LEVEL.xlsx sa Upload File"
         }
       />
 
