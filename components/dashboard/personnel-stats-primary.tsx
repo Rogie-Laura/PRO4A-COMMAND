@@ -1,4 +1,3 @@
-import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { AgeDistributionTable } from "@/components/dashboard/age-distribution-table"
 import { RankTenureTable } from "@/components/dashboard/rank-tenure-table"
 import { LeadershipSection } from "@/components/dashboard/leadership-section"
@@ -27,12 +26,7 @@ export async function PersonnelStatsPrimary() {
 
   return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <DataSyncBanner
-          lastUpdated={data.lastUpdated}
-          sourceLabel="PRO4A-COMMAND recap tab"
-          syncDescription="synced from Google Sheet (cached until you refresh)"
-        />
+      <div className="flex justify-end">
         <PersonnelStatsRefreshButton />
       </div>
 

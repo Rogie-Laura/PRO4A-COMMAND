@@ -1,6 +1,5 @@
 import { CrimeStatisticsRefreshButton } from "@/components/dashboard/crime-statistics-refresh-button"
 import { RidmdModuleView } from "@/components/dashboard/ridmd-module-view"
-import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getCrimeAnalytics } from "@/lib/crime-analytics"
@@ -20,16 +19,7 @@ export async function RidmdContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <DataSyncBanner
-          lastUpdated={data.lastUpdated}
-          sourceLabel={data.dataSource}
-          syncDescription={
-            data.dataReady
-              ? "index crime only · synced from Supabase upload"
-              : "upload crime stats in Settings (Super Admin)"
-          }
-        />
+      <div className="flex justify-end">
         <CrimeStatisticsRefreshButton />
       </div>
 

@@ -1,4 +1,3 @@
-import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { LegislativeAgendaSection } from "@/components/dashboard/legislative-agenda-section"
 import { PpoUperRankingsCard } from "@/components/dashboard/ppo-uper-rankings-card"
 import { StationClassificationSection } from "@/components/dashboard/station-classification-section"
@@ -16,40 +15,11 @@ export async function RpsmdPageContent() {
     getLegislativeAgendaAnalytics(),
   ])
 
-  const lastUpdated =
-    [
-      analytics.lastUpdated,
-      ppoAnalytics.lastUpdated,
-      stationClassification.lastUpdated,
-      legislativeAgenda.lastUpdated,
-    ]
-      .filter(Boolean)
-      .sort()
-      .at(-1) ?? new Date().toISOString()
-
   const hasProData = analytics.dataReady
   const hasPpoData = ppoAnalytics.dataReady
-  const hasStationData = stationClassification.dataReady
-  const hasLegislativeData = legislativeAgenda.dataReady
-
-  const syncParts = [
-    hasPpoData ? `PPO from ${ppoAnalytics.fileName}` : null,
-    hasStationData ? `Stations from ${stationClassification.fileName}` : null,
-    hasLegislativeData ? `Legislative from ${legislativeAgenda.fileName}` : null,
-  ].filter(Boolean)
 
   return (
     <div className="space-y-4">
-      <DataSyncBanner
-        lastUpdated={lastUpdated}
-        sourceLabel={syncParts.length > 0 ? "RPSMD uploads" : "RPSMD upload"}
-        syncDescription={
-          syncParts.length > 0
-            ? syncParts.join(" · ")
-            : "Mag-upload ng RPSMD workbooks sa Upload File"
-        }
-      />
-
       <PpoUperRankingsCard analytics={ppoAnalytics} />
       <StationClassificationSection analytics={stationClassification} />
       <LegislativeAgendaSection analytics={legislativeAgenda} />

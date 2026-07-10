@@ -4,7 +4,6 @@ import { ExternalLink, Siren } from "lucide-react"
 import { PoliceInterventionRefreshButton } from "@/components/dashboard/police-intervention-refresh-button"
 import { PatrolUnitCards } from "@/components/dashboard/patrol-unit-cards"
 import { EstablishmentTypeCards } from "@/components/dashboard/establishment-type-cards"
-import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -26,14 +25,6 @@ export async function PoliceInterventionContent() {
 
   return (
     <div className="space-y-4">
-      {data.ok && data.updated_at && (
-        <DataSyncBanner
-          lastUpdated={data.updated_at}
-          sourceLabel="Patrollers"
-          syncDescription="synced from Patrollers monitoring (cached until you refresh)"
-        />
-      )}
-
       <Card className="border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card">
         <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">

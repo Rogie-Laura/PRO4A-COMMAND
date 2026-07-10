@@ -7,7 +7,6 @@ import {
   Users,
 } from "lucide-react"
 
-import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { TrainingsRefreshButton } from "@/components/dashboard/trainings-refresh-button"
 import { TrainingsStatusBreakdown } from "@/components/dashboard/trainings-status-breakdown"
 import {
@@ -178,12 +177,7 @@ export async function TrainingsContent() {
         <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl" />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <DataSyncBanner
-          lastUpdated={data.lastUpdated}
-          sourceLabel={data.dataSource}
-          syncDescription="synced from Google Sheet (cached until you refresh)"
-        />
+      <div className="flex justify-end">
         <TrainingsRefreshButton />
       </div>
 

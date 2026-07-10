@@ -1,9 +1,8 @@
 import { BmiCategoryCards } from "@/components/dashboard/bmi-category-cards"
-import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { HealthAndBmiRefreshButton } from "@/components/dashboard/health-and-bmi-refresh-button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BMI_SUPABASE_SOURCE_LABEL, getHealthAnalytics } from "@/lib/health-analytics"
+import { getHealthAnalytics } from "@/lib/health-analytics"
 
 export function HealthAndBmiLoading() {
   return (
@@ -31,16 +30,7 @@ export async function HealthAndBmiContent() {
         <div className="absolute right-0 top-1/3 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-amber-500/15 blur-3xl" />
       </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <DataSyncBanner
-          lastUpdated={data.lastUpdated}
-          sourceLabel={data.dataSource}
-          syncDescription={
-            data.dataSource === BMI_SUPABASE_SOURCE_LABEL
-              ? "category summary cached · personnel loads when you open a category"
-              : "synced from Google Sheet fallback (cached until you refresh)"
-          }
-        />
+      <div className="flex justify-end">
         <HealthAndBmiRefreshButton />
       </div>
 

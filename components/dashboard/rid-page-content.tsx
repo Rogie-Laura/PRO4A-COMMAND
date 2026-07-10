@@ -1,4 +1,3 @@
-import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { CriminalGangsCards } from "@/components/dashboard/criminal-gangs-cards"
 import { IllegalDrugsCards } from "@/components/dashboard/illegal-drugs-cards"
 import { SurrenderedCtgfTable } from "@/components/dashboard/surrendered-ctgf-table"
@@ -14,37 +13,8 @@ export async function RidPageContent() {
       getSurrenderedCtgfAnalytics(),
     ])
 
-  const lastUpdated = [
-    illegalDrugsAnalytics.lastUpdated,
-    criminalGangsAnalytics.lastUpdated,
-    surrenderedCtgfAnalytics.lastUpdated,
-  ]
-    .filter(Boolean)
-    .sort()
-    .at(-1)
-
-  const syncParts = [
-    illegalDrugsAnalytics.dataReady ? `Illegal drugs from ${illegalDrugsAnalytics.fileName}` : null,
-    criminalGangsAnalytics.dataReady
-      ? `Criminal gangs from ${criminalGangsAnalytics.fileName}`
-      : null,
-    surrenderedCtgfAnalytics.dataReady
-      ? `Surrendered CTGs from ${surrenderedCtgfAnalytics.fileName}`
-      : null,
-  ].filter(Boolean)
-
   return (
     <div className="space-y-6">
-      <DataSyncBanner
-        lastUpdated={lastUpdated ?? new Date().toISOString()}
-        sourceLabel="RID"
-        syncDescription={
-          syncParts.length > 0
-            ? syncParts.join(" · ")
-            : "Mag-upload ng RID workbooks sa Upload File"
-        }
-      />
-
       <section className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold">Illegal Drugs</h2>
