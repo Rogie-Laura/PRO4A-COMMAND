@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 
 import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-upload-card"
 import { IllegalDrugsUploadCard } from "@/components/settings/illegal-drugs-upload-card"
+import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctgf-upload-card"
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
 import {
   Card,
@@ -13,9 +14,11 @@ import {
 import { getSession, requireDivisionUploadSession } from "@/lib/auth/get-session"
 import { getLatestCriminalGangsUploadBatch } from "@/lib/criminal-gangs-records"
 import { getLatestIllegalDrugsUploadBatch } from "@/lib/illegal-drugs-records"
+import { getLatestSurrenderedCtgfUploadBatch } from "@/lib/surrendered-ctgf-records"
 import { getLatestTerrorismThreatUploadBatch } from "@/lib/terrorism-threat-records"
 import type { CriminalGangsUploadBatchInfo } from "@/lib/criminal-gangs-types"
 import type { IllegalDrugsUploadBatchInfo } from "@/lib/illegal-drugs-types"
+import type { SurrenderedCtgfUploadBatchInfo } from "@/lib/surrendered-ctgf-types"
 import type { TerrorismThreatUploadBatchInfo } from "@/lib/terrorism-threat-types"
 
 export const maxDuration = 300
@@ -35,9 +38,11 @@ export default async function RidUploadPage() {
 
   let latestIllegalDrugsBatch: IllegalDrugsUploadBatchInfo | null = null
   let latestCriminalGangsBatch: CriminalGangsUploadBatchInfo | null = null
+  let latestSurrenderedCtgfBatch: SurrenderedCtgfUploadBatchInfo | null = null
   let latestTerrorismThreatBatch: TerrorismThreatUploadBatchInfo | null = null
   let illegalDrugsUploadError: string | null = null
   let criminalGangsUploadError: string | null = null
+  let surrenderedCtgfUploadError: string | null = null
   let terrorismThreatUploadError: string | null = null
 
   try {
@@ -55,6 +60,13 @@ export default async function RidUploadPage() {
   }
 
   try {
+    latestSurrenderedCtgfBatch = await getLatestSurrenderedCtgfUploadBatch()
+  } catch (error) {
+    surrenderedCtgfUploadError =
+      error instanceof Error ? error.message : "Unable to load surrendered CTGs upload status."
+  }
+
+  try {
     latestTerrorismThreatBatch = await getLatestTerrorismThreatUploadBatch()
   } catch (error) {
     terrorismThreatUploadError =
@@ -67,8 +79,8 @@ export default async function RidUploadPage() {
         <CardHeader>
           <CardTitle className="text-base">RID File Upload</CardTitle>
           <CardDescription>
-            Upload ang ILLEGAL DRUGS.xlsx, ACCOMPLISHMENTS ON CRIMINAL GANGS.xlsx, at TERRORISM
-            THREAT LEVEL.xlsx para sa PRO4A Status.
+            Upload ang ILLEGAL DRUGS.xlsx, ACCOMPLISHMENTS ON CRIMINAL GANGS.xlsx, SURRENDERED
+            CTGs AND FAs.xlsx, at TERRORISM THREAT LEVEL.xlsx.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -102,6 +114,19 @@ export default async function RidUploadPage() {
         </Card>
       ) : (
         <CriminalGangsUploadCard latestBatch={latestCriminalGangsBatch} compact />
+      )}
+
+      {surrenderedCtgfUploadError ? (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Upload Surrendered CTGs and FAs</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{surrenderedCtgfUploadError}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <SurrenderedCtgfUploadCard latestBatch={latestSurrenderedCtgfBatch} compact />
       )}
 
       {terrorismThreatUploadError ? (

@@ -1,16 +1,24 @@
 import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
 import { CriminalGangsCards } from "@/components/dashboard/criminal-gangs-cards"
 import { IllegalDrugsCards } from "@/components/dashboard/illegal-drugs-cards"
+import { SurrenderedCtgfTable } from "@/components/dashboard/surrendered-ctgf-table"
 import { getCriminalGangsAnalytics } from "@/lib/criminal-gangs-records"
 import { getIllegalDrugsAnalytics } from "@/lib/illegal-drugs-records"
+import { getSurrenderedCtgfAnalytics } from "@/lib/surrendered-ctgf-records"
 
 export async function RidPageContent() {
-  const [illegalDrugsAnalytics, criminalGangsAnalytics] = await Promise.all([
-    getIllegalDrugsAnalytics(),
-    getCriminalGangsAnalytics(),
-  ])
+  const [illegalDrugsAnalytics, criminalGangsAnalytics, surrenderedCtgfAnalytics] =
+    await Promise.all([
+      getIllegalDrugsAnalytics(),
+      getCriminalGangsAnalytics(),
+      getSurrenderedCtgfAnalytics(),
+    ])
 
-  const lastUpdated = [illegalDrugsAnalytics.lastUpdated, criminalGangsAnalytics.lastUpdated]
+  const lastUpdated = [
+    illegalDrugsAnalytics.lastUpdated,
+    criminalGangsAnalytics.lastUpdated,
+    surrenderedCtgfAnalytics.lastUpdated,
+  ]
     .filter(Boolean)
     .sort()
     .at(-1)
@@ -19,6 +27,9 @@ export async function RidPageContent() {
     illegalDrugsAnalytics.dataReady ? `Illegal drugs from ${illegalDrugsAnalytics.fileName}` : null,
     criminalGangsAnalytics.dataReady
       ? `Criminal gangs from ${criminalGangsAnalytics.fileName}`
+      : null,
+    surrenderedCtgfAnalytics.dataReady
+      ? `Surrendered CTGs from ${surrenderedCtgfAnalytics.fileName}`
       : null,
   ].filter(Boolean)
 
@@ -30,7 +41,7 @@ export async function RidPageContent() {
         syncDescription={
           syncParts.length > 0
             ? syncParts.join(" · ")
-            : "Mag-upload ng ILLEGAL DRUGS.xlsx at ACCOMPLISHMENTS ON CRIMINAL GANGS.xlsx sa Upload File"
+            : "Mag-upload ng RID workbooks sa Upload File"
         }
       />
 
@@ -50,6 +61,10 @@ export async function RidPageContent() {
           </p>
         </div>
         <CriminalGangsCards analytics={criminalGangsAnalytics} />
+      </section>
+
+      <section className="space-y-4">
+        <SurrenderedCtgfTable analytics={surrenderedCtgfAnalytics} />
       </section>
     </div>
   )
