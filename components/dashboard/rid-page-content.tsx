@@ -1,27 +1,23 @@
-import Link from "next/link"
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { DataSyncBanner } from "@/components/dashboard/data-sync-banner"
+import { IllegalDrugsCards } from "@/components/dashboard/illegal-drugs-cards"
+import { getIllegalDrugsAnalytics } from "@/lib/illegal-drugs-records"
 
 export async function RidPageContent() {
+  const analytics = await getIllegalDrugsAnalytics()
+
   return (
     <div className="space-y-4">
-      <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
-        <CardHeader>
-          <CardTitle>RID</CardTitle>
-          <CardDescription>
-            Ang Terrorism Threat Level ay nasa PRO4A Status na. Mag-upload pa rin ng
-            TERRORISM THREAT LEVEL.xlsx sa Upload File.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Link
-            href="/pro4a-status"
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Pumunta sa PRO4A Status
-          </Link>
-        </CardContent>
-      </Card>
+      <DataSyncBanner
+        lastUpdated={analytics.lastUpdated}
+        sourceLabel={analytics.dataReady ? "Illegal drugs upload" : "Illegal drugs upload"}
+        syncDescription={
+          analytics.dataReady
+            ? `synced from ${analytics.fileName}`
+            : "Mag-upload ng ILLEGAL DRUGS.xlsx sa Upload File"
+        }
+      />
+
+      <IllegalDrugsCards analytics={analytics} />
     </div>
   )
 }
