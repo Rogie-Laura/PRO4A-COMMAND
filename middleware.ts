@@ -6,6 +6,10 @@ import { getSessionCookieName, verifySessionToken } from "@/lib/auth/session"
 
 const PUBLIC_PATHS = ["/login"]
 
+function isPatrollersApi(pathname: string) {
+  return pathname.startsWith("/api/establishments/")
+}
+
 function isPublicAsset(pathname: string) {
   return (
     pathname.startsWith("/_next") ||
@@ -31,6 +35,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (isPublicAsset(pathname)) {
+    return NextResponse.next()
+  }
+
+  if (isPatrollersApi(pathname)) {
     return NextResponse.next()
   }
 
