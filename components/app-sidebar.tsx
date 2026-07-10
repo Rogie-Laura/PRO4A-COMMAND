@@ -55,10 +55,11 @@ function shouldRenderLink(link: NavLink, session: AppSession) {
   if (link.hidden) return false
 
   if (link.uploadOnly) {
-    return (
-      isDivisionUploader(session.role) &&
-      Boolean(link.divisionId && link.divisionId === session.divisionScope)
-    )
+    return isDivisionUploader(session.role) && isLinkAccessible(link, session)
+  }
+
+  if (isDivisionUploader(session.role)) {
+    return isLinkAccessible(link, session)
   }
 
   return true
