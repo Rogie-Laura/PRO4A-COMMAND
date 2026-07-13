@@ -14,6 +14,12 @@ import type {
   DrugClearingProvince,
 } from "@/lib/drug-clearing-types"
 import { cn } from "@/lib/utils"
+import {
+  ridStickyLabelCellClass,
+  ridStickyLabelHeaderClass,
+  ridStickyLabelTotalCellClass,
+  ridTableWrapperClass,
+} from "@/components/dashboard/rid-table-styles"
 
 type DrugClearingPanelProps = {
   analytics: DrugClearingAnalytics
@@ -37,6 +43,46 @@ const STATUS_BADGE_CLASS: Record<DrugClearingBarangayStatus, string> = {
 
 function formatCount(value: number) {
   return value.toLocaleString("en-PH")
+}
+
+const PROVINCE_STICKY_CLASS =
+  "min-w-[7.25rem] sm:min-w-[8.5rem] text-violet-700 dark:text-violet-300"
+
+function DrillDownContextBar({
+  province,
+  municipality,
+  onBack,
+  backLabel,
+}: {
+  province: string
+  municipality: string | null
+  onBack: () => void
+  backLabel: string
+}) {
+  return (
+    <div className="sticky top-14 z-20 -mx-1 space-y-2 border-b border-violet-500/15 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:top-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={onBack} className="h-8 px-2">
+          <ArrowLeft className="size-4" />
+          {backLabel}
+        </Button>
+      </div>
+      <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          Province
+        </p>
+        <p className="text-base font-semibold text-violet-700 dark:text-violet-300">{province}</p>
+        {municipality ? (
+          <>
+            <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Municipality
+            </p>
+            <p className="text-sm font-medium text-foreground">{municipality}</p>
+          </>
+        ) : null}
+      </div>
+    </div>
+  )
 }
 
 function KpiChip({ label, value }: { label: string; value: number }) {
@@ -200,106 +246,98 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
               </div>
             ) : null}
 
-            <div className="overflow-x-auto rounded-lg border bg-background/70">
-              <table className="w-full min-w-[760px] text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/30 text-left text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">Province</th>
-                    <th className="px-4 py-3 font-medium text-right">Cities/Mun.</th>
-                    <th className="px-4 py-3 font-medium text-right">Total Brgy</th>
-                    <th className="px-4 py-3 font-medium text-right">Cleared</th>
-                    <th className="px-4 py-3 font-medium text-right">Affected</th>
-                    <th className="px-4 py-3 font-medium text-right">Unaffected</th>
-                    <th className="px-4 py-3 font-medium text-right">Drug Free</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {provinceRows.map((row) => (
-                    <tr
-                      key={row.province}
-                      className="cursor-pointer border-b transition-colors last:border-0 hover:bg-violet-500/5"
-                      onClick={() => handleProvinceSelect(row.province)}
-                    >
-                      <td className="px-4 py-3 font-medium text-violet-700 dark:text-violet-300">
-                        <span className="inline-flex items-center gap-1">
-                          {row.province}
-                          <ChevronRight className="size-3.5 opacity-60" />
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {formatCount(row.citiesMunicipalities)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {formatCount(row.totalBarangays)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-violet-700 dark:text-violet-300">
-                        {formatCount(row.clearedBarangays)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-amber-700 dark:text-amber-300">
-                        {formatCount(row.remainingAffected)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {formatCount(row.unaffected)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums text-emerald-700 dark:text-emerald-300">
-                        {formatCount(row.drugFree)}
-                      </td>
+            <div className="space-y-2">
+              <div className={ridTableWrapperClass}>
+                <table className="w-full min-w-[760px] text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className={ridStickyLabelHeaderClass(PROVINCE_STICKY_CLASS)}>Province</th>
+                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Cities/Mun.</th>
+                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Total Brgy</th>
+                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Cleared</th>
+                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Affected</th>
+                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Unaffected</th>
+                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Drug Free</th>
                     </tr>
-                  ))}
-                  {regionalTotal ? (
-                    <tr className="bg-muted/20 font-semibold">
-                      <td className="px-4 py-3">TOTAL</td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {formatCount(regionalTotal.citiesMunicipalities)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {formatCount(regionalTotal.totalBarangays)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {formatCount(regionalTotal.clearedBarangays)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {formatCount(regionalTotal.remainingAffected)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {formatCount(regionalTotal.unaffected)}
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {formatCount(regionalTotal.drugFree)}
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {provinceRows.map((row) => (
+                      <tr
+                        key={row.province}
+                        className="group cursor-pointer border-b transition-colors last:border-0 hover:bg-violet-500/5"
+                        onClick={() => handleProvinceSelect(row.province)}
+                      >
+                        <td
+                          className={ridStickyLabelCellClass(
+                            cn(PROVINCE_STICKY_CLASS, "group-hover:bg-violet-500/5"),
+                          )}
+                        >
+                          <span className="inline-flex items-center gap-1">
+                            {row.province}
+                            <ChevronRight className="size-3.5 opacity-60" />
+                          </span>
+                        </td>
+                        <td className="bg-background px-4 py-3 text-right tabular-nums group-hover:bg-violet-500/5">
+                          {formatCount(row.citiesMunicipalities)}
+                        </td>
+                        <td className="bg-background px-4 py-3 text-right tabular-nums group-hover:bg-violet-500/5">
+                          {formatCount(row.totalBarangays)}
+                        </td>
+                        <td className="bg-background px-4 py-3 text-right tabular-nums text-violet-700 group-hover:bg-violet-500/5 dark:text-violet-300">
+                          {formatCount(row.clearedBarangays)}
+                        </td>
+                        <td className="bg-background px-4 py-3 text-right tabular-nums text-amber-700 group-hover:bg-violet-500/5 dark:text-amber-300">
+                          {formatCount(row.remainingAffected)}
+                        </td>
+                        <td className="bg-background px-4 py-3 text-right tabular-nums group-hover:bg-violet-500/5">
+                          {formatCount(row.unaffected)}
+                        </td>
+                        <td className="bg-background px-4 py-3 text-right tabular-nums text-emerald-700 group-hover:bg-violet-500/5 dark:text-emerald-300">
+                          {formatCount(row.drugFree)}
+                        </td>
+                      </tr>
+                    ))}
+                    {regionalTotal ? (
+                      <tr className="bg-muted/20 font-semibold">
+                        <td className={ridStickyLabelTotalCellClass(PROVINCE_STICKY_CLASS)}>TOTAL</td>
+                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
+                          {formatCount(regionalTotal.citiesMunicipalities)}
+                        </td>
+                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
+                          {formatCount(regionalTotal.totalBarangays)}
+                        </td>
+                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
+                          {formatCount(regionalTotal.clearedBarangays)}
+                        </td>
+                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
+                          {formatCount(regionalTotal.remainingAffected)}
+                        </td>
+                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
+                          {formatCount(regionalTotal.unaffected)}
+                        </td>
+                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
+                          {formatCount(regionalTotal.drugFree)}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-center text-xs text-muted-foreground md:hidden">
+                Swipe left para makita ang ibang columns · naka-sticky ang province
+              </p>
             </div>
           </>
         ) : null}
 
         {selectedProvince && activeProvince ? (
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={selectedMunicipality ? handleBackToProvince : handleBackToRecap}
-                className="h-8 px-2"
-              >
-                <ArrowLeft className="size-4" />
-                {selectedMunicipality ? `Back to ${selectedProvince}` : "Back to recap"}
-              </Button>
-              <p className="text-sm text-muted-foreground">
-                {selectedMunicipality ? (
-                  <>
-                    <span className="font-medium text-foreground">{selectedProvince}</span>
-                    {" · "}
-                    <span className="font-medium text-foreground">{selectedMunicipality}</span>
-                  </>
-                ) : (
-                  <span className="font-medium text-foreground">{selectedProvince}</span>
-                )}
-              </p>
-            </div>
+            <DrillDownContextBar
+              province={selectedProvince}
+              municipality={selectedMunicipality}
+              onBack={selectedMunicipality ? handleBackToProvince : handleBackToRecap}
+              backLabel={selectedMunicipality ? `Back to ${selectedProvince}` : "Back to recap"}
+            />
 
             {activeMunicipality ? (
               <BarangayDetails municipality={activeMunicipality} />
