@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { TrendingUp } from "lucide-react"
 
-import { formatUperRating } from "@/lib/uper-config"
+import { formatUperRating, UPER_RANK_SCALE_MAX } from "@/lib/uper-config"
 import type { UperAnalytics } from "@/lib/uper-types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -131,7 +131,8 @@ export function UperCurrentRankingCard({ analytics, compact = false }: UperCurre
                 <YAxis
                   yAxisId="rank"
                   reversed
-                  domain={[1, "dataMax"]}
+                  domain={[1, UPER_RANK_SCALE_MAX]}
+                  allowDecimals={false}
                   tickLine={false}
                   axisLine={false}
                   width={36}
