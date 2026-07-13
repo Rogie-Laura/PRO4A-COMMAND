@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   alertLevelBadgeClass,
   alertLevelCardClass,
+  alertLevelSupportsRemarks,
   alertLevelTextClass,
   getAlertLevelLabel,
 } from "@/lib/alert-level-config"
@@ -39,6 +40,12 @@ export function AlertLevelCard({ setting, compact = false }: AlertLevelCardProps
         >
           {label}
         </Badge>
+        {alertLevelSupportsRemarks(setting.level) && setting.remarks ? (
+          <div className="rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm">
+            <p className="text-xs font-medium text-muted-foreground">Remarks</p>
+            <p className="mt-1 font-medium leading-snug">{setting.remarks}</p>
+          </div>
+        ) : null}
         <p className="text-xs text-muted-foreground">
           {setting.updatedByLabel
             ? `Updated by ${setting.updatedByLabel}`

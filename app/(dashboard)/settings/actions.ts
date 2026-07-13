@@ -924,7 +924,7 @@ export async function uploadEstablishmentWorkbookAction(formData: FormData) {
   }
 }
 
-export async function updateAlertLevelAction(level: AlertLevelId) {
+export async function updateAlertLevelAction(level: AlertLevelId, remarks?: string | null) {
   try {
     const session = await requireAlertLevelManageSession()
 
@@ -932,7 +932,7 @@ export async function updateAlertLevelAction(level: AlertLevelId) {
       throw new Error("Invalid alert level.")
     }
 
-    const result = await updateAlertLevelSetting(level, session.label)
+    const result = await updateAlertLevelSetting(level, session.label, remarks)
 
     updateTag(ALERT_LEVEL_CACHE_TAG)
     revalidatePath("/settings")

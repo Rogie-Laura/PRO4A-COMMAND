@@ -109,12 +109,14 @@ export default async function SettingsPage() {
   let latestEstablishmentBatch: EstablishmentUploadBatchInfo | null = null
   let establishmentUploadError: string | null = null
   let alertLevel: AlertLevelId = "normal"
+  let alertLevelRemarks: string | null = null
   let alertLevelError: string | null = null
 
   if (showAlertLevelSettings) {
     try {
       const setting = await getAlertLevelSetting()
       alertLevel = setting.level
+      alertLevelRemarks = setting.remarks
     } catch (error) {
       alertLevelError =
         error instanceof Error
@@ -285,13 +287,16 @@ export default async function SettingsPage() {
               <CardContent>
                 <p className="text-sm text-destructive">{alertLevelError}</p>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  I-run muna ang Supabase migration `20260710180000_create_pro4a_alert_level_settings.sql`
-                  kung wala pa ang `pro4a_alert_level_settings` table.
+                  I-run muna ang Supabase migrations para sa `pro4a_alert_level_settings` table at
+                  `remarks` column.
                 </p>
               </CardContent>
             </Card>
           ) : (
-            <AlertLevelSettingsCard initialLevel={alertLevel} />
+            <AlertLevelSettingsCard
+              initialLevel={alertLevel}
+              initialRemarks={alertLevelRemarks}
+            />
           )
         ) : null}
 

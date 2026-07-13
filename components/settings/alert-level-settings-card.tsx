@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { BellRing } from "lucide-react"
 
@@ -13,20 +13,35 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { ALERT_LEVEL_OPTIONS } from "@/lib/alert-level-config"
+import { ALERT_LEVEL_OPTIONS, alertLevelSupportsRemarks } from "@/lib/alert-level-config"
 import type { AlertLevelId } from "@/lib/alert-level-types"
 import { formatServerActionError } from "@/lib/server-action-errors"
 
 type AlertLevelSettingsCardProps = {
   initialLevel: AlertLevelId
+  initialRemarks?: string | null
 }
 
-export function AlertLevelSettingsCard({ initialLevel }: AlertLevelSettingsCardProps) {
+export function AlertLevelSettingsCard({
+  initialLevel,
+  initialRemarks = null,
+}: AlertLevelSettingsCardProps) {
   const router = useRouter()
   const [level, setLevel] = useState<AlertLevelId>(initialLevel)
+  const [remarks, setRemarks] = useState(initialRemarks ?? "")
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    setLevel(initialLevel)
+    setRemarks(initialRemarks ?? "")
+  }, [initialLevel, initialRemarks])
+
+  const showRemarks = alertLevelSupportsRemarks(level)
+  const hasChanges =
+    level !== initialLevel ||
+    (showRemarks ? remarks.trim() !== (initialRemarks ?? "").trim() : false)
 
   function handleSave() {
     setError(null)
@@ -34,7 +49,7 @@ export function AlertLevelSettingsCard({ initialLevel }: AlertLevelSettingsCardP
 
     startTransition(async () => {
       try {
-        await updateAlertLevelAction(level)
+        await updateAlertLevelAction(level, showRemarks ? remarks : null)
         setSuccess("Na-update ang Alert Level.")
         router.refresh()
       } catch (saveError) {
@@ -60,7 +75,13 @@ export function AlertLevelSettingsCard({ initialLevel }: AlertLevelSettingsCardP
           <span className="font-medium">Alert level</span>
           <select
             value={level}
-            onChange={(event) => setLevel(event.target.value as AlertLevelId)}
+            onChange={(event) => {
+              const nextLevel = event.target.value as AlertLevelId
+              setLevel(nextLevel)
+              if (!alertLevelSupportsRemarks(nextLevel)) {
+                setRemarks("")
+              }
+            }}
             disabled={isPending}
             className="h-10 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           >
@@ -75,7 +96,25 @@ export function AlertLevelSettingsCard({ initialLevel }: AlertLevelSettingsCardP
           </span>
         </label>
 
-        <Button onClick={handleSave} disabled={isPending || level === initialLevel}>
+        {showRemarks ? (
+          <label className="block space-y-2 text-sm">
+            <span className="font-medium">Remarks</span>
+            <textarea
+              value={remarks}
+              onChange={(event) => setRemarks(event.target.value)}
+              disabled={isPending}
+              maxLength={200}
+              rows={3}
+              placeholder="Hal. 1 Billion Flood Control Rally"
+              className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+            />
+            <span className="block text-xs text-muted-foreground">
+              Optional context na lalabas sa Alert Level card kapag Heightened Alert o Full Alert.
+            </span>
+          </label>
+        ) : null}
+
+        <Button onClick={handleSave} disabled={isPending || !hasChanges}>
           {isPending ? "Sine-save..." : "Save Alert Level"}
         </Button>
 

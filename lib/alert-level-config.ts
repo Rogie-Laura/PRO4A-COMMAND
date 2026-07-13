@@ -59,3 +59,7 @@ export function alertLevelTextClass(level: AlertLevelId) {
 export function isAlertLevelId(value: unknown): value is AlertLevelId {
   return typeof value === "string" && ALERT_LEVEL_OPTIONS.some((option) => option.id === value)
 }
+
+export function alertLevelSupportsRemarks(level: AlertLevelId) {
+  return level === "heightened" || level === "full_alert"
+}
