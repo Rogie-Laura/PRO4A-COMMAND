@@ -16,6 +16,7 @@ import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctg
 import { ForeignNationalUploadCard } from "@/components/settings/foreign-national-upload-card"
 import { TrainingsUploadCard } from "@/components/settings/trainings-upload-card"
 import { AlertLevelSettingsCard } from "@/components/settings/alert-level-settings-card"
+import { DrugClearingUploadCard } from "@/components/settings/drug-clearing-upload-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
 import { EstablishmentUploadCard } from "@/components/settings/establishment-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
@@ -56,6 +57,8 @@ import { getLatestForeignNationalUploadBatch } from "@/lib/foreign-national-reco
 import type { ForeignNationalUploadBatchInfo } from "@/lib/foreign-national-types"
 import { getLatestTrainingsUploadBatch } from "@/lib/trainings-records"
 import type { TrainingsUploadBatchInfo } from "@/lib/trainings-types"
+import { getLatestDrugClearingUploadBatch } from "@/lib/drug-clearing-records"
+import type { DrugClearingUploadBatchInfo } from "@/lib/drug-clearing-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
 import type { RcaddUploadBatchInfo } from "@/lib/rcadd-accomplishment-types"
 import { getLatestEstablishmentUploadBatch } from "@/lib/establishment-records"
@@ -111,6 +114,8 @@ export default async function SettingsPage() {
   let trainingsUploadError: string | null = null
   let latestRcaddBatch: RcaddUploadBatchInfo | null = null
   let rcaddUploadError: string | null = null
+  let latestDrugClearingBatch: DrugClearingUploadBatchInfo | null = null
+  let drugClearingUploadError: string | null = null
   let latestEstablishmentBatch: EstablishmentUploadBatchInfo | null = null
   let establishmentUploadError: string | null = null
   let alertLevel: AlertLevelId = "normal"
@@ -273,6 +278,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load RCADD upload status from Supabase."
+    }
+
+    try {
+      latestDrugClearingBatch = await getLatestDrugClearingUploadBatch()
+    } catch (error) {
+      drugClearingUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load drug clearing upload status from Supabase."
     }
 
     try {
@@ -576,6 +590,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <RcaddUploadCard latestBatch={latestRcaddBatch} />
+            )}
+
+            {drugClearingUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Drug Clearing Workbook</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{drugClearingUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260713220000_create_drug_clearing_upload_batches.sql`
+                    kung wala pa ang `drug_clearing_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <DrugClearingUploadCard latestBatch={latestDrugClearingBatch} />
             )}
 
             {establishmentUploadError ? (

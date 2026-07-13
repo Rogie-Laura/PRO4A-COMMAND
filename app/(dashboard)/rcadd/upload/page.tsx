@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { DrugClearingUploadCard } from "@/components/settings/drug-clearing-upload-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
 import {
   Card,
@@ -9,6 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { getSession, requireDivisionUploadSession } from "@/lib/auth/get-session"
+import { getLatestDrugClearingUploadBatch } from "@/lib/drug-clearing-records"
+import type { DrugClearingUploadBatchInfo } from "@/lib/drug-clearing-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
 import type { RcaddUploadBatchInfo } from "@/lib/rcadd-accomplishment-types"
 
@@ -29,6 +32,8 @@ export default async function RcaddUploadPage() {
 
   let latestBatch: RcaddUploadBatchInfo | null = null
   let uploadError: string | null = null
+  let latestDrugClearingBatch: DrugClearingUploadBatchInfo | null = null
+  let drugClearingUploadError: string | null = null
 
   try {
     latestBatch = await getLatestRcaddUploadBatch()
@@ -37,14 +42,21 @@ export default async function RcaddUploadPage() {
       error instanceof Error ? error.message : "Unable to load RCADD upload status."
   }
 
+  try {
+    latestDrugClearingBatch = await getLatestDrugClearingUploadBatch()
+  } catch (error) {
+    drugClearingUploadError =
+      error instanceof Error ? error.message : "Unable to load drug clearing upload status."
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
         <CardHeader>
           <CardTitle className="text-base">RCADD File Upload</CardTitle>
           <CardDescription>
-            Upload ang RCADD ACCOMPLISHMENT FOR PRO 4A COMMAND DASHBOARD workbook para sa RSRI,
-            mobilized barangays, drug cleared barangays, at Project L.A.K.A.S cards.
+            Upload ang RCADD accomplishment workbook at drug_clearing.xlsx para sa RSRI,
+            mobilized barangays, Project L.A.K.A.S, at Drug Clearing dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -65,6 +77,19 @@ export default async function RcaddUploadPage() {
         </Card>
       ) : (
         <RcaddUploadCard latestBatch={latestBatch} compact />
+      )}
+
+      {drugClearingUploadError ? (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Upload Drug Clearing Workbook</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{drugClearingUploadError}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <DrugClearingUploadCard latestBatch={latestDrugClearingBatch} compact />
       )}
     </div>
   )

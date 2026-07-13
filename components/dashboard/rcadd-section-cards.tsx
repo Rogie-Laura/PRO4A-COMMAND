@@ -209,7 +209,7 @@ export function RcaddSectionCards({ analytics }: RcaddSectionCardsProps) {
     <div className="space-y-4">
       <RsriCard analytics={analytics} />
       {groups
-        .filter((group) => group.sectionId !== "rsri")
+        .filter((group) => group.sectionId !== "rsri" && group.sectionId !== "drug_cleared_barangays")
         .map((group) => (
           <SummaryMetricCard
             key={group.sectionId}
