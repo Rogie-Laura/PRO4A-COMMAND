@@ -1,3 +1,11 @@
+export type DrugClearingStatusFilter = Exclude<DrugClearingBarangayStatus, "unknown">
+
+export type DrugClearingBreakdownRow = {
+  ppo: string
+  municipality: string
+  barangay: string
+}
+
 export type DrugClearingBarangayStatus =
   | "cleared"
   | "affected"

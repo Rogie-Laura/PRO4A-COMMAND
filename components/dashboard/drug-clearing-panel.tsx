@@ -6,12 +6,17 @@ import { ArrowLeft, ChevronRight, ShieldCheck } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getDrugClearingRegionalTotal } from "@/lib/drug-clearing-analytics"
+import {
+  collectStatusBreakdown,
+  getDrugClearingRegionalTotal,
+  getStatusFilterTitle,
+} from "@/lib/drug-clearing-analytics"
 import type {
   DrugClearingAnalytics,
   DrugClearingBarangayStatus,
   DrugClearingMunicipality,
   DrugClearingProvince,
+  DrugClearingStatusFilter,
 } from "@/lib/drug-clearing-types"
 import { cn } from "@/lib/utils"
 import {
@@ -23,6 +28,16 @@ import {
 
 type DrugClearingPanelProps = {
   analytics: DrugClearingAnalytics
+}
+
+type StatusFilterScope = {
+  province?: string
+  municipality?: string
+}
+
+type ActiveStatusFilter = {
+  status: DrugClearingStatusFilter
+  scope: StatusFilterScope
 }
 
 const STATUS_LABELS: Record<DrugClearingBarangayStatus, string> = {
@@ -41,12 +56,21 @@ const STATUS_BADGE_CLASS: Record<DrugClearingBarangayStatus, string> = {
   unknown: "border-muted-foreground/20 bg-muted/40 text-muted-foreground",
 }
 
+const FIGURE_CELL_CLASS: Record<DrugClearingStatusFilter, string> = {
+  cleared: "text-violet-700 dark:text-violet-300",
+  affected: "text-amber-700 dark:text-amber-300",
+  unaffected: "text-foreground",
+  drug_free: "text-emerald-700 dark:text-emerald-300",
+}
+
 function formatCount(value: number) {
   return value.toLocaleString("en-PH")
 }
 
 const PROVINCE_STICKY_CLASS =
   "min-w-[7.25rem] sm:min-w-[8.5rem] text-violet-700 dark:text-violet-300"
+
+const PPO_STICKY_CLASS = "min-w-[6.5rem] sm:min-w-[7.5rem]"
 
 function DrillDownContextBar({
   province,
@@ -69,13 +93,13 @@ function DrillDownContextBar({
       </div>
       <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 px-3 py-2">
         <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          Province
+          PPO
         </p>
         <p className="text-base font-semibold text-violet-700 dark:text-violet-300">{province}</p>
         {municipality ? (
           <>
             <p className="mt-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Municipality
+              Bayan
             </p>
             <p className="text-sm font-medium text-foreground">{municipality}</p>
           </>
@@ -85,26 +109,188 @@ function DrillDownContextBar({
   )
 }
 
-function KpiChip({ label, value }: { label: string; value: number }) {
+function ClickableFigure({
+  value,
+  status,
+  onSelect,
+  className,
+}: {
+  value: number
+  status: DrugClearingStatusFilter
+  onSelect: (status: DrugClearingStatusFilter) => void
+  className?: string
+}) {
+  const clickable = value > 0
+
+  if (!clickable) {
+    return <span className={cn("tabular-nums", className)}>{formatCount(value)}</span>
+  }
+
   return (
-    <div className="rounded-lg border border-violet-500/20 bg-background/70 px-4 py-3">
+    <button
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation()
+        onSelect(status)
+      }}
+      className={cn(
+        "tabular-nums underline-offset-2 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        FIGURE_CELL_CLASS[status],
+        className,
+      )}
+      title={`Tingnan ang ${STATUS_LABELS[status]} barangays`}
+    >
+      {formatCount(value)}
+    </button>
+  )
+}
+
+function KpiChip({
+  label,
+  value,
+  status,
+  onStatusSelect,
+}: {
+  label: string
+  value: number
+  status?: DrugClearingStatusFilter
+  onStatusSelect?: (status: DrugClearingStatusFilter) => void
+}) {
+  const clickable = Boolean(status && onStatusSelect && value > 0)
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border border-violet-500/20 bg-background/70 px-4 py-3",
+        clickable && "cursor-pointer transition-colors hover:border-violet-500/35 hover:bg-violet-500/5",
+      )}
+      onClick={clickable ? () => onStatusSelect?.(status!) : undefined}
+      onKeyDown={
+        clickable
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                onStatusSelect?.(status!)
+              }
+            }
+          : undefined
+      }
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+    >
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-bold tabular-nums text-violet-700 dark:text-violet-300">
+      <p
+        className={cn(
+          "mt-1 text-2xl font-bold tabular-nums",
+          status ? FIGURE_CELL_CLASS[status] : "text-violet-700 dark:text-violet-300",
+        )}
+      >
         {formatCount(value)}
       </p>
+      {clickable ? (
+        <p className="mt-1 text-[11px] text-muted-foreground">Tap para sa PPO · Bayan · Brgy</p>
+      ) : null}
     </div>
   )
 }
 
-function BarangayDetails({ municipality }: { municipality: DrugClearingMunicipality }) {
+function StatusBreakdownTable({
+  title,
+  status,
+  rows,
+  onBack,
+}: {
+  title: string
+  status: DrugClearingStatusFilter
+  rows: { ppo: string; municipality: string; barangay: string }[]
+  onBack: () => void
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="sticky top-14 z-20 -mx-1 space-y-2 border-b border-violet-500/15 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:top-0">
+        <Button type="button" variant="ghost" size="sm" onClick={onBack} className="h-8 px-2">
+          <ArrowLeft className="size-4" />
+          Back
+        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className={STATUS_BADGE_CLASS[status]}>
+            {STATUS_LABELS[status]}
+          </Badge>
+          <p className="text-sm font-medium">{title}</p>
+          <Badge variant="secondary" className="tabular-nums">
+            {formatCount(rows.length)} barangays
+          </Badge>
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Walang barangay records para sa status na ito.</p>
+      ) : (
+        <div className="space-y-2">
+          <div className={cn(ridTableWrapperClass, "max-h-[min(70vh,36rem)]")}>
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className={ridStickyLabelHeaderClass(PPO_STICKY_CLASS)}>PPO</th>
+                  <th className="bg-muted/30 px-4 py-3 font-medium">Bayan</th>
+                  <th className="bg-muted/30 px-4 py-3 font-medium">Barangay</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={`${row.ppo}-${row.municipality}-${row.barangay}`} className="border-b last:border-0">
+                    <td className={ridStickyLabelCellClass(PPO_STICKY_CLASS)}>{row.ppo}</td>
+                    <td className="bg-background px-4 py-3">{row.municipality}</td>
+                    <td className="bg-background px-4 py-3">{row.barangay}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-center text-xs text-muted-foreground md:hidden">
+            Swipe left para makita ang Bayan at Barangay · naka-sticky ang PPO
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BarangayDetails({
+  municipality,
+  onStatusSelect,
+}: {
+  municipality: DrugClearingMunicipality
+  onStatusSelect: (status: DrugClearingStatusFilter) => void
+}) {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <KpiChip label="Total Barangays" value={municipality.totalBarangays} />
-        <KpiChip label="Cleared" value={municipality.cleared} />
-        <KpiChip label="Affected" value={municipality.affected} />
-        <KpiChip label="Unaffected" value={municipality.unaffected} />
-        <KpiChip label="Drug Free" value={municipality.drugFree} />
+        <KpiChip
+          label="Cleared"
+          value={municipality.cleared}
+          status="cleared"
+          onStatusSelect={() => onStatusSelect("cleared")}
+        />
+        <KpiChip
+          label="Affected"
+          value={municipality.affected}
+          status="affected"
+          onStatusSelect={() => onStatusSelect("affected")}
+        />
+        <KpiChip
+          label="Unaffected"
+          value={municipality.unaffected}
+          status="unaffected"
+          onStatusSelect={() => onStatusSelect("unaffected")}
+        />
+        <KpiChip
+          label="Drug Free"
+          value={municipality.drugFree}
+          status="drug_free"
+          onStatusSelect={() => onStatusSelect("drug_free")}
+        />
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -168,6 +354,7 @@ function MunicipalityList({
 export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
   const [selectedMunicipality, setSelectedMunicipality] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<ActiveStatusFilter | null>(null)
 
   const regionalTotal = useMemo(() => getDrugClearingRegionalTotal(analytics.recap), [analytics.recap])
   const provinceRows = useMemo(
@@ -189,22 +376,57 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
     )
   }, [activeProvince, selectedMunicipality])
 
+  const statusBreakdownRows = useMemo(() => {
+    if (!statusFilter) return []
+    return collectStatusBreakdown(
+      analytics.provinces,
+      statusFilter.status,
+      statusFilter.scope,
+    )
+  }, [analytics.provinces, statusFilter])
+
+  const statusFilterTitle = useMemo(() => {
+    if (!statusFilter) return ""
+    return getStatusFilterTitle(statusFilter.status, statusFilter.scope)
+  }, [statusFilter])
+
+  function openStatusFilter(status: DrugClearingStatusFilter, scope: StatusFilterScope = {}) {
+    setStatusFilter({ status, scope })
+  }
+
   function handleProvinceSelect(provinceName: string) {
     setSelectedProvince(provinceName)
     setSelectedMunicipality(null)
+    setStatusFilter(null)
   }
 
   function handleMunicipalitySelect(municipalityName: string) {
     setSelectedMunicipality(municipalityName)
+    setStatusFilter(null)
   }
 
   function handleBackToRecap() {
     setSelectedProvince(null)
     setSelectedMunicipality(null)
+    setStatusFilter(null)
   }
 
   function handleBackToProvince() {
     setSelectedMunicipality(null)
+    setStatusFilter(null)
+  }
+
+  function handleStatusSelectAtRecap(status: DrugClearingStatusFilter, province?: string) {
+    openStatusFilter(status, province ? { province } : {})
+  }
+
+  function handleStatusSelectInDrillDown(status: DrugClearingStatusFilter) {
+    if (!selectedProvince) return
+
+    openStatusFilter(status, {
+      province: selectedProvince,
+      municipality: selectedMunicipality ?? undefined,
+    })
   }
 
   if (!analytics.dataReady) {
@@ -228,21 +450,50 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
           Drug Clearing / Drug Cleared Barangays
         </CardTitle>
         <CardDescription>
-          Regional recap validated by ROCBDC · i-click ang province, tapos ang bayan para sa
-          barangay details
+          I-click ang province, bayan, o ang Cleared / Affected / Unaffected / Drug Free figures para
+          sa PPO · Bayan · Barangay breakdown
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {!selectedProvince ? (
+        {statusFilter ? (
+          <StatusBreakdownTable
+            title={statusFilterTitle}
+            status={statusFilter.status}
+            rows={statusBreakdownRows}
+            onBack={() => setStatusFilter(null)}
+          />
+        ) : null}
+
+        {!statusFilter && !selectedProvince ? (
           <>
             {regionalTotal ? (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <KpiChip label="Cities / Municipalities" value={regionalTotal.citiesMunicipalities} />
                 <KpiChip label="Total Barangays" value={regionalTotal.totalBarangays} />
-                <KpiChip label="Cleared Barangays (ROCBDC)" value={regionalTotal.clearedBarangays} />
-                <KpiChip label="Remaining Affected" value={regionalTotal.remainingAffected} />
-                <KpiChip label="Unaffected Barangays" value={regionalTotal.unaffected} />
-                <KpiChip label="Drug Free Barangays" value={regionalTotal.drugFree} />
+                <KpiChip
+                  label="Cleared Barangays (ROCBDC)"
+                  value={regionalTotal.clearedBarangays}
+                  status="cleared"
+                  onStatusSelect={(status) => handleStatusSelectAtRecap(status)}
+                />
+                <KpiChip
+                  label="Remaining Affected"
+                  value={regionalTotal.remainingAffected}
+                  status="affected"
+                  onStatusSelect={(status) => handleStatusSelectAtRecap(status)}
+                />
+                <KpiChip
+                  label="Unaffected Barangays"
+                  value={regionalTotal.unaffected}
+                  status="unaffected"
+                  onStatusSelect={(status) => handleStatusSelectAtRecap(status)}
+                />
+                <KpiChip
+                  label="Drug Free Barangays"
+                  value={regionalTotal.drugFree}
+                  status="drug_free"
+                  onStatusSelect={(status) => handleStatusSelectAtRecap(status)}
+                />
               </div>
             ) : null}
 
@@ -251,7 +502,7 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
                 <table className="w-full min-w-[760px] text-sm">
                   <thead>
                     <tr className="border-b text-left text-muted-foreground">
-                      <th className={ridStickyLabelHeaderClass(PROVINCE_STICKY_CLASS)}>Province</th>
+                      <th className={ridStickyLabelHeaderClass(PROVINCE_STICKY_CLASS)}>PPO</th>
                       <th className="bg-muted/30 px-4 py-3 font-medium text-right">Cities/Mun.</th>
                       <th className="bg-muted/30 px-4 py-3 font-medium text-right">Total Brgy</th>
                       <th className="bg-muted/30 px-4 py-3 font-medium text-right">Cleared</th>
@@ -264,15 +515,15 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
                     {provinceRows.map((row) => (
                       <tr
                         key={row.province}
-                        className="group cursor-pointer border-b transition-colors last:border-0 hover:bg-violet-500/5"
-                        onClick={() => handleProvinceSelect(row.province)}
+                        className="group border-b transition-colors last:border-0 hover:bg-violet-500/5"
                       >
                         <td
                           className={ridStickyLabelCellClass(
-                            cn(PROVINCE_STICKY_CLASS, "group-hover:bg-violet-500/5"),
+                            cn(PROVINCE_STICKY_CLASS, "cursor-pointer group-hover:bg-violet-500/5"),
                           )}
+                          onClick={() => handleProvinceSelect(row.province)}
                         >
-                          <span className="inline-flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1 font-medium">
                             {row.province}
                             <ChevronRight className="size-3.5 opacity-60" />
                           </span>
@@ -283,17 +534,33 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
                         <td className="bg-background px-4 py-3 text-right tabular-nums group-hover:bg-violet-500/5">
                           {formatCount(row.totalBarangays)}
                         </td>
-                        <td className="bg-background px-4 py-3 text-right tabular-nums text-violet-700 group-hover:bg-violet-500/5 dark:text-violet-300">
-                          {formatCount(row.clearedBarangays)}
+                        <td className="bg-background px-4 py-3 text-right group-hover:bg-violet-500/5">
+                          <ClickableFigure
+                            value={row.clearedBarangays}
+                            status="cleared"
+                            onSelect={(status) => handleStatusSelectAtRecap(status, row.province)}
+                          />
                         </td>
-                        <td className="bg-background px-4 py-3 text-right tabular-nums text-amber-700 group-hover:bg-violet-500/5 dark:text-amber-300">
-                          {formatCount(row.remainingAffected)}
+                        <td className="bg-background px-4 py-3 text-right group-hover:bg-violet-500/5">
+                          <ClickableFigure
+                            value={row.remainingAffected}
+                            status="affected"
+                            onSelect={(status) => handleStatusSelectAtRecap(status, row.province)}
+                          />
                         </td>
-                        <td className="bg-background px-4 py-3 text-right tabular-nums group-hover:bg-violet-500/5">
-                          {formatCount(row.unaffected)}
+                        <td className="bg-background px-4 py-3 text-right group-hover:bg-violet-500/5">
+                          <ClickableFigure
+                            value={row.unaffected}
+                            status="unaffected"
+                            onSelect={(status) => handleStatusSelectAtRecap(status, row.province)}
+                          />
                         </td>
-                        <td className="bg-background px-4 py-3 text-right tabular-nums text-emerald-700 group-hover:bg-violet-500/5 dark:text-emerald-300">
-                          {formatCount(row.drugFree)}
+                        <td className="bg-background px-4 py-3 text-right group-hover:bg-violet-500/5">
+                          <ClickableFigure
+                            value={row.drugFree}
+                            status="drug_free"
+                            onSelect={(status) => handleStatusSelectAtRecap(status, row.province)}
+                          />
                         </td>
                       </tr>
                     ))}
@@ -306,17 +573,33 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
                         <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
                           {formatCount(regionalTotal.totalBarangays)}
                         </td>
-                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
-                          {formatCount(regionalTotal.clearedBarangays)}
+                        <td className="bg-muted/20 px-4 py-3 text-right">
+                          <ClickableFigure
+                            value={regionalTotal.clearedBarangays}
+                            status="cleared"
+                            onSelect={(status) => handleStatusSelectAtRecap(status)}
+                          />
                         </td>
-                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
-                          {formatCount(regionalTotal.remainingAffected)}
+                        <td className="bg-muted/20 px-4 py-3 text-right">
+                          <ClickableFigure
+                            value={regionalTotal.remainingAffected}
+                            status="affected"
+                            onSelect={(status) => handleStatusSelectAtRecap(status)}
+                          />
                         </td>
-                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
-                          {formatCount(regionalTotal.unaffected)}
+                        <td className="bg-muted/20 px-4 py-3 text-right">
+                          <ClickableFigure
+                            value={regionalTotal.unaffected}
+                            status="unaffected"
+                            onSelect={(status) => handleStatusSelectAtRecap(status)}
+                          />
                         </td>
-                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
-                          {formatCount(regionalTotal.drugFree)}
+                        <td className="bg-muted/20 px-4 py-3 text-right">
+                          <ClickableFigure
+                            value={regionalTotal.drugFree}
+                            status="drug_free"
+                            onSelect={(status) => handleStatusSelectAtRecap(status)}
+                          />
                         </td>
                       </tr>
                     ) : null}
@@ -324,13 +607,13 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
                 </table>
               </div>
               <p className="text-center text-xs text-muted-foreground md:hidden">
-                Swipe left para makita ang ibang columns · naka-sticky ang province
+                Swipe left para makita ang ibang columns · naka-sticky ang PPO
               </p>
             </div>
           </>
         ) : null}
 
-        {selectedProvince && activeProvince ? (
+        {!statusFilter && selectedProvince && activeProvince ? (
           <div className="space-y-4">
             <DrillDownContextBar
               province={selectedProvince}
@@ -340,7 +623,10 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
             />
 
             {activeMunicipality ? (
-              <BarangayDetails municipality={activeMunicipality} />
+              <BarangayDetails
+                municipality={activeMunicipality}
+                onStatusSelect={handleStatusSelectInDrillDown}
+              />
             ) : (
               <MunicipalityList province={activeProvince} onSelect={handleMunicipalitySelect} />
             )}
