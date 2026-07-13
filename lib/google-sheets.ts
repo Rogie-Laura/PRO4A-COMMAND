@@ -2,6 +2,7 @@ import { getAdminHoldingCsvUrl, ADMIN_HOLDING_SHEET } from "@/lib/admin-holding-
 import { getIctEquipmentCsvUrl, ICT_EQUIPMENT_SHEET } from "@/lib/ict-equipment-sheet"
 import { getRictmdBmiCsvUrl, RICTMD_BMI_SHEET } from "@/lib/rictmd-bmi-sheet"
 import { PERSONNEL_RECAP_SHEET } from "@/lib/personnel-recap-sheet"
+import { getPersonnelRosterCsvUrl, PERSONNEL_ROSTER_SHEET } from "@/lib/personnel-sheet"
 import { getTrainingsCsvUrl, TRAININGS_SHEET } from "@/lib/trainings-sheet"
 import {
   getDetailedPersonnelCsvUrl,
@@ -18,6 +19,7 @@ export {
   ICT_EQUIPMENT_SHEET,
   RICTMD_BMI_SHEET,
   PERSONNEL_RECAP_SHEET,
+  PERSONNEL_ROSTER_SHEET,
   ADMIN_HOLDING_SHEET,
   TRAININGS_SHEET,
   SCHOOLING_SHEET,
@@ -26,7 +28,6 @@ export {
 
 const DEFAULT_SHEET_ID = "1B0-dkbSxcdmEygDVxz_0tthLz9vFBqax9Fq8WUtoPQk"
 const DEFAULT_MOBILITY_TAB = "Mobility"
-const PERSONNEL_COLUMNS = "A, B, C, D, F, G, I, K, N, R, T, V, Y"
 const MOBILITY_VEHICLE_COLUMNS =
   "Sub Unit, Station, Plate Number, Vehicle Type, Ownership, Condition, Status"
 const SHEET_CACHE_SECONDS = 600
@@ -59,10 +60,13 @@ function buildSheetCsvUrl(
 }
 
 export function getPersonnelSheetCsvUrl(sheetId?: string) {
-  const id = sheetId ?? process.env.GOOGLE_SHEET_ID ?? DEFAULT_SHEET_ID
-  return buildSheetCsvUrl(id, {
-    query: `SELECT ${PERSONNEL_COLUMNS}`,
-  })
+  if (sheetId && sheetId !== (process.env.GOOGLE_SHEET_ID ?? PERSONNEL_ROSTER_SHEET.sheetId)) {
+    return buildSheetCsvUrl(sheetId, {
+      query: "SELECT *",
+    })
+  }
+
+  return getPersonnelRosterCsvUrl()
 }
 
 /** @deprecated Use getPersonnelSheetCsvUrl instead. */
@@ -326,7 +330,7 @@ export function parseCsv(text: string): Record<string, string>[] {
     const row: Record<string, string> = {}
 
     headers.forEach((header, index) => {
-      row[header.trim()] = values[index]?.trim() ?? ""
+      row[header.replace(/^\uFEFF/, "").trim()] = values[index]?.trim() ?? ""
     })
 
     return row

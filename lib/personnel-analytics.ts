@@ -4,8 +4,7 @@ import {
   buildPersonnelAnalyticsFromRecords,
   mapPersonnelRow,
 } from "@/lib/personnel-aggregations"
-import { fetchPersonnelRecapCsv, fetchPersonnelSheetCsv, parseCsv } from "@/lib/google-sheets"
-import { parsePersonnelRecap } from "@/lib/personnel-recap-parser"
+import { fetchPersonnelSheetCsv, parseCsv } from "@/lib/google-sheets"
 import type { PersonnelAnalytics } from "@/lib/personnel-types"
 
 function emptyAnalytics(): PersonnelAnalytics {
@@ -54,23 +53,7 @@ async function loadPersonnelAnalyticsFromRoster(): Promise<PersonnelAnalytics> {
 async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
   const syncedAt = new Date().toISOString()
 
-  try {
-    const recapCsv = await fetchPersonnelRecapCsv()
-    const recapRows = parseCsv(recapCsv)
-    const fromRecap = parsePersonnelRecap(recapRows)
-
-    if (fromRecap) {
-      return {
-        ...fromRecap,
-        lastUpdated: syncedAt,
-      }
-    }
-  } catch {
-    // recap tab missing or unreachable — fall through to roster
-  }
-
-  // Let errors propagate so unstable_cache does NOT cache failures.
-  // The loader's try/catch handles UI gracefully; retrying on next page load.
+  // Alphalist roster is the source of truth for RPRMD personnel stats.
   const fromRoster = await loadPersonnelAnalyticsFromRoster()
   return {
     ...fromRoster,
@@ -78,7 +61,7 @@ async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
   }
 }
 
-export const PERSONNEL_ANALYTICS_CACHE_TAG = "personnel-analytics-recap-v2"
+export const PERSONNEL_ANALYTICS_CACHE_TAG = "personnel-analytics-alphalist-v1"
 
 /** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedPersonnelAnalytics = unstable_cache(
