@@ -20,9 +20,6 @@ import type {
 } from "@/lib/drug-clearing-types"
 import { cn } from "@/lib/utils"
 import {
-  ridStickyLabelCellClass,
-  ridStickyLabelHeaderClass,
-  ridStickyLabelTotalCellClass,
   ridTableWrapperClass,
 } from "@/components/dashboard/rid-table-styles"
 
@@ -68,9 +65,30 @@ function formatCount(value: number) {
 }
 
 const PROVINCE_STICKY_CLASS =
-  "min-w-[7.25rem] sm:min-w-[8.5rem] text-violet-700 dark:text-violet-300"
+  "min-w-0 w-[4.25rem] max-w-[4.75rem] text-violet-700 dark:text-violet-300"
 
-const PPO_STICKY_CLASS = "min-w-[6.5rem] sm:min-w-[7.5rem]"
+const PPO_STICKY_CLASS = "min-w-0 w-[4.25rem] max-w-[4.75rem]"
+
+const STICKY_PPO_HEADER_CLASS = cn(
+  "sticky left-0 z-30 min-w-0 w-[4.25rem] max-w-[4.75rem] border-r border-border bg-muted px-1.5 py-1.5 text-left text-[10px] font-medium leading-tight shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] sm:w-[4.75rem] sm:max-w-[5rem] sm:px-2 sm:text-xs",
+)
+
+const STICKY_PPO_CELL_CLASS = cn(
+  "sticky left-0 z-20 min-w-0 w-[4.25rem] max-w-[4.75rem] border-r border-border bg-background px-1.5 py-1.5 text-[10px] font-medium leading-tight shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] sm:w-[4.75rem] sm:max-w-[5rem] sm:px-2 sm:text-xs",
+)
+
+const STICKY_PPO_TOTAL_CLASS = cn(
+  "sticky left-0 z-20 min-w-0 w-[4.25rem] max-w-[4.75rem] border-r border-border bg-muted px-1.5 py-1.5 text-[10px] font-semibold leading-tight shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] sm:w-[4.75rem] sm:max-w-[5rem] sm:px-2 sm:text-xs",
+)
+
+const TABLE_DATA_HEADER_CLASS =
+  "bg-muted/30 px-1.5 py-1.5 text-right text-[10px] font-medium whitespace-nowrap sm:px-2 sm:py-2 sm:text-xs"
+
+const TABLE_DATA_CELL_CLASS =
+  "bg-background px-1.5 py-1.5 text-right text-[10px] tabular-nums sm:px-2 sm:py-2 sm:text-xs"
+
+const TABLE_DATA_TOTAL_CLASS =
+  "bg-muted/20 px-1.5 py-1.5 text-right text-[10px] tabular-nums sm:px-2 sm:py-2 sm:text-xs"
 
 function DrillDownContextBar({
   province,
@@ -228,20 +246,20 @@ function StatusBreakdownTable({
       ) : (
         <div className="space-y-2">
           <div className={cn(ridTableWrapperClass, "max-h-[min(70vh,36rem)]")}>
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-[22rem] text-xs sm:min-w-[28rem]">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className={ridStickyLabelHeaderClass(PPO_STICKY_CLASS)}>PPO</th>
-                  <th className="bg-muted/30 px-4 py-3 font-medium">Bayan</th>
-                  <th className="bg-muted/30 px-4 py-3 font-medium">Barangay</th>
+                  <th className={cn(STICKY_PPO_HEADER_CLASS, PPO_STICKY_CLASS)}>PPO</th>
+                  <th className={cn(TABLE_DATA_HEADER_CLASS, "text-left")}>Bayan</th>
+                  <th className={cn(TABLE_DATA_HEADER_CLASS, "text-left")}>Barangay</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={`${row.ppo}-${row.municipality}-${row.barangay}`} className="border-b last:border-0">
-                    <td className={ridStickyLabelCellClass(PPO_STICKY_CLASS)}>{row.ppo}</td>
-                    <td className="bg-background px-4 py-3">{row.municipality}</td>
-                    <td className="bg-background px-4 py-3">{row.barangay}</td>
+                    <td className={cn(STICKY_PPO_CELL_CLASS, PPO_STICKY_CLASS)}>{row.ppo}</td>
+                    <td className={cn(TABLE_DATA_CELL_CLASS, "text-left")}>{row.municipality}</td>
+                    <td className={cn(TABLE_DATA_CELL_CLASS, "text-left")}>{row.barangay}</td>
                   </tr>
                 ))}
               </tbody>
@@ -499,16 +517,28 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
 
             <div className="space-y-2">
               <div className={ridTableWrapperClass}>
-                <table className="w-full min-w-[760px] text-sm">
+                <table className="w-full min-w-[34rem] text-xs sm:min-w-[40rem]">
                   <thead>
                     <tr className="border-b text-left text-muted-foreground">
-                      <th className={ridStickyLabelHeaderClass(PROVINCE_STICKY_CLASS)}>PPO</th>
-                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Cities/Mun.</th>
-                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Total Brgy</th>
-                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Cleared</th>
-                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Affected</th>
-                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Unaffected</th>
-                      <th className="bg-muted/30 px-4 py-3 font-medium text-right">Drug Free</th>
+                      <th className={cn(STICKY_PPO_HEADER_CLASS, PROVINCE_STICKY_CLASS)}>PPO</th>
+                      <th className={TABLE_DATA_HEADER_CLASS}>
+                        <span className="sm:hidden">Mun.</span>
+                        <span className="hidden sm:inline">Cities/Mun.</span>
+                      </th>
+                      <th className={TABLE_DATA_HEADER_CLASS}>
+                        <span className="sm:hidden">Brgy</span>
+                        <span className="hidden sm:inline">Total Brgy</span>
+                      </th>
+                      <th className={TABLE_DATA_HEADER_CLASS}>Cleared</th>
+                      <th className={TABLE_DATA_HEADER_CLASS}>Affected</th>
+                      <th className={TABLE_DATA_HEADER_CLASS}>
+                        <span className="sm:hidden">Unaff.</span>
+                        <span className="hidden sm:inline">Unaffected</span>
+                      </th>
+                      <th className={TABLE_DATA_HEADER_CLASS}>
+                        <span className="sm:hidden">D.Free</span>
+                        <span className="hidden sm:inline">Drug Free</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -518,44 +548,46 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
                         className="group border-b transition-colors last:border-0 hover:bg-violet-500/5"
                       >
                         <td
-                          className={ridStickyLabelCellClass(
-                            cn(PROVINCE_STICKY_CLASS, "cursor-pointer group-hover:bg-violet-500/5"),
+                          className={cn(
+                            STICKY_PPO_CELL_CLASS,
+                            PROVINCE_STICKY_CLASS,
+                            "cursor-pointer group-hover:bg-violet-500/5",
                           )}
                           onClick={() => handleProvinceSelect(row.province)}
                         >
-                          <span className="inline-flex items-center gap-1 font-medium">
+                          <span className="inline-flex items-center gap-0.5 font-medium leading-tight">
                             {row.province}
-                            <ChevronRight className="size-3.5 opacity-60" />
+                            <ChevronRight className="size-3 shrink-0 opacity-60" />
                           </span>
                         </td>
-                        <td className="bg-background px-4 py-3 text-right tabular-nums group-hover:bg-violet-500/5">
+                        <td className={cn(TABLE_DATA_CELL_CLASS, "group-hover:bg-violet-500/5")}>
                           {formatCount(row.citiesMunicipalities)}
                         </td>
-                        <td className="bg-background px-4 py-3 text-right tabular-nums group-hover:bg-violet-500/5">
+                        <td className={cn(TABLE_DATA_CELL_CLASS, "group-hover:bg-violet-500/5")}>
                           {formatCount(row.totalBarangays)}
                         </td>
-                        <td className="bg-background px-4 py-3 text-right group-hover:bg-violet-500/5">
+                        <td className={cn(TABLE_DATA_CELL_CLASS, "group-hover:bg-violet-500/5")}>
                           <ClickableFigure
                             value={row.clearedBarangays}
                             status="cleared"
                             onSelect={(status) => handleStatusSelectAtRecap(status, row.province)}
                           />
                         </td>
-                        <td className="bg-background px-4 py-3 text-right group-hover:bg-violet-500/5">
+                        <td className={cn(TABLE_DATA_CELL_CLASS, "group-hover:bg-violet-500/5")}>
                           <ClickableFigure
                             value={row.remainingAffected}
                             status="affected"
                             onSelect={(status) => handleStatusSelectAtRecap(status, row.province)}
                           />
                         </td>
-                        <td className="bg-background px-4 py-3 text-right group-hover:bg-violet-500/5">
+                        <td className={cn(TABLE_DATA_CELL_CLASS, "group-hover:bg-violet-500/5")}>
                           <ClickableFigure
                             value={row.unaffected}
                             status="unaffected"
                             onSelect={(status) => handleStatusSelectAtRecap(status, row.province)}
                           />
                         </td>
-                        <td className="bg-background px-4 py-3 text-right group-hover:bg-violet-500/5">
+                        <td className={cn(TABLE_DATA_CELL_CLASS, "group-hover:bg-violet-500/5")}>
                           <ClickableFigure
                             value={row.drugFree}
                             status="drug_free"
@@ -566,35 +598,35 @@ export function DrugClearingPanel({ analytics }: DrugClearingPanelProps) {
                     ))}
                     {regionalTotal ? (
                       <tr className="bg-muted/20 font-semibold">
-                        <td className={ridStickyLabelTotalCellClass(PROVINCE_STICKY_CLASS)}>TOTAL</td>
-                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
+                        <td className={cn(STICKY_PPO_TOTAL_CLASS, PROVINCE_STICKY_CLASS)}>TOTAL</td>
+                        <td className={TABLE_DATA_TOTAL_CLASS}>
                           {formatCount(regionalTotal.citiesMunicipalities)}
                         </td>
-                        <td className="bg-muted/20 px-4 py-3 text-right tabular-nums">
+                        <td className={TABLE_DATA_TOTAL_CLASS}>
                           {formatCount(regionalTotal.totalBarangays)}
                         </td>
-                        <td className="bg-muted/20 px-4 py-3 text-right">
+                        <td className={TABLE_DATA_TOTAL_CLASS}>
                           <ClickableFigure
                             value={regionalTotal.clearedBarangays}
                             status="cleared"
                             onSelect={(status) => handleStatusSelectAtRecap(status)}
                           />
                         </td>
-                        <td className="bg-muted/20 px-4 py-3 text-right">
+                        <td className={TABLE_DATA_TOTAL_CLASS}>
                           <ClickableFigure
                             value={regionalTotal.remainingAffected}
                             status="affected"
                             onSelect={(status) => handleStatusSelectAtRecap(status)}
                           />
                         </td>
-                        <td className="bg-muted/20 px-4 py-3 text-right">
+                        <td className={TABLE_DATA_TOTAL_CLASS}>
                           <ClickableFigure
                             value={regionalTotal.unaffected}
                             status="unaffected"
                             onSelect={(status) => handleStatusSelectAtRecap(status)}
                           />
                         </td>
-                        <td className="bg-muted/20 px-4 py-3 text-right">
+                        <td className={TABLE_DATA_TOTAL_CLASS}>
                           <ClickableFigure
                             value={regionalTotal.drugFree}
                             status="drug_free"
