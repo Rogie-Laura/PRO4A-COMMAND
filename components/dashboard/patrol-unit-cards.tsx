@@ -84,7 +84,8 @@ export function PatrolUnitCards({
                     </CardTitle>
                     {dataOk && (
                       <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">
-                        <span className="font-semibold text-foreground">{onDuty}</span> on duty
+                        <span className="font-semibold text-foreground">{onDuty}</span> personnel
+                        on duty
                       </p>
                     )}
                   </div>
