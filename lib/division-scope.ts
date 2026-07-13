@@ -89,7 +89,8 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     label: "RETD",
     rNumber: 8,
     defaultHref: "/trainings-and-education",
-    allowedPaths: ["/trainings-and-education", "/pro4a-status", "/settings"],
+    allowedPaths: ["/trainings-and-education", "/trainings-and-education/upload", "/pro4a-status", "/settings"],
+    uploadPath: "/trainings-and-education/upload",
   },
   rpsmd: {
     id: "rpsmd",

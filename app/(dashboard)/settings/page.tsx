@@ -14,6 +14,7 @@ import { IllegalDrugsUploadCard } from "@/components/settings/illegal-drugs-uplo
 import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-upload-card"
 import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctgf-upload-card"
 import { ForeignNationalUploadCard } from "@/components/settings/foreign-national-upload-card"
+import { TrainingsUploadCard } from "@/components/settings/trainings-upload-card"
 import { AlertLevelSettingsCard } from "@/components/settings/alert-level-settings-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
 import { EstablishmentUploadCard } from "@/components/settings/establishment-upload-card"
@@ -53,6 +54,8 @@ import { getLatestSurrenderedCtgfUploadBatch } from "@/lib/surrendered-ctgf-reco
 import type { SurrenderedCtgfUploadBatchInfo } from "@/lib/surrendered-ctgf-types"
 import { getLatestForeignNationalUploadBatch } from "@/lib/foreign-national-records"
 import type { ForeignNationalUploadBatchInfo } from "@/lib/foreign-national-types"
+import { getLatestTrainingsUploadBatch } from "@/lib/trainings-records"
+import type { TrainingsUploadBatchInfo } from "@/lib/trainings-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
 import type { RcaddUploadBatchInfo } from "@/lib/rcadd-accomplishment-types"
 import { getLatestEstablishmentUploadBatch } from "@/lib/establishment-records"
@@ -104,6 +107,8 @@ export default async function SettingsPage() {
   let surrenderedCtgfUploadError: string | null = null
   let latestForeignNationalBatch: ForeignNationalUploadBatchInfo | null = null
   let foreignNationalUploadError: string | null = null
+  let latestTrainingsBatch: TrainingsUploadBatchInfo | null = null
+  let trainingsUploadError: string | null = null
   let latestRcaddBatch: RcaddUploadBatchInfo | null = null
   let rcaddUploadError: string | null = null
   let latestEstablishmentBatch: EstablishmentUploadBatchInfo | null = null
@@ -250,6 +255,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load foreign national upload status from Supabase."
+    }
+
+    try {
+      latestTrainingsBatch = await getLatestTrainingsUploadBatch()
+    } catch (error) {
+      trainingsUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load RTAP upload status from Supabase."
     }
 
     try {
@@ -526,6 +540,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <ForeignNationalUploadCard latestBatch={latestForeignNationalBatch} />
+            )}
+
+            {trainingsUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload RTAP Accomplishment Monitoring</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{trainingsUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260713120000_create_trainings_upload_batches.sql`
+                    kung wala pa ang `trainings_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <TrainingsUploadCard latestBatch={latestTrainingsBatch} />
             )}
 
             {rcaddUploadError ? (

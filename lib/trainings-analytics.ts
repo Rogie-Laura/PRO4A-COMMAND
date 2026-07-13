@@ -1,10 +1,7 @@
-import { unstable_cache } from "next/cache"
-
 import type { CountItem } from "@/lib/personnel-types"
-import { fetchTrainingsSheetCsv, parseCsvRows } from "@/lib/google-sheets"
+import { parseCsvRows } from "@/lib/google-sheets"
 import {
   formatMonthLabel,
-  formatTrainingMode,
   resolveTrainingMode,
   resolveTrainingStatus,
   TRAINING_MONTHS,
@@ -12,7 +9,11 @@ import {
   TRAINING_STATUS_ORDER,
 } from "@/lib/trainings-config"
 import { TRAININGS_SHEET } from "@/lib/trainings-sheet"
-import type { TrainingRecord, TrainingsAnalytics } from "@/lib/trainings-types"
+import type {
+  ParsedTrainingsWorkbook,
+  TrainingRecord,
+  TrainingsAnalytics,
+} from "@/lib/trainings-types"
 
 type ColumnMap = {
   activity: number
@@ -29,11 +30,11 @@ type ColumnMap = {
   totalParticipants: number
 }
 
-function emptyAnalytics(): TrainingsAnalytics {
+export function emptyTrainingsAnalytics(fileName = ""): TrainingsAnalytics {
   return {
     lastUpdated: new Date().toISOString(),
     dataReady: false,
-    dataSource: TRAININGS_SHEET.label,
+    dataSource: fileName || TRAININGS_SHEET.label,
     programYear: TRAININGS_SHEET.programYear,
     total: 0,
     uniquePrograms: 0,
@@ -156,8 +157,7 @@ function buildModeStats(records: TrainingRecord[]): CountItem[] {
   const counts = new Map<string, number>()
 
   for (const record of records) {
-    const mode = resolveTrainingMode(record.mode, record.venue)
-    counts.set(mode, (counts.get(mode) ?? 0) + effectiveClassCount(record))
+    counts.set(record.mode, (counts.get(record.mode) ?? 0) + effectiveClassCount(record))
   }
 
   return buildCountItems(counts, sumClassCounts(records))
@@ -183,12 +183,10 @@ function buildMonthStats(records: TrainingRecord[]): CountItem[] {
     .sort((a, b) => monthOrder.indexOf(a.name) - monthOrder.indexOf(b.name))
 }
 
-export function parseTrainingsCsv(text: string): TrainingRecord[] {
-  const rows = parseCsvRows(text)
-  const header = findColumnMap(rows)
-
-  if (!header) return []
-
+function parseTrainingsRows(
+  rows: string[][],
+  header: { headerIdx: number; columns: ColumnMap },
+): TrainingRecord[] {
   const { headerIdx, columns } = header
   const records: TrainingRecord[] = []
   let currentMonth = ""
@@ -205,7 +203,7 @@ export function parseTrainingsCsv(text: string): TrainingRecord[] {
       continue
     }
 
-    if (/^TOTAL$/i.test(activity)) continue
+    if (/^TOTAL$/i.test(activity) || /^GRAND TOTAL$/i.test(activity)) continue
 
     const classCount = parseNumber(cellAt(row, columns.classCount))
     const dateOpening = cellAt(row, columns.dateOpening)
@@ -250,65 +248,56 @@ export function parseTrainingsCsv(text: string): TrainingRecord[] {
   return records
 }
 
-export function parseTrainingsCsvWithMeta(text: string) {
-  const rows = parseCsvRows(text)
+export function parseTrainingsRowsWithMeta(rows: string[][]) {
   const header = findColumnMap(rows)
-  const records = parseTrainingsCsv(text)
-  const plannedTotalClasses = header
-    ? parsePlannedTotalClasses(rows, header.columns, header.headerIdx)
-    : 0
+  if (!header) {
+    return { records: [], plannedTotalClasses: 0 }
+  }
+
+  const records = parseTrainingsRows(rows, header)
+  const plannedTotalClasses = parsePlannedTotalClasses(rows, header.columns, header.headerIdx)
 
   return { records, plannedTotalClasses }
 }
 
-async function loadTrainingsAnalytics(): Promise<TrainingsAnalytics> {
-  try {
-    const csv = await fetchTrainingsSheetCsv()
-    const { records, plannedTotalClasses } = parseTrainingsCsvWithMeta(csv)
-
-    if (records.length === 0) {
-      return emptyAnalytics()
-    }
-
-    const classifiedClasses = sumClassCounts(records)
-    const totalClasses = plannedTotalClasses || classifiedClasses
-    const completedClasses = sumClassCounts(
-      records.filter((record) => record.status === "COMPLETED"),
-    )
-    const uniquePrograms = new Set(records.map((record) => record.activity)).size
-    const totalParticipants = records.reduce(
-      (sum, record) => sum + record.totalParticipants,
-      0,
-    )
-
-    return {
-      lastUpdated: new Date().toISOString(),
-      dataReady: true,
-      dataSource: TRAININGS_SHEET.label,
-      programYear: TRAININGS_SHEET.programYear,
-      total: totalClasses,
-      uniquePrograms,
-      totalParticipants,
-      completionRate: Math.round((completedClasses / totalClasses) * 1000) / 10,
-      statusStats: buildStatusStats(records, totalClasses),
-      modeStats: buildModeStats(records),
-      monthStats: buildMonthStats(records),
-      records,
-    }
-  } catch {
-    return emptyAnalytics()
-  }
+export function parseTrainingsCsv(text: string): TrainingRecord[] {
+  return parseTrainingsRowsWithMeta(parseCsvRows(text)).records
 }
 
-export const TRAININGS_ANALYTICS_CACHE_TAG = "trainings-analytics-v8"
+export function parseTrainingsCsvWithMeta(text: string) {
+  return parseTrainingsRowsWithMeta(parseCsvRows(text))
+}
 
-/** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
-const getCachedTrainingsAnalytics = unstable_cache(
-  loadTrainingsAnalytics,
-  [TRAININGS_ANALYTICS_CACHE_TAG],
-  { revalidate: false, tags: [TRAININGS_ANALYTICS_CACHE_TAG] },
-)
+export function buildTrainingsAnalyticsFromWorkbook(
+  workbook: ParsedTrainingsWorkbook,
+  meta: { fileName: string; lastUpdated: string },
+): TrainingsAnalytics {
+  const { records, plannedTotalClasses, sheetName } = workbook
 
-export async function getTrainingsAnalytics(): Promise<TrainingsAnalytics> {
-  return getCachedTrainingsAnalytics()
+  if (records.length === 0) {
+    return emptyTrainingsAnalytics(meta.fileName)
+  }
+
+  const classifiedClasses = sumClassCounts(records)
+  const totalClasses = plannedTotalClasses || classifiedClasses
+  const completedClasses = sumClassCounts(
+    records.filter((record) => record.status === "COMPLETED"),
+  )
+  const uniquePrograms = new Set(records.map((record) => record.activity)).size
+  const totalParticipants = records.reduce((sum, record) => sum + record.totalParticipants, 0)
+
+  return {
+    lastUpdated: meta.lastUpdated,
+    dataReady: true,
+    dataSource: `${TRAININGS_SHEET.programYear} · ${sheetName}`,
+    programYear: TRAININGS_SHEET.programYear,
+    total: totalClasses,
+    uniquePrograms,
+    totalParticipants,
+    completionRate: Math.round((completedClasses / totalClasses) * 1000) / 10,
+    statusStats: buildStatusStats(records, totalClasses),
+    modeStats: buildModeStats(records),
+    monthStats: buildMonthStats(records),
+    records,
+  }
 }

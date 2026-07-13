@@ -94,6 +94,8 @@ import {
   replaceForeignNationalWorkbook,
 } from "@/lib/foreign-national-records"
 import { parseForeignNationalXlsx } from "@/lib/foreign-national-xlsx-parser"
+import { TRAININGS_ANALYTICS_CACHE_TAG, replaceTrainingsWorkbook } from "@/lib/trainings-records"
+import { parseTrainingsXlsx } from "@/lib/trainings-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -102,6 +104,7 @@ const MAX_FIREARMS_UPLOAD_BYTES = 5 * 1024 * 1024
 const MAX_MOBILITY_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_UPER_UPLOAD_BYTES = 5 * 1024 * 1024
 const MAX_ESTABLISHMENT_UPLOAD_BYTES = 15 * 1024 * 1024
+const MAX_TRAININGS_UPLOAD_BYTES = 10 * 1024 * 1024
 
 export async function getAccessTokensAction() {
   await requireSuperAdminSession()
@@ -921,6 +924,52 @@ export async function uploadEstablishmentWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang establishment upload. Subukan ulit.")
+  }
+}
+
+export async function uploadTrainingsWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("retd")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_TRAININGS_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 10 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseTrainingsXlsx(buffer)
+    const result = await replaceTrainingsWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(TRAININGS_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/trainings-and-education")
+    revalidatePath("/trainings-and-education/upload")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang RTAP accomplishment upload. Subukan ulit.")
   }
 }
 

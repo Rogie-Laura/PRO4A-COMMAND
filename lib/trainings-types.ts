@@ -32,3 +32,16 @@ export type TrainingsAnalytics = {
   monthStats: CountItem[]
   records: TrainingRecord[]
 }
+
+export type TrainingsUploadBatchInfo = {
+  id: string
+  filename: string
+  uploadedByLabel: string | null
+  createdAt: string
+}
+
+export type ParsedTrainingsWorkbook = {
+  sheetName: string
+  records: TrainingRecord[]
+  plannedTotalClasses: number
+}

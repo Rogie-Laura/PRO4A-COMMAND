@@ -19,7 +19,7 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TRAINING_STATUS_LABELS, formatMonthLabel, formatTrainingMode, getNextRtapMonthKey } from "@/lib/trainings-config"
-import { getTrainingsAnalytics } from "@/lib/trainings-analytics"
+import { getTrainingsAnalytics } from "@/lib/trainings-records"
 import type { TrainingsAnalytics, TrainingRecord } from "@/lib/trainings-types"
 
 function StatChip({ label, value }: { label: string; value: string | number }) {
@@ -315,8 +315,8 @@ export async function TrainingsContent() {
           <CardContent className="flex items-start gap-3 py-4 text-sm text-muted-foreground">
             <Users className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>
-              Walang training data pa. Siguraduhing naka-public ang RTAP Google Sheet at may
-              records sa accomplishment monitoring tab.
+              Walang training data pa. I-upload ang RTAP 2026 - ACCOMPLISHMENT MONITORING workbook
+              (4th UPDATED DET sheet) sa RETD upload page o Settings.
             </p>
           </CardContent>
         </Card>
