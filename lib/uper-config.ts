@@ -9,6 +9,11 @@ export const UPER_RATING_LABELS: Record<string, string> = {
 /** Fixed rank scale for PRO 4A UPER trend charts (18 regional/provincial offices). */
 export const UPER_RANK_SCALE_MAX = 18
 
+export const UPER_RANK_SCALE_TICKS = Array.from(
+  { length: UPER_RANK_SCALE_MAX },
+  (_, index) => index + 1,
+)
+
 const ORDINAL_SUFFIXES: Record<number, string> = {
   1: "st",
   2: "nd",

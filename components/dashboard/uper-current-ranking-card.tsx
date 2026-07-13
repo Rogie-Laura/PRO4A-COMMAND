@@ -4,7 +4,7 @@ import { useMemo, useState } from "react"
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { TrendingUp } from "lucide-react"
 
-import { formatUperRating, UPER_RANK_SCALE_MAX } from "@/lib/uper-config"
+import { formatUperRating, UPER_RANK_SCALE_MAX, UPER_RANK_SCALE_TICKS } from "@/lib/uper-config"
 import type { UperAnalytics } from "@/lib/uper-types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -124,18 +124,21 @@ export function UperCurrentRankingCard({ analytics, compact = false }: UperCurre
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <ChartContainer config={chartConfig} className="aspect-[16/10] w-full">
-              <LineChart data={chartData} margin={{ top: 12, right: 24, left: 8, bottom: 8 }}>
+            <ChartContainer config={chartConfig} className="aspect-[4/5] min-h-[22rem] w-full sm:aspect-[16/12]">
+              <LineChart data={chartData} margin={{ top: 12, right: 24, left: 12, bottom: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="shortLabel" tickLine={false} axisLine={false} />
                 <YAxis
                   yAxisId="rank"
                   reversed
                   domain={[1, UPER_RANK_SCALE_MAX]}
+                  ticks={UPER_RANK_SCALE_TICKS}
+                  interval={0}
                   allowDecimals={false}
                   tickLine={false}
                   axisLine={false}
-                  width={36}
+                  width={40}
+                  tick={{ fontSize: 11 }}
                   label={{ value: "Rank", angle: -90, position: "insideLeft" }}
                 />
                 <YAxis
