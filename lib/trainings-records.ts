@@ -51,45 +51,63 @@ function isTrainingsAnalytics(value: unknown): value is TrainingsAnalytics {
 }
 
 export async function getLatestTrainingsUploadBatch(): Promise<TrainingsUploadBatchInfo | null> {
-  const supabase = createAdminClient()
+  try {
+    const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from("trainings_upload_batches")
-    .select("id, filename, uploaded_by_label, created_at")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
+    const { data, error } = await supabase
+      .from("trainings_upload_batches")
+      .select("id, filename, uploaded_by_label, created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-  if (error) {
-    throw new Error(error.message)
+    if (error) {
+      console.error("[trainings-records] getLatestTrainingsUploadBatch:", error.message)
+      throw new Error(error.message)
+    }
+
+    return data ? mapBatch(data) : null
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Unable to load RTAP upload status.")
   }
-
-  return data ? mapBatch(data) : null
 }
 
 async function loadLatestTrainingsAnalytics(): Promise<TrainingsAnalytics> {
-  const supabase = createAdminClient()
+  try {
+    const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from("trainings_upload_batches")
-    .select("filename, created_at, analytics")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
+    const { data, error } = await supabase
+      .from("trainings_upload_batches")
+      .select("filename, created_at, analytics")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-  if (error) {
-    throw new Error(error.message)
-  }
+    if (error) {
+      console.error("[trainings-records] loadLatestTrainingsAnalytics:", error.message)
+      return emptyTrainingsAnalytics()
+    }
 
-  if (!data || !isTrainingsAnalytics(data.analytics)) {
+    if (!data || !isTrainingsAnalytics(data.analytics)) {
+      return emptyTrainingsAnalytics()
+    }
+
+    return {
+      ...data.analytics,
+      dataSource: data.analytics.dataSource || data.filename,
+      lastUpdated: data.created_at ?? data.analytics.lastUpdated,
+      dataReady: data.analytics.dataReady,
+    }
+  } catch (error) {
+    console.error(
+      "[trainings-records] loadLatestTrainingsAnalytics:",
+      error instanceof Error ? error.message : error,
+    )
     return emptyTrainingsAnalytics()
-  }
-
-  return {
-    ...data.analytics,
-    dataSource: data.analytics.dataSource || data.filename,
-    lastUpdated: data.created_at ?? data.analytics.lastUpdated,
-    dataReady: data.analytics.dataReady,
   }
 }
 

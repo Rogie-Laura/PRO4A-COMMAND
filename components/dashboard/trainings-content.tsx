@@ -19,6 +19,7 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TRAINING_STATUS_LABELS, formatMonthLabel, formatTrainingMode, getNextRtapMonthKey } from "@/lib/trainings-config"
+import { emptyTrainingsAnalytics } from "@/lib/trainings-analytics"
 import { getTrainingsAnalytics } from "@/lib/trainings-records"
 import type { TrainingsAnalytics, TrainingRecord } from "@/lib/trainings-types"
 
@@ -157,7 +158,14 @@ export function TrainingsLoading() {
 }
 
 export async function TrainingsContent() {
-  const data = await getTrainingsAnalytics()
+  let data: TrainingsAnalytics
+
+  try {
+    data = await getTrainingsAnalytics()
+  } catch {
+    data = emptyTrainingsAnalytics()
+  }
+
   const nextMonthKey = getNextRtapMonthKey()
   const nextMonthLabel = formatMonthLabel(nextMonthKey)
   const upcomingRecords = data.records.filter((record) => record.month === nextMonthKey)
