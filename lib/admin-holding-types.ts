@@ -23,3 +23,15 @@ export type AdminHoldingAnalytics = {
 }
 
 export type AdminHoldingSummary = Omit<AdminHoldingAnalytics, "records">
+
+export type ParsedAdminHoldingWorkbook = {
+  sheetName: string
+  records: AdminHoldingRecord[]
+}
+
+export type AdminHoldingUploadBatchInfo = {
+  id: string
+  filename: string
+  uploadedByLabel: string | null
+  createdAt: string
+}

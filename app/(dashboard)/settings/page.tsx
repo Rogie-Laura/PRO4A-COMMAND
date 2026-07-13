@@ -15,6 +15,7 @@ import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-up
 import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctgf-upload-card"
 import { ForeignNationalUploadCard } from "@/components/settings/foreign-national-upload-card"
 import { TrainingsUploadCard } from "@/components/settings/trainings-upload-card"
+import { AdminHoldingUploadCard } from "@/components/settings/admin-holding-upload-card"
 import { AlertLevelSettingsCard } from "@/components/settings/alert-level-settings-card"
 import { DrugClearingUploadCard } from "@/components/settings/drug-clearing-upload-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
@@ -57,6 +58,8 @@ import { getLatestForeignNationalUploadBatch } from "@/lib/foreign-national-reco
 import type { ForeignNationalUploadBatchInfo } from "@/lib/foreign-national-types"
 import { getLatestTrainingsUploadBatch } from "@/lib/trainings-records"
 import type { TrainingsUploadBatchInfo } from "@/lib/trainings-types"
+import { getLatestAdminHoldingUploadBatch } from "@/lib/admin-holding-records"
+import type { AdminHoldingUploadBatchInfo } from "@/lib/admin-holding-types"
 import { getLatestDrugClearingUploadBatch } from "@/lib/drug-clearing-records"
 import type { DrugClearingUploadBatchInfo } from "@/lib/drug-clearing-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
@@ -112,6 +115,8 @@ export default async function SettingsPage() {
   let foreignNationalUploadError: string | null = null
   let latestTrainingsBatch: TrainingsUploadBatchInfo | null = null
   let trainingsUploadError: string | null = null
+  let latestAdminHoldingBatch: AdminHoldingUploadBatchInfo | null = null
+  let adminHoldingUploadError: string | null = null
   let latestRcaddBatch: RcaddUploadBatchInfo | null = null
   let rcaddUploadError: string | null = null
   let latestDrugClearingBatch: DrugClearingUploadBatchInfo | null = null
@@ -269,6 +274,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load RTAP upload status from Supabase."
+    }
+
+    try {
+      latestAdminHoldingBatch = await getLatestAdminHoldingUploadBatch()
+    } catch (error) {
+      adminHoldingUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load admin holding upload status from Supabase."
     }
 
     try {
@@ -572,6 +586,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <TrainingsUploadCard latestBatch={latestTrainingsBatch} />
+            )}
+
+            {adminHoldingUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Admin Holding Workbook</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{adminHoldingUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260714120000_create_admin_holding_upload_batches.sql`
+                    kung wala pa ang `admin_holding_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <AdminHoldingUploadCard latestBatch={latestAdminHoldingBatch} />
             )}
 
             {rcaddUploadError ? (

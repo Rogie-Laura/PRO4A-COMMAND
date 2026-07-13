@@ -1,22 +1,23 @@
-import { unstable_cache } from "next/cache"
-
 import { ADMIN_HOLDING_SHEET } from "@/lib/admin-holding-sheet"
-import type { AdminHoldingAnalytics, AdminHoldingRecord, AdminHoldingSummary } from "@/lib/admin-holding-types"
-import { fetchAdminHoldingSheetCsv, parseCsvRows } from "@/lib/google-sheets"
+import type {
+  AdminHoldingAnalytics,
+  AdminHoldingRecord,
+  ParsedAdminHoldingWorkbook,
+} from "@/lib/admin-holding-types"
 import type { CountItem } from "@/lib/personnel-types"
 
-function emptyAnalytics(): AdminHoldingAnalytics {
+export function emptyAdminHoldingAnalytics(fileName = ""): AdminHoldingAnalytics {
   return {
     lastUpdated: new Date().toISOString(),
     dataReady: false,
-    dataSource: ADMIN_HOLDING_SHEET.label,
+    dataSource: fileName || ADMIN_HOLDING_SHEET.label,
     total: 0,
     statusStats: [],
     records: [],
   }
 }
 
-function isAdminHoldingDataRow(cols: string[]) {
+export function isAdminHoldingDataRow(cols: string[]) {
   const no = cols[0]?.trim() ?? ""
   const rank = cols[1]?.trim() ?? ""
   const lastName = cols[2]?.trim() ?? ""
@@ -25,7 +26,7 @@ function isAdminHoldingDataRow(cols: string[]) {
   return /^\d+$/.test(no) && rank.length > 0 && lastName.length > 0
 }
 
-function mapAdminHoldingRow(cols: string[]): AdminHoldingRecord {
+export function mapAdminHoldingRow(cols: string[]): AdminHoldingRecord {
   return {
     no: Number.parseInt(cols[0] ?? "0", 10),
     rank: cols[1]?.trim() ?? "",
@@ -40,7 +41,7 @@ function mapAdminHoldingRow(cols: string[]): AdminHoldingRecord {
   }
 }
 
-function normalizeStatus(status: string) {
+export function normalizeStatus(status: string) {
   const trimmed = status.trim()
   if (!trimmed) return "Unspecified"
 
@@ -81,46 +82,36 @@ function buildStatusStats(records: AdminHoldingRecord[]): CountItem[] {
     .sort((a, b) => b.count - a.count)
 }
 
-function parseAdminHoldingCsv(text: string): AdminHoldingRecord[] {
-  const rows = parseCsvRows(text)
-
+export function parseAdminHoldingRows(rows: string[][]): AdminHoldingRecord[] {
   return rows.filter(isAdminHoldingDataRow).map(mapAdminHoldingRow)
 }
 
-async function loadAdminHoldingAnalytics(): Promise<AdminHoldingAnalytics> {
-  // Let fetch errors propagate — unstable_cache will not cache failures,
-  // so the next page load retries. Only return empty for genuinely empty sheets.
-  const csv = await fetchAdminHoldingSheetCsv()
-  const records = parseAdminHoldingCsv(csv)
+export function buildAdminHoldingAnalyticsFromWorkbook(
+  workbook: ParsedAdminHoldingWorkbook,
+  options: { fileName: string; lastUpdated: string },
+): AdminHoldingAnalytics {
+  const records = workbook.records
 
   if (records.length === 0) {
-    return emptyAnalytics()
+    return emptyAdminHoldingAnalytics(options.fileName)
   }
 
   return {
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: options.lastUpdated,
     dataReady: true,
-    dataSource: ADMIN_HOLDING_SHEET.label,
+    dataSource: options.fileName,
     total: records.length,
     statusStats: buildStatusStats(records),
     records,
   }
 }
 
-export const ADMIN_HOLDING_ANALYTICS_CACHE_TAG = "admin-holding-analytics-v1"
+export {
+  ADMIN_HOLDING_ANALYTICS_CACHE_TAG,
+  getAdminHoldingAnalytics,
+} from "@/lib/admin-holding-records"
 
-/** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
-const getCachedAdminHoldingAnalytics = unstable_cache(
-  loadAdminHoldingAnalytics,
-  [ADMIN_HOLDING_ANALYTICS_CACHE_TAG],
-  { revalidate: false, tags: [ADMIN_HOLDING_ANALYTICS_CACHE_TAG] },
-)
-
-export async function getAdminHoldingAnalytics(): Promise<AdminHoldingAnalytics> {
-  return getCachedAdminHoldingAnalytics()
-}
-
-export function toAdminHoldingSummary(data: AdminHoldingAnalytics): AdminHoldingSummary {
+export function toAdminHoldingSummary(data: AdminHoldingAnalytics) {
   const { records: _records, ...summary } = data
   return summary
 }

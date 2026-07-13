@@ -10,6 +10,10 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
     description: "Regional ranking, alert level, and terrorism threat status",
   },
   "/rprmd": { title: "RPRMD" },
+  "/rprmd/upload": {
+    title: "Upload File",
+    description: "RPRMD admin holding workbook upload",
+  },
   "/rid": { title: "RID" },
   "/rid/upload": {
     title: "Upload File",

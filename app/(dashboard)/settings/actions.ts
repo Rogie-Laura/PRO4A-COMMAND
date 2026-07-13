@@ -101,6 +101,11 @@ import {
 import { parseForeignNationalXlsx } from "@/lib/foreign-national-xlsx-parser"
 import { TRAININGS_ANALYTICS_CACHE_TAG, replaceTrainingsWorkbook } from "@/lib/trainings-records"
 import { parseTrainingsXlsx } from "@/lib/trainings-xlsx-parser"
+import {
+  ADMIN_HOLDING_ANALYTICS_CACHE_TAG,
+  replaceAdminHoldingWorkbook,
+} from "@/lib/admin-holding-records"
+import { parseAdminHoldingXlsx } from "@/lib/admin-holding-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -110,6 +115,7 @@ const MAX_MOBILITY_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_UPER_UPLOAD_BYTES = 5 * 1024 * 1024
 const MAX_ESTABLISHMENT_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_TRAININGS_UPLOAD_BYTES = 10 * 1024 * 1024
+const MAX_ADMIN_HOLDING_UPLOAD_BYTES = 10 * 1024 * 1024
 
 export async function getAccessTokensAction() {
   await requireSuperAdminSession()
@@ -1021,6 +1027,53 @@ export async function uploadTrainingsWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang RTAP accomplishment upload. Subukan ulit.")
+  }
+}
+
+export async function uploadAdminHoldingWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rprmd")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx o .xlsm).")
+    }
+
+    const lowerName = file.name.toLowerCase()
+    if (!lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xlsm")) {
+      throw new Error("Excel (.xlsx o .xlsm) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_ADMIN_HOLDING_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 10 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseAdminHoldingXlsx(buffer)
+    const result = await replaceAdminHoldingWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(ADMIN_HOLDING_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/rprmd")
+    revalidatePath("/rprmd/upload")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang admin holding upload. Subukan ulit.")
   }
 }
 

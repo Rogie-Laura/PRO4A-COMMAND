@@ -33,7 +33,7 @@ export function AdminHoldingSection({ data }: AdminHoldingSectionProps) {
           <CardContent>
             <p className="text-sm font-medium text-foreground">Total Admin Holdings</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Personnel under admin holding from RPHAS Data
+              Personnel under admin holding from uploaded RPHAS workbook
             </p>
           </CardContent>
         </Card>
@@ -46,8 +46,8 @@ export function AdminHoldingSection({ data }: AdminHoldingSectionProps) {
       {!data.dataReady ? (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15">
           <CardContent className="py-4 text-sm text-muted-foreground">
-            Walang admin holding data pa. Siguraduhing naka-public ang RPHAS Data sheet at
-            may records sa Admin Holding tab.
+            Walang admin holding data pa. Mag-upload ng RPHAS workbook (Admin Holding sheet) sa
+            Upload File.
           </CardContent>
         </Card>
       ) : null}

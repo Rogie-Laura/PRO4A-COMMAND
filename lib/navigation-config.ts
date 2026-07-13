@@ -42,7 +42,7 @@ export const MAIN_NAV: NavLink[] = [
     icon: Activity,
     description: "Regional ranking, alert level, and terrorism threat status",
   },
-  { title: "RPRMD", href: "/rprmd", icon: BarChart3, divisionId: "rprmd" },
+  { title: "RPRMD", href: "/rprmd", icon: BarChart3, activePaths: ["/rprmd", "/rprmd/upload"], divisionId: "rprmd" },
   { title: "RID", href: "/rid", icon: Search, divisionId: "rid" },
   {
     title: "ROD",
@@ -90,6 +90,14 @@ export const MAIN_NAV: NavLink[] = [
     divisionId: "rictmd",
   },
   { title: "Station Profiles", href: "/station-profiles", icon: MapPinned, hidden: true },
+  {
+    title: "Upload File",
+    href: "/rprmd/upload",
+    icon: Upload,
+    activePaths: ["/rprmd/upload"],
+    divisionId: "rprmd",
+    uploadOnly: true,
+  },
   {
     title: "Upload File",
     href: "/rlrdd/upload",
