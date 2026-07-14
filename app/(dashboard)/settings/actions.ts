@@ -107,10 +107,17 @@ import {
 } from "@/lib/admin-holding-records"
 import { parseAdminHoldingXlsx } from "@/lib/admin-holding-xlsx-parser"
 import {
+  abortRprmdWorkbookUploadBatch,
+  appendRprmdPersonnelChunk,
+  appendRprmdWorkbookMeta,
+  beginRprmdWorkbookUploadBatch,
+  finalizeRprmdWorkbookUploadBatch,
   replaceRprmdWorkbook,
   RPRMD_WORKBOOK_CACHE_TAG,
+  type RprmdWorkbookMetaChunk,
 } from "@/lib/rprmd-workbook-records"
 import { parseRprmdWorkbookXlsx } from "@/lib/rprmd-workbook-xlsx-parser"
+import type { PersonnelRecord } from "@/lib/personnel-types"
 import { PERSONNEL_ANALYTICS_CACHE_TAG } from "@/lib/personnel-analytics"
 import {
   SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG,
@@ -133,6 +140,7 @@ const MAX_ESTABLISHMENT_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_TRAININGS_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_ADMIN_HOLDING_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_RPRMD_WORKBOOK_UPLOAD_BYTES = 25 * 1024 * 1024
+const MAX_RPRMD_PERSONNEL_CHUNK = 500
 const MAX_ICT_EQUIPMENT_UPLOAD_BYTES = 15 * 1024 * 1024
 
 export async function getAccessTokensAction() {
@@ -1099,6 +1107,93 @@ export async function uploadAdminHoldingWorkbookAction(formData: FormData) {
   }
 }
 
+export async function beginRprmdWorkbookUploadAction(filename: string) {
+  const session = await requireDivisionUploadSession("rprmd")
+  const trimmed = filename.trim()
+
+  if (!trimmed.toLowerCase().endsWith(".xlsx")) {
+    throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+  }
+
+  return beginRprmdWorkbookUploadBatch(trimmed, session.label)
+}
+
+export async function appendRprmdPersonnelChunkAction(
+  batchId: string,
+  records: PersonnelRecord[],
+) {
+  await requireDivisionUploadSession("rprmd")
+
+  if (!batchId.trim()) {
+    throw new Error("Missing upload batch.")
+  }
+
+  if (records.length === 0) {
+    return
+  }
+
+  if (records.length > MAX_RPRMD_PERSONNEL_CHUNK) {
+    throw new Error(`Too many personnel records in one chunk (max ${MAX_RPRMD_PERSONNEL_CHUNK}).`)
+  }
+
+  await appendRprmdPersonnelChunk(batchId, records)
+}
+
+export async function appendRprmdWorkbookMetaAction(
+  batchId: string,
+  meta: RprmdWorkbookMetaChunk,
+) {
+  await requireDivisionUploadSession("rprmd")
+
+  if (!batchId.trim()) {
+    throw new Error("Missing upload batch.")
+  }
+
+  await appendRprmdWorkbookMeta(batchId, meta)
+}
+
+export async function abortRprmdWorkbookUploadAction(batchId: string) {
+  await requireDivisionUploadSession("rprmd")
+  if (!batchId.trim()) return
+  await abortRprmdWorkbookUploadBatch(batchId)
+}
+
+function revalidateRprmdWorkbookPaths() {
+  updateTag(RPRMD_WORKBOOK_CACHE_TAG)
+  updateTag(PERSONNEL_ANALYTICS_CACHE_TAG)
+  updateTag(SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG)
+  updateTag(SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG)
+  updateTag(DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG)
+  revalidatePath("/settings")
+  revalidatePath("/rprmd")
+  revalidatePath("/rprmd/upload")
+}
+
+export async function finalizeRprmdWorkbookUploadAction(batchId: string) {
+  await requireDivisionUploadSession("rprmd")
+
+  if (!batchId.trim()) {
+    throw new Error("Missing upload batch.")
+  }
+
+  const result = await finalizeRprmdWorkbookUploadBatch(batchId)
+  revalidateRprmdWorkbookPaths()
+
+  return {
+    batch: result.batch,
+    summary: {
+      personnelCount: result.payload.personnelRecords.length,
+      mandatoryCount: result.payload.mandatorySchooling.total,
+      specializedCount: result.payload.specializedSchooling.total,
+      detailedNhq: result.payload.detailed.nhq.total,
+      detailedNosus: result.payload.detailed.nosus.total,
+      detailedRsu: result.payload.detailed.rsu.total,
+      detailedRhqPpo: result.payload.detailed.rhqPpo.total,
+      alphalistSheetName: result.alphalistSheetName,
+    },
+  }
+}
+
 export async function uploadRprmdWorkbookAction(formData: FormData) {
   try {
     const session = await requireDivisionUploadSession("rprmd")
@@ -1128,14 +1223,7 @@ export async function uploadRprmdWorkbookAction(formData: FormData) {
       workbook,
     })
 
-    updateTag(RPRMD_WORKBOOK_CACHE_TAG)
-    updateTag(PERSONNEL_ANALYTICS_CACHE_TAG)
-    updateTag(SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG)
-    updateTag(SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG)
-    updateTag(DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG)
-    revalidatePath("/settings")
-    revalidatePath("/rprmd")
-    revalidatePath("/rprmd/upload")
+    revalidateRprmdWorkbookPaths()
 
     return {
       batch: result.batch,

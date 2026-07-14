@@ -4,7 +4,13 @@ import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react"
 
-import { uploadRprmdWorkbookAction } from "@/app/(dashboard)/settings/actions"
+import {
+  abortRprmdWorkbookUploadAction,
+  appendRprmdPersonnelChunkAction,
+  appendRprmdWorkbookMetaAction,
+  beginRprmdWorkbookUploadAction,
+  finalizeRprmdWorkbookUploadAction,
+} from "@/app/(dashboard)/settings/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,9 +27,13 @@ import {
   UPLOAD_STATUS_BOX_CLASS,
 } from "@/components/settings/upload-card-styles"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
+import type { PersonnelRecord } from "@/lib/personnel-types"
+import { parseRprmdWorkbookXlsx } from "@/lib/rprmd-workbook-xlsx-parser"
 import type { RprmdWorkbookUploadBatchInfo } from "@/lib/rprmd-workbook-types"
 import { formatServerActionError } from "@/lib/server-action-errors"
 import { cn } from "@/lib/utils"
+
+const UPLOAD_CHUNK_SIZE = 500
 
 type RprmdWorkbookUploadCardProps = {
   latestBatch: RprmdWorkbookUploadBatchInfo | null
@@ -41,6 +51,14 @@ type UploadSummary = {
   alphalistSheetName: string
 }
 
+function chunkRecords(records: PersonnelRecord[], size: number) {
+  const chunks: PersonnelRecord[][] = []
+  for (let index = 0; index < records.length; index += size) {
+    chunks.push(records.slice(index, index + size))
+  }
+  return chunks
+}
+
 export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdWorkbookUploadCardProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -48,6 +66,7 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
   const [success, setSuccess] = useState<string | null>(null)
   const [summary, setSummary] = useState<UploadSummary | null>(null)
   const [batch, setBatch] = useState(latestBatch)
+  const [progress, setProgress] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function handleUpload() {
@@ -55,6 +74,7 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
     setError(null)
     setSuccess(null)
     setSummary(null)
+    setProgress(null)
 
     if (!file) {
       setError("Pumili muna ng Excel file (.xlsx).")
@@ -66,12 +86,34 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
       return
     }
 
-    const formData = new FormData()
-    formData.set("file", file)
-
     startTransition(async () => {
+      let batchId: string | null = null
+
       try {
-        const result = await uploadRprmdWorkbookAction(formData)
+        setProgress("Binabasa ang Excel file sa browser...")
+        const parsed = parseRprmdWorkbookXlsx(await file.arrayBuffer())
+
+        const started = await beginRprmdWorkbookUploadAction(file.name)
+        batchId = started.id
+
+        const chunks = chunkRecords(parsed.personnelRecords, UPLOAD_CHUNK_SIZE)
+        for (let index = 0; index < chunks.length; index += 1) {
+          setProgress(`Sine-save ang personnel... (${index + 1}/${chunks.length})`)
+          await appendRprmdPersonnelChunkAction(batchId, chunks[index]!)
+        }
+
+        setProgress("Sine-save ang schooling at detailed tabs...")
+        await appendRprmdWorkbookMetaAction(batchId, {
+          alphalistSheetName: parsed.alphalistSheetName,
+          mandatorySchooling: parsed.mandatorySchooling,
+          specializedSchooling: parsed.specializedSchooling,
+          detailed: parsed.detailed,
+        })
+
+        setProgress("Tinatapos ang upload...")
+        const result = await finalizeRprmdWorkbookUploadAction(batchId)
+        batchId = null
+
         setBatch(result.batch)
         setSummary(result.summary)
         setSuccess("Na-upload ang RPRMD workbook. Makikita na ang data sa dashboard.")
@@ -80,7 +122,22 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
         }
         router.refresh()
       } catch (uploadError) {
-        setError(formatServerActionError(uploadError, "Hindi ma-upload ang RPRMD workbook."))
+        if (batchId) {
+          try {
+            await abortRprmdWorkbookUploadAction(batchId)
+          } catch {
+            // Best-effort cleanup for partial uploads.
+          }
+        }
+
+        const message = formatServerActionError(uploadError, "Hindi ma-upload ang RPRMD workbook.")
+        setError(
+          message.includes("413") || message.toLowerCase().includes("too large")
+            ? "Masyadong malaki ang request. Subukan ulit — na-chunk na ang upload sa latest version."
+            : message,
+        )
+      } finally {
+        setProgress(null)
       }
     })
   }
@@ -95,7 +152,7 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
         <CardDescription>
           Alphalist sheet (yellow tab) para sa personnel stats, Mandatory at Specialized Schooling
           (walang Authority column), at Detailed tabs (walang Authority). Hindi kasama ang RPHAS
-          sheet.
+          sheet. Malaking file ay pinoprocess sa browser bago i-upload nang pa-chunk.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -128,10 +185,11 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
 
           <Button onClick={handleUpload} disabled={isPending}>
             <UploadIcon />
-            {isPending ? "Ina-upload..." : "Upload to Supabase"}
+            {isPending ? "Ina-upload... (huwag isara ang page)" : "Upload to Supabase"}
           </Button>
         </div>
 
+        {progress ? <p className="text-sm text-muted-foreground">{progress}</p> : null}
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         {success ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p> : null}
 
