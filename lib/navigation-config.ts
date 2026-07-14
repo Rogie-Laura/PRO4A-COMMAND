@@ -65,7 +65,7 @@ export const MAIN_NAV: NavLink[] = [
     href: "/ridmd",
     icon: Shield,
     description: "Regional Investigation and Detection Management Division",
-    activePaths: ["/ridmd", "/crime-statistics", "/comparative-crime-stats"],
+    activePaths: ["/ridmd", "/ridmd/upload", "/crime-statistics", "/comparative-crime-stats"],
     divisionId: "ridmd",
   },
   {
@@ -152,6 +152,14 @@ export const MAIN_NAV: NavLink[] = [
     icon: Upload,
     activePaths: ["/ict-equipment-inventory/upload"],
     divisionId: "rictmd",
+    uploadOnly: true,
+  },
+  {
+    title: "Upload File",
+    href: "/ridmd/upload",
+    icon: Upload,
+    activePaths: ["/ridmd/upload"],
+    divisionId: "ridmd",
     uploadOnly: true,
   },
   { title: "Settings", href: "/settings", icon: Settings },

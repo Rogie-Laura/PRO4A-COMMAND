@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react"
 
 import {
@@ -21,6 +22,7 @@ import {
 import type { CrimeUploadBatchInfo } from "@/lib/crime-records"
 import { parseCrimeXlsx, type ParsedCrimeRecord } from "@/lib/crime-xlsx-parser"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
+import { cn } from "@/lib/utils"
 import {
   UPLOAD_CARD_CLASS,
   UPLOAD_DROPZONE_CLASS,
@@ -32,6 +34,7 @@ const UPLOAD_CHUNK_SIZE = 400
 
 type CrimeUploadCardProps = {
   latestBatch: CrimeUploadBatchInfo | null
+  compact?: boolean
 }
 
 type UploadSummary = {
@@ -52,7 +55,8 @@ function chunkRecords(records: ParsedCrimeRecord[], size: number) {
   return chunks
 }
 
-export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
+export function CrimeUploadCard({ latestBatch, compact = false }: CrimeUploadCardProps) {
+  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -115,6 +119,7 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
         setSuccess(
           `Na-upload ang ${result.insertedCount.toLocaleString()} crime records sa Supabase.`,
         )
+        router.refresh()
         if (fileInputRef.current) {
           fileInputRef.current.value = ""
         }
@@ -137,8 +142,8 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
   }
 
   return (
-    <Card className={UPLOAD_CARD_CLASS}>
-      <CardHeader>
+    <Card className={cn(UPLOAD_CARD_CLASS, compact && "shadow-sm")}>
+      <CardHeader className={compact ? "pb-3" : undefined}>
         <CardTitle className="flex items-center gap-2">
           <FileSpreadsheetIcon className="size-5 text-primary" />
           Upload Crime Stats

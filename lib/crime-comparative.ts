@@ -2,6 +2,7 @@ import {
   endOfMonthFromMonthKey,
   formatCrimeDateLabel,
   formatCrimeDateRangeLabel,
+  getMatchingDayInPreviousMonth,
   parseCrimeDisplayDate,
   startOfDay,
   toIsoDateString,
@@ -114,7 +115,7 @@ export const COMPARATIVE_PRESETS: ComparativePreset[] = [
   {
     id: "month-vs-last-month",
     label: "Latest month vs previous month",
-    description: "Huling buwan na may data vs nakaraang buwan",
+    description: "Parehong araw ng buwan (hal. Jul 1–9 vs Jun 1–9)",
   },
   {
     id: "last-30-vs-prev-30",
@@ -229,7 +230,7 @@ export function buildPresetRanges(
     const reviewStart = new Date(today.getFullYear(), today.getMonth(), 1)
     const reviewEnd = today
     const previousStart = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-    const previousEnd = new Date(today.getFullYear(), today.getMonth(), 0)
+    const previousEnd = getMatchingDayInPreviousMonth(today)
 
     const periodA = clampRange(previousStart, previousEnd, bounds)
     const periodB = clampRange(reviewStart, reviewEnd, bounds)

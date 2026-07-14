@@ -66,6 +66,24 @@ export async function requireDivisionUploadSession(divisionId: DivisionId) {
   throw new Error("Division upload access required.")
 }
 
+export async function requireCrimeUploadSession() {
+  const session = await getSession()
+
+  if (!session) {
+    throw new Error("Sign in required.")
+  }
+
+  if (session.role === "super_admin") {
+    return session
+  }
+
+  if (session.role === "division_uploader" && session.divisionScope === "ridmd") {
+    return session
+  }
+
+  throw new Error("Crime upload access required.")
+}
+
 export async function requireAlertLevelManageSession() {
   const session = await getSession()
 

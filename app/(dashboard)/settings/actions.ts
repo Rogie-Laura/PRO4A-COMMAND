@@ -8,7 +8,7 @@ import {
   listAccessTokens,
   revokeAccessToken,
 } from "@/lib/access-tokens"
-import { requireSuperAdminSession, requireDivisionUploadSession, requireAlertLevelManageSession } from "@/lib/auth/get-session"
+import { requireSuperAdminSession, requireDivisionUploadSession, requireAlertLevelManageSession, requireCrimeUploadSession } from "@/lib/auth/get-session"
 import type { AccessKeyRole } from "@/lib/auth/roles"
 import type { DivisionId } from "@/lib/division-scope"
 import { getLatestBmiUploadBatch, replaceBmiRecords } from "@/lib/bmi-records"
@@ -238,7 +238,7 @@ export async function uploadBmiRecordsAction(formData: FormData) {
 }
 
 export async function beginCrimeUploadAction(filename: string) {
-  const session = await requireSuperAdminSession()
+  const session = await requireCrimeUploadSession()
   const trimmed = filename.trim()
 
   if (!trimmed.toLowerCase().endsWith(".xlsx")) {
@@ -252,7 +252,7 @@ export async function appendCrimeRecordsChunkAction(
   batchId: string,
   records: ParsedCrimeRecord[],
 ) {
-  await requireSuperAdminSession()
+  await requireCrimeUploadSession()
 
   if (!batchId.trim()) {
     throw new Error("Missing upload batch.")
@@ -270,13 +270,13 @@ export async function appendCrimeRecordsChunkAction(
 }
 
 export async function abortCrimeUploadAction(batchId: string) {
-  await requireSuperAdminSession()
+  await requireCrimeUploadSession()
   if (!batchId.trim()) return
   await abortCrimeUploadBatch(batchId)
 }
 
 export async function finalizeCrimeUploadAction(batchId: string) {
-  await requireSuperAdminSession()
+  await requireCrimeUploadSession()
 
   if (!batchId.trim()) {
     throw new Error("Missing upload batch.")
@@ -287,14 +287,16 @@ export async function finalizeCrimeUploadAction(batchId: string) {
   updateTag(CRIME_ANALYTICS_CACHE_TAG)
   revalidatePath("/settings")
   revalidatePath("/ridmd")
+  revalidatePath("/ridmd/upload")
   revalidatePath("/crime-statistics")
+  revalidatePath("/comparative-crime-stats")
 
   return result
 }
 
 export async function uploadCrimeRecordsAction(formData: FormData) {
   try {
-    const session = await requireSuperAdminSession()
+    const session = await requireCrimeUploadSession()
     const file = formData.get("file")
 
     if (!(file instanceof File)) {
@@ -324,7 +326,9 @@ export async function uploadCrimeRecordsAction(formData: FormData) {
     updateTag(CRIME_ANALYTICS_CACHE_TAG)
     revalidatePath("/settings")
     revalidatePath("/ridmd")
+    revalidatePath("/ridmd/upload")
     revalidatePath("/crime-statistics")
+    revalidatePath("/comparative-crime-stats")
 
     return {
       batch: result.batch,

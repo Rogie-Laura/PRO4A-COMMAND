@@ -83,7 +83,15 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     label: "RIDMD",
     rNumber: 7,
     defaultHref: "/ridmd",
-    allowedPaths: ["/ridmd", "/crime-statistics", "/comparative-crime-stats", "/pro4a-status", "/settings"],
+    allowedPaths: [
+      "/ridmd",
+      "/ridmd/upload",
+      "/crime-statistics",
+      "/comparative-crime-stats",
+      "/pro4a-status",
+      "/settings",
+    ],
+    uploadPath: "/ridmd/upload",
   },
   retd: {
     id: "retd",

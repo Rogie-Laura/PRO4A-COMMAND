@@ -41,6 +41,16 @@ export function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
+/** Same day-of-month in the previous calendar month, capped at that month's last day. */
+export function getMatchingDayInPreviousMonth(referenceDate: Date): Date {
+  const year = referenceDate.getFullYear()
+  const month = referenceDate.getMonth()
+  const day = referenceDate.getDate()
+  const lastDayOfPreviousMonth = new Date(year, month, 0).getDate()
+
+  return new Date(year, month - 1, Math.min(day, lastDayOfPreviousMonth))
+}
+
 export function endOfMonthFromMonthKey(monthKey: string): string {
   const [year, month] = monthKey.split("-").map(Number)
   const lastDay = new Date(year, month, 0).getDate()
