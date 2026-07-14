@@ -38,6 +38,7 @@ type UploadSummary = {
   insertedCount: number
   skippedRows: number
   skippedInvalidCategoryRows: number
+  skippedFilteredRows: number
   indexVolume: number
   nonIndexVolume: number
   year: number | null
@@ -85,7 +86,7 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
         const parsed = parseCrimeXlsx(await file.arrayBuffer())
 
         if (parsed.records.length === 0) {
-          throw new Error("Walang valid INDEX o NON INDEX rows sa file.")
+          throw new Error("Walang valid crime rows sa file.")
         }
 
         const started = await beginCrimeUploadAction(file.name)
@@ -106,6 +107,7 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
           insertedCount: result.insertedCount,
           skippedRows: parsed.skippedRows,
           skippedInvalidCategoryRows: parsed.skippedInvalidCategoryRows,
+          skippedFilteredRows: parsed.skippedFilteredRows,
           indexVolume: result.analytics.indexCrime.totalVolume,
           nonIndexVolume: result.analytics.nonIndexCrime.totalVolume,
           year: result.analytics.year,
@@ -142,10 +144,12 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
           Upload Crime Stats
         </CardTitle>
         <CardDescription>
-          Super Admin lang. PNP-CIRAS incident export — kukunin ang INDEX at NON INDEX rows lang
-          (Column2), kasama ang modus, offense, ppo, stn, barangay, typeofPlace, dateCommitted,
-          timeCommitted, at casestatus. I-skip ang QUASI at ibang category. Malaking file ay
-          pinoprocess sa browser bago i-upload nang pa-chunk.
+          Super Admin lang. PNP-CRAS export (CRAS-112) — kukunin ang INDEX crime rows lang
+          (Column2), mula 2026 pataas, gamit ang Column1 bilang crime at Column2 bilang
+          category. Kasama ang ppo, stn, pcp, region, province, municipal, barangay, day,
+          typeofPlace, dateCommitted, timeCommitted, modus, casestatus, lat, at lng. Legacy at
+          CIRAS incident export ay suportado pa rin. Malaking file ay pinoprocess sa browser
+          bago i-upload nang pa-chunk.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -163,7 +167,7 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
           </div>
         ) : (
           <p className={UPLOAD_EMPTY_STATE_CLASS}>
-            Wala pang na-upload na crime stats. Mag-upload ng PNP-CIRAS Excel export.
+            Wala pang na-upload na crime stats. Mag-upload ng PNP-CRAS o CIRAS Excel export.
           </p>
         )}
 
@@ -196,6 +200,9 @@ export function CrimeUploadCard({ latestBatch }: CrimeUploadCardProps) {
               {summary.insertedCount.toLocaleString()} valid rows
               {summary.skippedRows > 0
                 ? ` · ${summary.skippedRows.toLocaleString()} skipped`
+                : ""}
+              {summary.skippedFilteredRows > 0
+                ? ` (${summary.skippedFilteredRows.toLocaleString()} non-INDEX o pre-2026)`
                 : ""}
               {summary.skippedInvalidCategoryRows > 0
                 ? ` (${summary.skippedInvalidCategoryRows.toLocaleString()} invalid category)`

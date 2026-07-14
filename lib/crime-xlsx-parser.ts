@@ -31,10 +31,38 @@ export const CRIME_INCIDENT_HEADERS = [
   "casestatus",
 ] as const
 
+/** PNP-CRAS export (e.g. CRAS-112): Column1 = crime, Column2 = category. */
+export const CRIME_CRAS_HEADERS = [
+  "ppo",
+  "stn",
+  "pcp",
+  "region",
+  "province",
+  "municipal",
+  "barangay",
+  "day",
+  "typeofplace",
+  "datecommitted",
+  "timecommitted",
+  "column1",
+  "column2",
+  "modus",
+  "casestatus",
+  "lat",
+  "lng",
+] as const
+
+export const CRIME_CRAS_MIN_YEAR = 2026
+
 export type ParsedCrimeRecord = {
   ppo: string
   stn: string
+  pcp: string
+  region: string
+  province: string
+  municipal: string
   barangay: string
+  day: string
   year: number | null
   typeofPlace: string
   dateCommitted: string | null
@@ -43,21 +71,30 @@ export type ParsedCrimeRecord = {
   category: string
   caseStatus: string
   modus: string
+  lat: number | null
+  lng: number | null
 }
 
 export type ParsedCrimeWorkbook = {
   records: ParsedCrimeRecord[]
   skippedRows: number
   skippedInvalidCategoryRows: number
+  skippedFilteredRows: number
 }
 
-type CrimeUploadFormat = "legacy" | "incident"
+type CrimeUploadFormat = "legacy" | "incident" | "cras"
 
 function normalizeHeader(value: unknown) {
-  return String(value ?? "")
+  const normalized = String(value ?? "")
     .trim()
     .toLowerCase()
     .replace(/\s+/g, "")
+
+  if (normalized === "long") {
+    return "lng"
+  }
+
+  return normalized
 }
 
 function readCell(row: unknown[], index: number | undefined) {
@@ -65,11 +102,18 @@ function readCell(row: unknown[], index: number | undefined) {
   return row[index]
 }
 
+function formatLocalIsoDate(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 function parseExcelDate(value: unknown): string | null {
   if (value == null || value === "") return null
 
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10)
+    return formatLocalIsoDate(value)
   }
 
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -100,7 +144,7 @@ function parseExcelDate(value: unknown): string | null {
 
   const parsed = new Date(trimmed)
   if (!Number.isNaN(parsed.getTime())) {
-    return parsed.toISOString().slice(0, 10)
+    return formatLocalIsoDate(parsed)
   }
 
   return null
@@ -135,6 +179,17 @@ function parseYear(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
+function parseCoordinate(value: unknown): number | null {
+  if (value == null || value === "") return null
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value
+  }
+
+  const parsed = Number.parseFloat(String(value).trim())
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 function yearFromIsoDate(isoDate: string | null) {
   if (!isoDate) return null
   const year = Number.parseInt(isoDate.slice(0, 4), 10)
@@ -142,6 +197,9 @@ function yearFromIsoDate(isoDate: string | null) {
 }
 
 function detectUploadFormat(headers: string[]): CrimeUploadFormat {
+  const hasCras = CRIME_CRAS_HEADERS.every((header) => headers.includes(header))
+  if (hasCras) return "cras"
+
   const hasLegacy = CRIME_UPLOAD_HEADERS.every((header) => headers.includes(header))
   if (hasLegacy) return "legacy"
 
@@ -149,7 +207,7 @@ function detectUploadFormat(headers: string[]): CrimeUploadFormat {
   if (hasIncident) return "incident"
 
   throw new Error(
-    "Invalid crime Excel format. Kailangan ang legacy export (crime, category, YEAR) o ang CIRAS incident export (offense, Column2, modus, casestatus).",
+    "Invalid crime Excel format. Kailangan ang legacy export (crime, category, YEAR), CIRAS incident export (offense, Column2), o CRAS export (Column1, Column2, pcp, region, lat/lng).",
   )
 }
 
@@ -160,18 +218,26 @@ function buildColumnIndex(headers: string[]) {
   >
 }
 
+function readOptionalString(row: unknown[], columnIndex: Record<string, number>, key: string) {
+  const index = columnIndex[key]
+  if (index == null) return ""
+  return String(readCell(row, index) ?? "").trim()
+}
+
 function parseCrimeRow(
   row: unknown[],
   columnIndex: Record<string, number>,
   format: CrimeUploadFormat,
-): ParsedCrimeRecord | "skip" | "invalid-category" {
+): ParsedCrimeRecord | "skip" | "invalid-category" | "filtered" {
   const ppo = String(readCell(row, columnIndex.ppo) ?? "").trim()
   const crime =
-    format === "incident"
-      ? String(readCell(row, columnIndex.offense) ?? "").trim()
-      : String(readCell(row, columnIndex.crime) ?? "").trim()
+    format === "cras"
+      ? String(readCell(row, columnIndex.column1) ?? "").trim()
+      : format === "incident"
+        ? String(readCell(row, columnIndex.offense) ?? "").trim()
+        : String(readCell(row, columnIndex.crime) ?? "").trim()
   const categoryRaw =
-    format === "incident"
+    format === "incident" || format === "cras"
       ? String(readCell(row, columnIndex.column2) ?? "")
       : String(readCell(row, columnIndex.category) ?? "")
   const category = normalizeUploadCategory(categoryRaw)
@@ -187,22 +253,37 @@ function parseCrimeRow(
   const dateCommitted = parseExcelDate(readCell(row, columnIndex.datecommitted))
   const explicitYear =
     format === "legacy" ? parseYear(readCell(row, columnIndex.year)) : null
+  const year = explicitYear ?? yearFromIsoDate(dateCommitted)
+
+  if (format === "cras") {
+    if (category !== "INDEX") {
+      return "filtered"
+    }
+
+    if (!year || year < CRIME_CRAS_MIN_YEAR) {
+      return "filtered"
+    }
+  }
 
   return {
     ppo,
     stn: String(readCell(row, columnIndex.stn) ?? "").trim(),
+    pcp: readOptionalString(row, columnIndex, "pcp"),
+    region: readOptionalString(row, columnIndex, "region"),
+    province: readOptionalString(row, columnIndex, "province"),
+    municipal: readOptionalString(row, columnIndex, "municipal"),
     barangay: String(readCell(row, columnIndex.barangay) ?? "").trim(),
-    year: explicitYear ?? yearFromIsoDate(dateCommitted),
+    day: readOptionalString(row, columnIndex, "day"),
+    year,
     typeofPlace: String(readCell(row, columnIndex.typeofplace) ?? "").trim(),
     dateCommitted,
     timeCommitted: parseTimeValue(readCell(row, columnIndex.timecommitted)),
     crime,
     category,
     caseStatus: normalizeCaseStatus(String(readCell(row, columnIndex.casestatus) ?? "")),
-    modus:
-      format === "incident"
-        ? String(readCell(row, columnIndex.modus) ?? "").trim()
-        : String(readCell(row, columnIndex.modus) ?? "").trim(),
+    modus: String(readCell(row, columnIndex.modus) ?? "").trim(),
+    lat: parseCoordinate(readCell(row, columnIndex.lat)),
+    lng: parseCoordinate(readCell(row, columnIndex.lng)),
   }
 }
 
@@ -232,6 +313,7 @@ export function parseCrimeXlsx(buffer: ArrayBuffer | Buffer): ParsedCrimeWorkboo
   const records: ParsedCrimeRecord[] = []
   let skippedRows = 0
   let skippedInvalidCategoryRows = 0
+  let skippedFilteredRows = 0
 
   for (const row of rows.slice(1)) {
     if (!Array.isArray(row)) {
@@ -251,14 +333,23 @@ export function parseCrimeXlsx(buffer: ArrayBuffer | Buffer): ParsedCrimeWorkboo
       continue
     }
 
+    if (parsed === "filtered") {
+      skippedRows += 1
+      skippedFilteredRows += 1
+      continue
+    }
+
     records.push(parsed)
   }
 
   if (records.length === 0) {
-    throw new Error(
-      "No valid crime records were found in the uploaded file. Dapat may INDEX o NON INDEX na category ang bawat row.",
-    )
+    const hint =
+      format === "cras"
+        ? `Walang valid INDEX crime rows mula ${CRIME_CRAS_MIN_YEAR} pataas.`
+        : "Dapat may INDEX o NON INDEX na category ang bawat row."
+
+    throw new Error(`No valid crime records were found in the uploaded file. ${hint}`)
   }
 
-  return { records, skippedRows, skippedInvalidCategoryRows }
+  return { records, skippedRows, skippedInvalidCategoryRows, skippedFilteredRows }
 }

@@ -1,0 +1,8 @@
+ALTER TABLE public.crime_records
+  ADD COLUMN IF NOT EXISTS pcp text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS region text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS province text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS municipal text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS day text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS lat double precision,
+  ADD COLUMN IF NOT EXISTS lng double precision;

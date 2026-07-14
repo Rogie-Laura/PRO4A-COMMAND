@@ -79,7 +79,12 @@ function toInsertRow(batchId: string, record: ParsedCrimeRecord) {
     batch_id: batchId,
     ppo: record.ppo,
     stn: record.stn,
+    pcp: record.pcp,
+    region: record.region,
+    province: record.province,
+    municipal: record.municipal,
     barangay: record.barangay,
+    day: record.day,
     year: record.year,
     typeof_place: record.typeofPlace,
     date_committed: record.dateCommitted,
@@ -88,13 +93,20 @@ function toInsertRow(batchId: string, record: ParsedCrimeRecord) {
     category: record.category,
     case_status: record.caseStatus,
     modus: record.modus,
+    lat: record.lat,
+    lng: record.lng,
   }
 }
 
 function mapStoredRecord(row: {
   ppo: string
   stn: string
+  pcp?: string | null
+  region?: string | null
+  province?: string | null
+  municipal?: string | null
   barangay: string
+  day?: string | null
   year: number | null
   typeof_place: string
   date_committed: string | null
@@ -103,11 +115,18 @@ function mapStoredRecord(row: {
   category: string
   case_status: string
   modus?: string | null
+  lat?: number | null
+  lng?: number | null
 }): ParsedCrimeRecord {
   return {
     ppo: row.ppo,
     stn: row.stn,
+    pcp: row.pcp?.trim() ?? "",
+    region: row.region?.trim() ?? "",
+    province: row.province?.trim() ?? "",
+    municipal: row.municipal?.trim() ?? "",
     barangay: row.barangay,
+    day: row.day?.trim() ?? "",
     year: row.year,
     typeofPlace: row.typeof_place,
     dateCommitted: row.date_committed,
@@ -116,6 +135,8 @@ function mapStoredRecord(row: {
     category: row.category ?? "",
     caseStatus: row.case_status ?? "",
     modus: row.modus?.trim() ?? "",
+    lat: row.lat ?? null,
+    lng: row.lng ?? null,
   }
 }
 
@@ -182,7 +203,7 @@ async function fetchCrimeRecordsForBatch(batchId: string): Promise<ParsedCrimeRe
     const { data, error } = await supabase
       .from("crime_records")
       .select(
-        "ppo, stn, barangay, year, typeof_place, date_committed, time_committed, crime, category, case_status, modus",
+        "ppo, stn, pcp, region, province, municipal, barangay, day, year, typeof_place, date_committed, time_committed, crime, category, case_status, modus, lat, lng",
       )
       .eq("batch_id", batchId)
       .order("id", { ascending: true })
