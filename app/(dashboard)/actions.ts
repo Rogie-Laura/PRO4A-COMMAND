@@ -20,6 +20,7 @@ import type { DetailedPersonnelRecord, DetailedPersonnelTabKey } from "@/lib/det
 import { buildRankTenurePersonnelForBracket, mapPersonnelRow } from "@/lib/personnel-aggregations"
 import { fetchPersonnelSheetCsv, parseCsv, PERSONNEL_RECAP_CSV_CACHE_TAG } from "@/lib/google-sheets"
 import { getPersonnelAnalytics, PERSONNEL_ANALYTICS_CACHE_TAG } from "@/lib/personnel-analytics"
+import { getRprmdWorkbookPayload, RPRMD_WORKBOOK_CACHE_TAG } from "@/lib/rprmd-workbook-records"
 import {
   getSchoolingMandatoryAnalytics,
   getSchoolingMandatorySummary,
@@ -96,6 +97,11 @@ export async function fetchRankTenurePersonnel(
   const cached = row?.bracketDetails[bracketId]
   if (cached && cached.length > 0) return cached
 
+  const uploaded = await getRprmdWorkbookPayload()
+  if (uploaded?.personnelRecords?.length) {
+    return buildRankTenurePersonnelForBracket(uploaded.personnelRecords, rank, bracketId)
+  }
+
   const csv = await fetchPersonnelSheetCsv()
   const rows = parseCsv(csv)
   const records = rows.map(mapPersonnelRow).filter((record) => record.lastName || record.firstName)
@@ -103,6 +109,7 @@ export async function fetchRankTenurePersonnel(
 }
 
 export async function refreshPersonnelStatsData() {
+  updateTag(RPRMD_WORKBOOK_CACHE_TAG)
   updateTag(PERSONNEL_RECAP_CSV_CACHE_TAG)
   updateTag(PERSONNEL_ANALYTICS_CACHE_TAG)
   updateTag(ADMIN_HOLDING_ANALYTICS_CACHE_TAG)

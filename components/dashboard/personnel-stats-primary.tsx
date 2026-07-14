@@ -4,6 +4,7 @@ import { LeadershipSection } from "@/components/dashboard/leadership-section"
 import { PersonnelStatsRefreshButton } from "@/components/dashboard/personnel-stats-refresh-button"
 import { RankDistributionSection } from "@/components/dashboard/rank-distribution-section"
 import { TotalPersonnelSection } from "@/components/dashboard/total-personnel-section"
+import { Card, CardContent } from "@/components/ui/card"
 import { getPersonnelAnalytics } from "@/lib/personnel-analytics"
 import {
   toOfficeBreakdownCards,
@@ -16,9 +17,12 @@ export async function PersonnelStatsPrimary() {
     data = await getPersonnelAnalytics()
   } catch {
     return (
-      <p className="text-sm text-muted-foreground">
-        Personnel data unavailable. Try refreshing.
-      </p>
+        <Card className="border-dashed border-muted-foreground/25 bg-muted/15 sm:max-w-xl">
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            Walang personnel data pa. Mag-upload ng Alphalist workbook sa{" "}
+            <span className="font-medium text-foreground">RPRMD → Upload File</span>.
+          </CardContent>
+        </Card>
     )
   }
 

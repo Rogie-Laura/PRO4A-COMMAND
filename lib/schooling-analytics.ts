@@ -1,10 +1,7 @@
 import { unstable_cache } from "next/cache"
 
-import {
-  fetchSchoolingMandatorySheetCsv,
-  fetchSchoolingSpecializedSheetCsv,
-  parseCsvRows,
-} from "@/lib/google-sheets"
+import { fetchSchoolingMandatorySheetCsv, fetchSchoolingSpecializedSheetCsv, parseCsvRows } from "@/lib/google-sheets"
+import { getRprmdWorkbookPayload } from "@/lib/rprmd-workbook-records"
 import { SCHOOLING_SHEET } from "@/lib/schooling-sheet"
 import type { SchoolingAnalytics, SchoolingRecord, SchoolingSummary } from "@/lib/schooling-types"
 import type { CountItem } from "@/lib/personnel-types"
@@ -41,7 +38,7 @@ function isSchoolingDataRow(cols: string[]) {
   return /^\d+$/.test(no) && rank.length > 0 && lastName.length > 0
 }
 
-function mapSchoolingRow(cols: string[]): SchoolingRecord {
+function mapSchoolingRow(cols: string[], includeAuthority = true): SchoolingRecord {
   return {
     no: Number.parseInt(cols[0] ?? "0", 10),
     rank: cols[1]?.trim() ?? "",
@@ -55,7 +52,7 @@ function mapSchoolingRow(cols: string[]): SchoolingRecord {
     effectiveDate: cols[9]?.trim() ?? "",
     course: extractSchoolingCourse(cols[10]?.trim() ?? ""),
     courseSchool: cols[10]?.trim() ?? "",
-    authority: cols[11]?.trim() ?? "",
+    authority: includeAuthority ? cols[11]?.trim() ?? "" : "",
   }
 }
 
@@ -109,10 +106,40 @@ export function toSchoolingSummary(data: SchoolingAnalytics): SchoolingSummary {
 
 export function parseSchoolingCsv(text: string): SchoolingRecord[] {
   const rows = parseCsvRows(text)
-  return rows.filter(isSchoolingDataRow).map(mapSchoolingRow)
+  return rows.filter(isSchoolingDataRow).map((cols) => mapSchoolingRow(cols, true))
+}
+
+export function parseSchoolingRows(rows: string[][]): SchoolingRecord[] {
+  return rows.filter(isSchoolingDataRow).map((cols) => mapSchoolingRow(cols, false))
+}
+
+export function buildSchoolingAnalyticsFromRecords(
+  title: string,
+  records: SchoolingRecord[],
+  options: { fileName: string; lastUpdated: string },
+): SchoolingAnalytics {
+  if (records.length === 0) {
+    return emptyAnalytics(title, options.fileName)
+  }
+
+  return {
+    lastUpdated: options.lastUpdated,
+    dataReady: true,
+    dataSource: options.fileName,
+    title,
+    total: records.length,
+    subUnitStats: buildSubUnitStats(records),
+    courseStats: buildCourseStats(records),
+    records,
+  }
 }
 
 async function loadSchoolingMandatorySummary(): Promise<SchoolingSummary> {
+  const uploaded = await getRprmdWorkbookPayload()
+  if (uploaded?.mandatorySchooling) {
+    return toSchoolingSummary(uploaded.mandatorySchooling)
+  }
+
   const csv = await fetchSchoolingMandatorySheetCsv()
   const records = parseSchoolingCsv(csv)
 
@@ -133,6 +160,11 @@ async function loadSchoolingMandatorySummary(): Promise<SchoolingSummary> {
 }
 
 async function loadSchoolingSpecializedSummary(): Promise<SchoolingSummary> {
+  const uploaded = await getRprmdWorkbookPayload()
+  if (uploaded?.specializedSchooling) {
+    return toSchoolingSummary(uploaded.specializedSchooling)
+  }
+
   const csv = await fetchSchoolingSpecializedSheetCsv()
   const records = parseSchoolingCsv(csv)
 
@@ -153,6 +185,11 @@ async function loadSchoolingSpecializedSummary(): Promise<SchoolingSummary> {
 }
 
 async function loadSchoolingMandatoryAnalytics(): Promise<SchoolingAnalytics> {
+  const uploaded = await getRprmdWorkbookPayload()
+  if (uploaded?.mandatorySchooling?.records?.length) {
+    return uploaded.mandatorySchooling
+  }
+
   const csv = await fetchSchoolingMandatorySheetCsv()
   const records = parseSchoolingCsv(csv)
 
@@ -173,6 +210,11 @@ async function loadSchoolingMandatoryAnalytics(): Promise<SchoolingAnalytics> {
 }
 
 async function loadSchoolingSpecializedAnalytics(): Promise<SchoolingAnalytics> {
+  const uploaded = await getRprmdWorkbookPayload()
+  if (uploaded?.specializedSchooling?.records?.length) {
+    return uploaded.specializedSchooling
+  }
+
   const csv = await fetchSchoolingSpecializedSheetCsv()
   const records = parseSchoolingCsv(csv)
 

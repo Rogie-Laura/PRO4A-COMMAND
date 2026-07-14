@@ -107,6 +107,17 @@ import {
 } from "@/lib/admin-holding-records"
 import { parseAdminHoldingXlsx } from "@/lib/admin-holding-xlsx-parser"
 import {
+  replaceRprmdWorkbook,
+  RPRMD_WORKBOOK_CACHE_TAG,
+} from "@/lib/rprmd-workbook-records"
+import { parseRprmdWorkbookXlsx } from "@/lib/rprmd-workbook-xlsx-parser"
+import { PERSONNEL_ANALYTICS_CACHE_TAG } from "@/lib/personnel-analytics"
+import {
+  SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG,
+  SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG,
+} from "@/lib/schooling-analytics"
+import { DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG } from "@/lib/detailed-personnel-analytics"
+import {
   ICT_EQUIPMENT_ANALYTICS_CACHE_TAG,
   replaceIctEquipmentWorkbook,
 } from "@/lib/ict-equipment-records"
@@ -121,6 +132,7 @@ const MAX_UPER_UPLOAD_BYTES = 5 * 1024 * 1024
 const MAX_ESTABLISHMENT_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_TRAININGS_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_ADMIN_HOLDING_UPLOAD_BYTES = 10 * 1024 * 1024
+const MAX_RPRMD_WORKBOOK_UPLOAD_BYTES = 25 * 1024 * 1024
 const MAX_ICT_EQUIPMENT_UPLOAD_BYTES = 15 * 1024 * 1024
 
 export async function getAccessTokensAction() {
@@ -1084,6 +1096,66 @@ export async function uploadAdminHoldingWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang admin holding upload. Subukan ulit.")
+  }
+}
+
+export async function uploadRprmdWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rprmd")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_RPRMD_WORKBOOK_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 25 MB ang file. Hatiin o i-compress muna.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseRprmdWorkbookXlsx(buffer)
+    const result = await replaceRprmdWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(RPRMD_WORKBOOK_CACHE_TAG)
+    updateTag(PERSONNEL_ANALYTICS_CACHE_TAG)
+    updateTag(SCHOOLING_MANDATORY_ANALYTICS_CACHE_TAG)
+    updateTag(SCHOOLING_SPECIALIZED_ANALYTICS_CACHE_TAG)
+    updateTag(DETAILED_PERSONNEL_DASHBOARD_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/rprmd")
+    revalidatePath("/rprmd/upload")
+
+    return {
+      batch: result.batch,
+      summary: {
+        personnelCount: result.payload.personnelRecords.length,
+        mandatoryCount: result.payload.mandatorySchooling.total,
+        specializedCount: result.payload.specializedSchooling.total,
+        detailedNhq: result.payload.detailed.nhq.total,
+        detailedNosus: result.payload.detailed.nosus.total,
+        detailedRsu: result.payload.detailed.rsu.total,
+        detailedRhqPpo: result.payload.detailed.rhqPpo.total,
+        alphalistSheetName: workbook.alphalistSheetName,
+      },
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang RPRMD workbook upload. Subukan ulit.")
   }
 }
 

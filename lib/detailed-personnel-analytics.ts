@@ -13,6 +13,7 @@ import type {
   DetailedPersonnelTabKey,
 } from "@/lib/detailed-personnel-types"
 import { fetchDetailedPersonnelSheetCsv, parseCsvRows } from "@/lib/google-sheets"
+import { getRprmdWorkbookPayload } from "@/lib/rprmd-workbook-records"
 
 export type DetailedPersonnelDashboardData = {
   nhq: DetailedPersonnelSummary
@@ -43,7 +44,7 @@ function isDetailedPersonnelDataRow(cols: string[]) {
   return /^\d+$/.test(no) && rank.length > 0 && lastName.length > 0
 }
 
-function mapDetailedPersonnelRow(cols: string[]): DetailedPersonnelRecord {
+function mapDetailedPersonnelRow(cols: string[], includeAuthority = true): DetailedPersonnelRecord {
   return {
     no: Number.parseInt(cols[0] ?? "0", 10),
     rank: cols[1]?.trim() ?? "",
@@ -57,14 +58,37 @@ function mapDetailedPersonnelRow(cols: string[]): DetailedPersonnelRecord {
     endDate: cols[9]?.trim() ?? "",
     unitFrom: cols[10]?.trim() || "Unspecified",
     unitTo: cols[11]?.trim() ?? "",
-    authority: cols[12]?.trim() ?? "",
+    authority: includeAuthority ? cols[12]?.trim() ?? "" : "",
     daysRemaining: cols[13]?.trim() ?? "",
   }
 }
 
 export function parseDetailedPersonnelCsv(text: string): DetailedPersonnelRecord[] {
   const rows = parseCsvRows(text)
-  return rows.filter(isDetailedPersonnelDataRow).map(mapDetailedPersonnelRow)
+  return rows.filter(isDetailedPersonnelDataRow).map((cols) => mapDetailedPersonnelRow(cols, true))
+}
+
+export function parseDetailedPersonnelRows(rows: string[][]): DetailedPersonnelRecord[] {
+  return rows.filter(isDetailedPersonnelDataRow).map((cols) => mapDetailedPersonnelRow(cols, false))
+}
+
+export function buildDetailedPersonnelAnalyticsFromRecords(
+  title: string,
+  records: DetailedPersonnelRecord[],
+  options: { fileName: string; lastUpdated: string },
+): DetailedPersonnelAnalytics {
+  if (records.length === 0) {
+    return emptyAnalytics(title)
+  }
+
+  return {
+    lastUpdated: options.lastUpdated,
+    dataReady: true,
+    dataSource: options.fileName,
+    title,
+    total: records.length,
+    records,
+  }
 }
 
 export function toDetailedPersonnelSummary(
@@ -96,6 +120,12 @@ function buildSummary(label: string, records: DetailedPersonnelRecord[]): Detail
 async function loadDetailedPersonnelAnalytics(
   tab: DetailedPersonnelTabKey,
 ): Promise<DetailedPersonnelAnalytics> {
+  const uploaded = await getRprmdWorkbookPayload()
+  const uploadedTab = uploaded?.detailed?.[tab]
+  if (uploadedTab?.records?.length) {
+    return uploadedTab
+  }
+
   const { label } = DETAILED_PERSONNEL_SHEET.tabs[tab]
   const csv = await fetchDetailedPersonnelSheetCsv(tab)
   const records = parseDetailedPersonnelCsv(csv)
@@ -116,6 +146,11 @@ async function loadDetailedPersonnelAnalytics(
 
 /** Loads all detailed tabs sequentially to avoid Google CSV export throttling. */
 async function loadDetailedPersonnelDashboard(): Promise<DetailedPersonnelDashboardData> {
+  const uploaded = await getRprmdWorkbookPayload()
+  if (uploaded?.detailedDashboard) {
+    return uploaded.detailedDashboard
+  }
+
   const tabs: DetailedPersonnelTabKey[] = ["nhq", "nosus", "rsu", "rhqPpo"]
   const summaries = {} as Record<DetailedPersonnelTabKey, DetailedPersonnelSummary>
   let terminatedCount = 0

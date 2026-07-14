@@ -6,6 +6,7 @@ import {
 } from "@/lib/personnel-aggregations"
 import { fetchPersonnelSheetCsv, parseCsv } from "@/lib/google-sheets"
 import type { PersonnelAnalytics } from "@/lib/personnel-types"
+import { getRprmdWorkbookPayload } from "@/lib/rprmd-workbook-records"
 
 function emptyAnalytics(): PersonnelAnalytics {
   return {
@@ -51,9 +52,12 @@ async function loadPersonnelAnalyticsFromRoster(): Promise<PersonnelAnalytics> {
 }
 
 async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
-  const syncedAt = new Date().toISOString()
+  const uploaded = await getRprmdWorkbookPayload()
+  if (uploaded?.personnel) {
+    return uploaded.personnel
+  }
 
-  // Alphalist roster is the source of truth for RPRMD personnel stats.
+  const syncedAt = new Date().toISOString()
   const fromRoster = await loadPersonnelAnalyticsFromRoster()
   return {
     ...fromRoster,
