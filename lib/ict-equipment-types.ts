@@ -4,6 +4,18 @@ export type IctPeriodBreakdown = {
   total: number
 }
 
+export type IctCybereasonBreakdown = {
+  installed: number
+  without: number
+  total: number
+}
+
+export type IctStorageBreakdown = {
+  hddOrHybrid: number
+  ssdOnly: number
+  total: number
+}
+
 export type IctOfficeBreakdownItem = {
   subUnit: string
   label: string
@@ -12,6 +24,8 @@ export type IctOfficeBreakdownItem = {
   colorClass: string
   count: number
   breakdown: IctPeriodBreakdown
+  cybereason?: IctCybereasonBreakdown
+  storage?: IctStorageBreakdown
 }
 
 export type IctStatusSection = {
@@ -19,6 +33,8 @@ export type IctStatusSection = {
   breakdown: IctPeriodBreakdown
   detail: string
   offices: IctOfficeBreakdownItem[]
+  cybereason?: IctCybereasonBreakdown
+  storage?: IctStorageBreakdown
 }
 
 export type IctEquipmentAnalytics = {
@@ -34,6 +50,18 @@ export type IctEquipmentAnalytics = {
   ber: IctStatusSection
   pnpIssuedByNhq: IctStatusSection
   procuredByPro: IctStatusSection
+}
+
+export type ParsedIctRecapWorkbook = {
+  sheetName: string
+  analytics: IctEquipmentAnalytics
+}
+
+export type IctEquipmentUploadBatchInfo = {
+  id: string
+  filename: string
+  uploadedByLabel: string | null
+  createdAt: string
 }
 
 /** @deprecated Use IctPeriodBreakdown */

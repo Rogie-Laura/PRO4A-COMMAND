@@ -80,7 +80,7 @@ export const MAIN_NAV: NavLink[] = [
     title: "RICTMD",
     href: "/ict-equipment-inventory",
     icon: Monitor,
-    activePaths: ["/ict-equipment-inventory"],
+    activePaths: ["/ict-equipment-inventory", "/ict-equipment-inventory/upload"],
     divisionId: "rictmd",
   },
   {
@@ -144,6 +144,14 @@ export const MAIN_NAV: NavLink[] = [
     icon: Upload,
     activePaths: ["/trainings-and-education/upload"],
     divisionId: "retd",
+    uploadOnly: true,
+  },
+  {
+    title: "Upload File",
+    href: "/ict-equipment-inventory/upload",
+    icon: Upload,
+    activePaths: ["/ict-equipment-inventory/upload"],
+    divisionId: "rictmd",
     uploadOnly: true,
   },
   { title: "Settings", href: "/settings", icon: Settings },

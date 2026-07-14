@@ -16,6 +16,7 @@ import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctg
 import { ForeignNationalUploadCard } from "@/components/settings/foreign-national-upload-card"
 import { TrainingsUploadCard } from "@/components/settings/trainings-upload-card"
 import { AdminHoldingUploadCard } from "@/components/settings/admin-holding-upload-card"
+import { IctEquipmentUploadCard } from "@/components/settings/ict-equipment-upload-card"
 import { AlertLevelSettingsCard } from "@/components/settings/alert-level-settings-card"
 import { DrugClearingUploadCard } from "@/components/settings/drug-clearing-upload-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
@@ -60,6 +61,8 @@ import { getLatestTrainingsUploadBatch } from "@/lib/trainings-records"
 import type { TrainingsUploadBatchInfo } from "@/lib/trainings-types"
 import { getLatestAdminHoldingUploadBatch } from "@/lib/admin-holding-records"
 import type { AdminHoldingUploadBatchInfo } from "@/lib/admin-holding-types"
+import { getLatestIctEquipmentUploadBatch } from "@/lib/ict-equipment-records"
+import type { IctEquipmentUploadBatchInfo } from "@/lib/ict-equipment-types"
 import { getLatestDrugClearingUploadBatch } from "@/lib/drug-clearing-records"
 import type { DrugClearingUploadBatchInfo } from "@/lib/drug-clearing-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
@@ -117,6 +120,8 @@ export default async function SettingsPage() {
   let trainingsUploadError: string | null = null
   let latestAdminHoldingBatch: AdminHoldingUploadBatchInfo | null = null
   let adminHoldingUploadError: string | null = null
+  let latestIctEquipmentBatch: IctEquipmentUploadBatchInfo | null = null
+  let ictEquipmentUploadError: string | null = null
   let latestRcaddBatch: RcaddUploadBatchInfo | null = null
   let rcaddUploadError: string | null = null
   let latestDrugClearingBatch: DrugClearingUploadBatchInfo | null = null
@@ -283,6 +288,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load admin holding upload status from Supabase."
+    }
+
+    try {
+      latestIctEquipmentBatch = await getLatestIctEquipmentUploadBatch()
+    } catch (error) {
+      ictEquipmentUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load ICT equipment upload status from Supabase."
     }
 
     try {
@@ -604,6 +618,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <AdminHoldingUploadCard latestBatch={latestAdminHoldingBatch} />
+            )}
+
+            {ictEquipmentUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload ICT Inventory Workbook</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{ictEquipmentUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260714140000_create_ict_equipment_upload_batches.sql`
+                    kung wala pa ang `ict_equipment_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <IctEquipmentUploadCard latestBatch={latestIctEquipmentBatch} />
             )}
 
             {rcaddUploadError ? (

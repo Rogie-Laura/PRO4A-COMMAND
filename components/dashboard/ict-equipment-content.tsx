@@ -1,6 +1,7 @@
 import { Monitor } from "lucide-react"
 
 import { IctEquipmentRefreshButton } from "@/components/dashboard/ict-equipment-refresh-button"
+import { IctServiceableExtras } from "@/components/dashboard/ict-serviceable-extras"
 import { IctStatusCard } from "@/components/dashboard/ict-status-card"
 import { IctStatusCarousel } from "@/components/dashboard/ict-status-carousel"
 import {
@@ -122,8 +123,8 @@ export async function IctEquipmentContent() {
       {!data.dataReady && (
         <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">
           <CardContent className="py-4 text-sm text-muted-foreground">
-            Walang ICT equipment data mula sa RECAP tab pa. Siguraduhing naka-public ang
-            Google Sheet at may kumpletong RECAP blocks.
+            Walang ICT equipment data pa. Mag-upload ng Inventory of Devices workbook (RECAP
+            sheet) sa Upload File.
           </CardContent>
         </Card>
       )}
@@ -131,6 +132,11 @@ export async function IctEquipmentContent() {
       <TotalIctEquipmentCard
         label={data.grandTotal.label}
         breakdown={data.grandTotal.breakdown}
+      />
+
+      <IctServiceableExtras
+        cybereason={data.serviceable.cybereason}
+        storage={data.serviceable.storage}
       />
 
       <div className="space-y-4">

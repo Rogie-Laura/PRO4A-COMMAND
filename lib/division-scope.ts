@@ -106,7 +106,14 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     label: "RICTMD",
     rNumber: 10,
     defaultHref: "/ict-equipment-inventory",
-    allowedPaths: ["/ict-equipment-inventory", "/health-and-bmi", "/pro4a-status", "/settings"],
+    allowedPaths: [
+      "/ict-equipment-inventory",
+      "/ict-equipment-inventory/upload",
+      "/health-and-bmi",
+      "/pro4a-status",
+      "/settings",
+    ],
+    uploadPath: "/ict-equipment-inventory/upload",
   },
 }
 

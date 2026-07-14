@@ -58,6 +58,10 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
     title: "Inventory of ICT Equipment",
     description: "Regional ICT assets and equipment registry",
   },
+  "/ict-equipment-inventory/upload": {
+    title: "Upload File",
+    description: "RICTMD ICT inventory workbook upload",
+  },
   "/health-and-bmi": {
     title: "Health and BMI",
     description: "Personnel body mass index classification",

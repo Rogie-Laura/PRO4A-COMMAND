@@ -106,6 +106,11 @@ import {
   replaceAdminHoldingWorkbook,
 } from "@/lib/admin-holding-records"
 import { parseAdminHoldingXlsx } from "@/lib/admin-holding-xlsx-parser"
+import {
+  ICT_EQUIPMENT_ANALYTICS_CACHE_TAG,
+  replaceIctEquipmentWorkbook,
+} from "@/lib/ict-equipment-records"
+import { parseIctEquipmentXlsx } from "@/lib/ict-equipment-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
@@ -116,6 +121,7 @@ const MAX_UPER_UPLOAD_BYTES = 5 * 1024 * 1024
 const MAX_ESTABLISHMENT_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_TRAININGS_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_ADMIN_HOLDING_UPLOAD_BYTES = 10 * 1024 * 1024
+const MAX_ICT_EQUIPMENT_UPLOAD_BYTES = 15 * 1024 * 1024
 
 export async function getAccessTokensAction() {
   await requireSuperAdminSession()
@@ -1074,6 +1080,53 @@ export async function uploadAdminHoldingWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang admin holding upload. Subukan ulit.")
+  }
+}
+
+export async function uploadIctEquipmentWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rictmd")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx o .xlsm).")
+    }
+
+    const lowerName = file.name.toLowerCase()
+    if (!lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xlsm")) {
+      throw new Error("Excel (.xlsx o .xlsm) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_ICT_EQUIPMENT_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 15 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseIctEquipmentXlsx(buffer)
+    const result = await replaceIctEquipmentWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(ICT_EQUIPMENT_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/ict-equipment-inventory")
+    revalidatePath("/ict-equipment-inventory/upload")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang ICT inventory upload. Subukan ulit.")
   }
 }
 
