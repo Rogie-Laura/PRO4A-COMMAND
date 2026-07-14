@@ -11,6 +11,7 @@ import {
 } from "@/components/dashboard/rid-table-styles"
 import type { SurrenderedCtgfAnalytics, SurrenderedCtgfCountSet } from "@/lib/surrendered-ctgf-types"
 import { cn } from "@/lib/utils"
+import { RidCardUploadedAt } from "@/components/dashboard/rid-section-header"
 
 type SurrenderedCtgfTableProps = {
   analytics: SurrenderedCtgfAnalytics
@@ -68,6 +69,7 @@ export function SurrenderedCtgfTable({ analytics }: SurrenderedCtgfTableProps) {
         <CardTitle>{analytics.title}</CardTitle>
         <CardDescription className="space-y-2">
           {analytics.periodLabel ? <span className="block">{analytics.periodLabel}</span> : null}
+          <RidCardUploadedAt uploadedAt={analytics.lastUpdated} dataReady={analytics.dataReady} />
           <div className="flex flex-wrap gap-2">
             {analytics.note ? (
               <Badge variant="outline" className="font-normal">

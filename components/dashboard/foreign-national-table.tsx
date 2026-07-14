@@ -11,6 +11,7 @@ import {
 } from "@/components/dashboard/rid-table-styles"
 import type { ForeignNationalAnalytics } from "@/lib/foreign-national-types"
 import { cn } from "@/lib/utils"
+import { RidCardUploadedAt } from "@/components/dashboard/rid-section-header"
 
 type ForeignNationalTableProps = {
   analytics: ForeignNationalAnalytics
@@ -43,6 +44,7 @@ export function ForeignNationalTable({ analytics }: ForeignNationalTableProps) {
       <CardHeader>
         <CardTitle>{analytics.title}</CardTitle>
         <CardDescription className="space-y-2">
+          <RidCardUploadedAt uploadedAt={analytics.lastUpdated} dataReady={analytics.dataReady} />
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="font-semibold tabular-nums">
               Grand Total: {formatCount(analytics.grandTotal)}

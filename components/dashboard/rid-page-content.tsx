@@ -2,7 +2,7 @@ import { CriminalGangsCards } from "@/components/dashboard/criminal-gangs-cards"
 import { ForeignNationalTable } from "@/components/dashboard/foreign-national-table"
 import { IllegalDrugsCards } from "@/components/dashboard/illegal-drugs-cards"
 import { IntelEligibilityCards } from "@/components/dashboard/intel-eligibility-cards"
-import { RidUploadStatus } from "@/components/dashboard/rid-upload-status"
+import { RidSectionHeader } from "@/components/dashboard/rid-section-header"
 import { SurrenderedCtgfTable } from "@/components/dashboard/surrendered-ctgf-table"
 import { getCriminalGangsAnalytics } from "@/lib/criminal-gangs-records"
 import { getForeignNationalAnalytics } from "@/lib/foreign-national-records"
@@ -27,23 +27,23 @@ export async function RidPageContent() {
 
   return (
     <div className="space-y-6">
-      <RidUploadStatus />
-
       <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Illegal Drugs</h2>
-          <p className="text-sm text-muted-foreground">HVI at SLI accomplishments</p>
-        </div>
+        <RidSectionHeader
+          title="Illegal Drugs"
+          description="HVI at SLI accomplishments"
+          uploadedAt={illegalDrugsAnalytics.lastUpdated}
+          dataReady={illegalDrugsAnalytics.dataReady}
+        />
         <IllegalDrugsCards analytics={illegalDrugsAnalytics} />
       </section>
 
       <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Criminal Gangs</h2>
-          <p className="text-sm text-muted-foreground">
-            Drug Groups, Gun-for-Hire, at Other Criminal Groups
-          </p>
-        </div>
+        <RidSectionHeader
+          title="Criminal Gangs"
+          description="Drug Groups, Gun-for-Hire, at Other Criminal Groups"
+          uploadedAt={criminalGangsAnalytics.lastUpdated}
+          dataReady={criminalGangsAnalytics.dataReady}
+        />
         <CriminalGangsCards analytics={criminalGangsAnalytics} />
       </section>
 
@@ -56,12 +56,12 @@ export async function RidPageContent() {
       </section>
 
       <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Intelligence Eligibility List</h2>
-          <p className="text-sm text-muted-foreground">
-            Authorized vs actual strength, training, seminar, at related intel personnel metrics
-          </p>
-        </div>
+        <RidSectionHeader
+          title="Intelligence Eligibility List"
+          description="Authorized vs actual strength, training, seminar, at related intel personnel metrics"
+          uploadedAt={intelEligibilityAnalytics.lastUpdated}
+          dataReady={intelEligibilityAnalytics.dataReady}
+        />
         <IntelEligibilityCards analytics={intelEligibilityAnalytics} />
       </section>
     </div>
