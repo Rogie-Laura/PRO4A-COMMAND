@@ -17,7 +17,7 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
   "/rid": { title: "RID" },
   "/rid/upload": {
     title: "Upload File",
-    description: "RID illegal drugs, criminal gangs, surrendered CTGs, and terrorism threat uploads",
+    description: "RID Intelligence Eligibility, illegal drugs, criminal gangs, surrendered CTGs, and terrorism threat uploads",
   },
   "/rcadd": { title: "RCADD" },
   "/rcadd/upload": {

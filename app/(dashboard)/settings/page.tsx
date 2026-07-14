@@ -12,6 +12,7 @@ import { StationClassificationUploadCard } from "@/components/settings/station-c
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
 import { IllegalDrugsUploadCard } from "@/components/settings/illegal-drugs-upload-card"
 import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-upload-card"
+import { IntelEligibilityUploadCard } from "@/components/settings/intel-eligibility-upload-card"
 import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctgf-upload-card"
 import { ForeignNationalUploadCard } from "@/components/settings/foreign-national-upload-card"
 import { TrainingsUploadCard } from "@/components/settings/trainings-upload-card"
@@ -53,6 +54,8 @@ import { getLatestIllegalDrugsUploadBatch } from "@/lib/illegal-drugs-records"
 import type { IllegalDrugsUploadBatchInfo } from "@/lib/illegal-drugs-types"
 import { getLatestCriminalGangsUploadBatch } from "@/lib/criminal-gangs-records"
 import type { CriminalGangsUploadBatchInfo } from "@/lib/criminal-gangs-types"
+import { getLatestIntelEligibilityUploadBatch } from "@/lib/intel-eligibility-records"
+import type { IntelEligibilityUploadBatchInfo } from "@/lib/intel-eligibility-types"
 import { getLatestSurrenderedCtgfUploadBatch } from "@/lib/surrendered-ctgf-records"
 import type { SurrenderedCtgfUploadBatchInfo } from "@/lib/surrendered-ctgf-types"
 import { getLatestForeignNationalUploadBatch } from "@/lib/foreign-national-records"
@@ -110,6 +113,8 @@ export default async function SettingsPage() {
   let terrorismThreatUploadError: string | null = null
   let latestIllegalDrugsBatch: IllegalDrugsUploadBatchInfo | null = null
   let illegalDrugsUploadError: string | null = null
+  let latestIntelEligibilityBatch: IntelEligibilityUploadBatchInfo | null = null
+  let intelEligibilityUploadError: string | null = null
   let latestCriminalGangsBatch: CriminalGangsUploadBatchInfo | null = null
   let criminalGangsUploadError: string | null = null
   let latestSurrenderedCtgfBatch: SurrenderedCtgfUploadBatchInfo | null = null
@@ -243,6 +248,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load illegal drugs upload status from Supabase."
+    }
+
+    try {
+      latestIntelEligibilityBatch = await getLatestIntelEligibilityUploadBatch()
+    } catch (error) {
+      intelEligibilityUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load Intelligence Eligibility upload status from Supabase."
     }
 
     try {
@@ -528,6 +542,24 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <IllegalDrugsUploadCard latestBatch={latestIllegalDrugsBatch} />
+            )}
+
+            {intelEligibilityUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Intelligence Eligibility List</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{intelEligibilityUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration `20260714210000_create_intel_eligibility_upload_batches.sql`
+                    kung wala pa ang `intel_eligibility_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <IntelEligibilityUploadCard latestBatch={latestIntelEligibilityBatch} />
             )}
 
             {criminalGangsUploadError ? (

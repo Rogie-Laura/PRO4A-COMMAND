@@ -90,6 +90,11 @@ import {
 } from "@/lib/criminal-gangs-records"
 import { parseCriminalGangsXlsx } from "@/lib/criminal-gangs-xlsx-parser"
 import {
+  INTEL_ELIGIBILITY_ANALYTICS_CACHE_TAG,
+  replaceIntelEligibilityWorkbook,
+} from "@/lib/intel-eligibility-records"
+import { parseIntelEligibilityXlsx } from "@/lib/intel-eligibility-xlsx-parser"
+import {
   SURRENDERED_CTGF_ANALYTICS_CACHE_TAG,
   replaceSurrenderedCtgfWorkbook,
 } from "@/lib/surrendered-ctgf-records"
@@ -780,6 +785,52 @@ export async function uploadCriminalGangsWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang criminal gangs upload. Subukan ulit.")
+  }
+}
+
+export async function uploadIntelEligibilityWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rid")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_UPER_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 5 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseIntelEligibilityXlsx(buffer)
+    const result = await replaceIntelEligibilityWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(INTEL_ELIGIBILITY_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/rid")
+    revalidatePath("/rid/upload")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang Intelligence Eligibility upload. Subukan ulit.")
   }
 }
 
