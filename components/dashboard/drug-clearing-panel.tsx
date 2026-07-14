@@ -102,7 +102,7 @@ function DrillDownContextBar({
   backLabel: string
 }) {
   return (
-    <div className="sticky top-14 z-20 -mx-1 space-y-2 border-b border-violet-500/15 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:top-0">
+    <div className="sticky top-0 z-20 -mx-1 space-y-2 border-b border-violet-500/15 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/85">
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onBack} className="h-8 px-2">
           <ArrowLeft className="size-4" />
@@ -225,7 +225,7 @@ function StatusBreakdownTable({
 }) {
   return (
     <div className="space-y-3">
-      <div className="sticky top-14 z-20 -mx-1 space-y-2 border-b border-violet-500/15 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:top-0">
+      <div className="sticky top-0 z-20 -mx-1 space-y-2 border-b border-violet-500/15 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/85">
         <Button type="button" variant="ghost" size="sm" onClick={onBack} className="h-8 px-2">
           <ArrowLeft className="size-4" />
           Back

@@ -67,7 +67,7 @@ export function SwipeCarousel({
   if (slides.length === 0) return null
 
   return (
-    <div ref={rootRef} className={cn("scroll-mt-20 space-y-3", className)}>
+    <div ref={rootRef} className={cn("scroll-mt-2 space-y-3", className)}>
       {navigation === "toggle" ? (
         <div
           className="flex rounded-lg border bg-muted/40 p-1"
