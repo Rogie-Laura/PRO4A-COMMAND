@@ -1,15 +1,14 @@
 "use client"
 
-import { useEffect, useRef, useState, type ReactNode } from "react"
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 
 import { CriminalGangsCards } from "@/components/dashboard/criminal-gangs-cards"
+import { useDashboardToolbarNav } from "@/components/dashboard/dashboard-toolbar"
 import { ForeignNationalTable } from "@/components/dashboard/foreign-national-table"
 import { IllegalDrugsCards } from "@/components/dashboard/illegal-drugs-cards"
 import { IntelEligibilityCards } from "@/components/dashboard/intel-eligibility-cards"
 import { RidSectionHeader } from "@/components/dashboard/rid-section-header"
 import { SurrenderedCtgfTable } from "@/components/dashboard/surrendered-ctgf-table"
-import { Button } from "@/components/ui/button"
 import type { CriminalGangsAnalytics } from "@/lib/criminal-gangs-types"
 import type { ForeignNationalAnalytics } from "@/lib/foreign-national-types"
 import type { IllegalDrugsAnalytics } from "@/lib/illegal-drugs-types"
@@ -121,9 +120,14 @@ export function RidSectionsCarousel({
     },
   ]
 
-  function goToIndex(index: number) {
-    setActiveIndex(Math.min(Math.max(index, 0), slides.length - 1))
-  }
+  const slideCount = slides.length
+
+  const goToIndex = useCallback(
+    (index: number) => {
+      setActiveIndex(Math.min(Math.max(index, 0), slideCount - 1))
+    },
+    [slideCount],
+  )
 
   useEffect(() => {
     if (activeIndex === previousIndexRef.current) return
@@ -134,48 +138,19 @@ export function RidSectionsCarousel({
   const activeSlide = slides[activeIndex]
   const prevSlide = slides[activeIndex - 1]
   const nextSlide = slides[activeIndex + 1]
-  const canGoPrev = activeIndex > 0
-  const canGoNext = activeIndex < slides.length - 1
+
+  useDashboardToolbarNav({
+    activeIndex,
+    total: slideCount,
+    prevLabel: prevSlide?.navLabel ?? null,
+    nextLabel: nextSlide?.navLabel ?? null,
+    goToIndex,
+  })
 
   return (
     <>
-      <div ref={rootRef} className="scroll-mt-2 space-y-3 md:hidden">
-        {/* Flat sub-header attached under the app header (not a floating card) */}
-        <div className="sticky top-0 z-20 -mx-4 -mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-1 border-b border-border bg-background px-2 py-1.5 sm:-mx-6 sm:-mt-6 sm:px-4">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={!canGoPrev}
-            aria-label={prevSlide ? `Previous: ${prevSlide.navLabel}` : "Previous section"}
-            onClick={() => goToIndex(activeIndex - 1)}
-            className="h-auto min-h-8 justify-start gap-0.5 px-1.5 py-1.5 text-left"
-          >
-            <ChevronLeftIcon className="size-4 shrink-0" />
-            <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
-              {prevSlide?.navLabel ?? ""}
-            </span>
-          </Button>
-
-          <span className="px-1 text-xs font-semibold tabular-nums text-muted-foreground">
-            {activeIndex + 1}/{slides.length}
-          </span>
-
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={!canGoNext}
-            aria-label={nextSlide ? `Next: ${nextSlide.navLabel}` : "Next section"}
-            onClick={() => goToIndex(activeIndex + 1)}
-            className="h-auto min-h-8 justify-end gap-0.5 px-1.5 py-1.5 text-right"
-          >
-            <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
-              {nextSlide?.navLabel ?? ""}
-            </span>
-            <ChevronRightIcon className="size-4 shrink-0" />
-          </Button>
-        </div>
-
-        <div aria-label="RID sections" className="relative z-0">
+      <div ref={rootRef} className="space-y-3 md:hidden">
+        <div aria-label="RID sections">
           {/* Active section only — avoids blank space from taller sibling slides. */}
           {activeSlide?.content}
         </div>
