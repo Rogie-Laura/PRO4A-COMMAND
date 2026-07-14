@@ -140,41 +140,43 @@ export function RidSectionsCarousel({
   return (
     <>
       <div ref={rootRef} className="scroll-mt-2 space-y-3 md:hidden">
-        <div className="sticky top-0 z-20 grid grid-cols-[1fr_auto_1fr] items-center gap-1 rounded-lg border bg-background px-1 py-1 shadow-sm">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={!canGoPrev}
-            aria-label={prevSlide ? `Previous: ${prevSlide.navLabel}` : "Previous section"}
-            onClick={() => goToIndex(activeIndex - 1)}
-            className="h-auto min-h-8 justify-start gap-0.5 px-1.5 py-1.5 text-left"
-          >
-            <ChevronLeftIcon className="size-4 shrink-0" />
-            <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
-              {prevSlide?.navLabel ?? ""}
-            </span>
-          </Button>
+        <div className="sticky top-0 z-40 -mx-4 border-b border-border bg-background px-4 pb-2 pt-0 sm:-mx-6 sm:px-6">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 rounded-lg border bg-background px-1 py-1 shadow-sm">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={!canGoPrev}
+              aria-label={prevSlide ? `Previous: ${prevSlide.navLabel}` : "Previous section"}
+              onClick={() => goToIndex(activeIndex - 1)}
+              className="h-auto min-h-8 justify-start gap-0.5 px-1.5 py-1.5 text-left"
+            >
+              <ChevronLeftIcon className="size-4 shrink-0" />
+              <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
+                {prevSlide?.navLabel ?? ""}
+              </span>
+            </Button>
 
-          <span className="px-1 text-xs font-semibold tabular-nums text-muted-foreground">
-            {activeIndex + 1}/{slides.length}
-          </span>
-
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={!canGoNext}
-            aria-label={nextSlide ? `Next: ${nextSlide.navLabel}` : "Next section"}
-            onClick={() => goToIndex(activeIndex + 1)}
-            className="h-auto min-h-8 justify-end gap-0.5 px-1.5 py-1.5 text-right"
-          >
-            <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
-              {nextSlide?.navLabel ?? ""}
+            <span className="px-1 text-xs font-semibold tabular-nums text-muted-foreground">
+              {activeIndex + 1}/{slides.length}
             </span>
-            <ChevronRightIcon className="size-4 shrink-0" />
-          </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={!canGoNext}
+              aria-label={nextSlide ? `Next: ${nextSlide.navLabel}` : "Next section"}
+              onClick={() => goToIndex(activeIndex + 1)}
+              className="h-auto min-h-8 justify-end gap-0.5 px-1.5 py-1.5 text-right"
+            >
+              <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
+                {nextSlide?.navLabel ?? ""}
+              </span>
+              <ChevronRightIcon className="size-4 shrink-0" />
+            </Button>
+          </div>
         </div>
 
-        <div aria-label="RID sections">
+        <div aria-label="RID sections" className="relative z-0">
           {/* Active section only — avoids blank space from taller sibling slides. */}
           {activeSlide?.content}
         </div>
