@@ -129,22 +129,6 @@ export function IctStatusCard({
           <BreakdownStat label="As of January 2026" value={section.breakdown.asOfJanuary2026} />
         </div>
 
-        {variant === "serviceable" && section.cybereason ? (
-          <div className="grid gap-2 sm:grid-cols-3">
-            <BreakdownStat label="Cybereason Installed" value={section.cybereason.installed} />
-            <BreakdownStat label="Without Cybereason" value={section.cybereason.without} />
-            <BreakdownStat label="Cybereason Total" value={section.cybereason.total} />
-          </div>
-        ) : null}
-
-        {variant === "serviceable" && section.storage ? (
-          <div className="grid gap-2 sm:grid-cols-3">
-            <BreakdownStat label="HDD or HDD/SSD" value={section.storage.hddOrHybrid} />
-            <BreakdownStat label="SSD only" value={section.storage.ssdOnly} />
-            <BreakdownStat label="Storage Total" value={section.storage.total} />
-          </div>
-        ) : null}
-
         <div className={cn("mt-auto border-t pt-4", styles.divider)}>
           <p className="mb-3 text-sm font-medium text-foreground">Breakdown by PPO</p>
           <IctOfficeCards

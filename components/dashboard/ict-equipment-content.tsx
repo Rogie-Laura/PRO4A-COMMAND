@@ -88,6 +88,11 @@ export function IctEquipmentLoading() {
         <Skeleton className="h-[28rem] rounded-xl" />
         <Skeleton className="h-[28rem] rounded-xl" />
       </div>
+      <Skeleton className="h-6 w-56 rounded" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Skeleton className="h-44 rounded-xl" />
+        <Skeleton className="h-44 rounded-xl" />
+      </div>
     </div>
   )
 }
@@ -134,11 +139,6 @@ export async function IctEquipmentContent() {
         breakdown={data.grandTotal.breakdown}
       />
 
-      <IctServiceableExtras
-        cybereason={data.serviceable.cybereason}
-        storage={data.serviceable.storage}
-      />
-
       <div className="space-y-4">
         <SectionHeading title="Device Condition" />
         <IctStatusCarousel
@@ -164,6 +164,14 @@ export async function IctEquipmentContent() {
           <IctStatusCard section={data.pnpIssuedByNhq} variant="pnpNhq" compactOffices />
           <IctStatusCard section={data.procuredByPro} variant="procuredPro" compactOffices />
         </div>
+      </div>
+
+      <div className="space-y-4">
+        <SectionHeading title="Serviceable Device Breakdown" />
+        <IctServiceableExtras
+          cybereason={data.serviceable.cybereason}
+          storage={data.serviceable.storage}
+        />
       </div>
     </div>
   )
