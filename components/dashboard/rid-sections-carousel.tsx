@@ -28,6 +28,8 @@ type RidSectionsCarouselProps = {
 type RidSlide = {
   id: string
   label: string
+  /** Compact label for the ← previous / next → navigation strip. */
+  navLabel: string
   dotClassName: string
   content: ReactNode
 }
@@ -50,6 +52,7 @@ export function RidSectionsCarousel({
     {
       id: "illegal-drugs",
       label: "Illegal Drugs",
+      navLabel: "Illegal Drugs",
       dotClassName: "bg-amber-500",
       content: (
         <section className="space-y-4">
@@ -66,6 +69,7 @@ export function RidSectionsCarousel({
     {
       id: "criminal-gangs",
       label: "Criminal Gangs",
+      navLabel: "Criminal Gangs",
       dotClassName: "bg-rose-500",
       content: (
         <section className="space-y-4">
@@ -82,6 +86,7 @@ export function RidSectionsCarousel({
     {
       id: "surrendered-ctgf",
       label: "Surrendered CTGs",
+      navLabel: "Surrendered CTG",
       dotClassName: "bg-teal-500",
       content: (
         <section className="space-y-4">
@@ -92,6 +97,7 @@ export function RidSectionsCarousel({
     {
       id: "foreign-national",
       label: "Foreign National",
+      navLabel: "Foreign Nationals",
       dotClassName: "bg-indigo-500",
       content: (
         <section className="space-y-4">
@@ -102,6 +108,7 @@ export function RidSectionsCarousel({
     {
       id: "intel-eligibility",
       label: "IEL",
+      navLabel: "Intelligence Eligibility",
       dotClassName: "bg-sky-500",
       content: (
         <section className="space-y-4">
@@ -155,42 +162,45 @@ export function RidSectionsCarousel({
   }
 
   const activeSlide = slides[activeIndex]
+  const prevSlide = slides[activeIndex - 1]
+  const nextSlide = slides[activeIndex + 1]
   const canGoPrev = activeIndex > 0
   const canGoNext = activeIndex < slides.length - 1
 
   return (
     <>
       <div ref={rootRef} className="scroll-mt-20 space-y-3 md:hidden">
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-1 py-1">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 rounded-lg border bg-muted/30 px-1 py-1">
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
             disabled={!canGoPrev}
-            aria-label="Previous section"
+            aria-label={prevSlide ? `Previous: ${prevSlide.navLabel}` : "Previous section"}
             onClick={() => goToIndex(activeIndex - 1)}
+            className="h-auto min-h-8 justify-start gap-0.5 px-1.5 py-1.5 text-left"
           >
-            <ChevronLeftIcon />
+            <ChevronLeftIcon className="size-4 shrink-0" />
+            <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
+              {prevSlide?.navLabel ?? ""}
+            </span>
           </Button>
 
-          <div className="min-w-0 flex-1 text-center">
-            <p className="truncate text-sm font-semibold text-foreground">
-              {activeSlide?.label}
-            </p>
-            <p className="text-[11px] text-muted-foreground">
-              {activeIndex + 1} / {slides.length} · swipe or tap arrows
-            </p>
-          </div>
+          <span className="px-1 text-xs font-semibold tabular-nums text-muted-foreground">
+            {activeIndex + 1}/{slides.length}
+          </span>
 
           <Button
             type="button"
             variant="ghost"
-            size="icon-sm"
             disabled={!canGoNext}
-            aria-label="Next section"
+            aria-label={nextSlide ? `Next: ${nextSlide.navLabel}` : "Next section"}
             onClick={() => goToIndex(activeIndex + 1)}
+            className="h-auto min-h-8 justify-end gap-0.5 px-1.5 py-1.5 text-right"
           >
-            <ChevronRightIcon />
+            <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
+              {nextSlide?.navLabel ?? ""}
+            </span>
+            <ChevronRightIcon className="size-4 shrink-0" />
           </Button>
         </div>
 
