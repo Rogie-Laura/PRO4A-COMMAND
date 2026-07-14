@@ -2,6 +2,7 @@ import { CriminalGangsCards } from "@/components/dashboard/criminal-gangs-cards"
 import { ForeignNationalTable } from "@/components/dashboard/foreign-national-table"
 import { IllegalDrugsCards } from "@/components/dashboard/illegal-drugs-cards"
 import { IntelEligibilityCards } from "@/components/dashboard/intel-eligibility-cards"
+import { RidUploadStatus } from "@/components/dashboard/rid-upload-status"
 import { SurrenderedCtgfTable } from "@/components/dashboard/surrendered-ctgf-table"
 import { getCriminalGangsAnalytics } from "@/lib/criminal-gangs-records"
 import { getForeignNationalAnalytics } from "@/lib/foreign-national-records"
@@ -26,15 +27,7 @@ export async function RidPageContent() {
 
   return (
     <div className="space-y-6">
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold">Intelligence Eligibility List</h2>
-          <p className="text-sm text-muted-foreground">
-            Authorized, actual strength, training, seminar, at related intel personnel metrics
-          </p>
-        </div>
-        <IntelEligibilityCards analytics={intelEligibilityAnalytics} />
-      </section>
+      <RidUploadStatus />
 
       <section className="space-y-4">
         <div>
@@ -60,6 +53,16 @@ export async function RidPageContent() {
 
       <section className="space-y-4">
         <ForeignNationalTable analytics={foreignNationalAnalytics} />
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold">Intelligence Eligibility List</h2>
+          <p className="text-sm text-muted-foreground">
+            Authorized vs actual strength, training, seminar, at related intel personnel metrics
+          </p>
+        </div>
+        <IntelEligibilityCards analytics={intelEligibilityAnalytics} />
       </section>
     </div>
   )
