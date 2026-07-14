@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from "react"
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 import { CriminalGangsCards } from "@/components/dashboard/criminal-gangs-cards"
 import { ForeignNationalTable } from "@/components/dashboard/foreign-national-table"
@@ -8,6 +9,7 @@ import { IllegalDrugsCards } from "@/components/dashboard/illegal-drugs-cards"
 import { IntelEligibilityCards } from "@/components/dashboard/intel-eligibility-cards"
 import { RidSectionHeader } from "@/components/dashboard/rid-section-header"
 import { SurrenderedCtgfTable } from "@/components/dashboard/surrendered-ctgf-table"
+import { Button } from "@/components/ui/button"
 import type { CriminalGangsAnalytics } from "@/lib/criminal-gangs-types"
 import type { ForeignNationalAnalytics } from "@/lib/foreign-national-types"
 import type { IllegalDrugsAnalytics } from "@/lib/illegal-drugs-types"
@@ -153,13 +155,44 @@ export function RidSectionsCarousel({
   }
 
   const activeSlide = slides[activeIndex]
+  const canGoPrev = activeIndex > 0
+  const canGoNext = activeIndex < slides.length - 1
 
   return (
     <>
       <div ref={rootRef} className="scroll-mt-20 space-y-3 md:hidden">
-        <p className="text-center text-xs text-muted-foreground">
-          Swipe left/right · Illegal Drugs · Criminal Gangs · Surrendered · Foreign National · IEL
-        </p>
+        <div className="flex items-center gap-2 rounded-lg border bg-muted/30 px-1 py-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            disabled={!canGoPrev}
+            aria-label="Previous section"
+            onClick={() => goToIndex(activeIndex - 1)}
+          >
+            <ChevronLeftIcon />
+          </Button>
+
+          <div className="min-w-0 flex-1 text-center">
+            <p className="truncate text-sm font-semibold text-foreground">
+              {activeSlide?.label}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {activeIndex + 1} / {slides.length} · swipe or tap arrows
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            disabled={!canGoNext}
+            aria-label="Next section"
+            onClick={() => goToIndex(activeIndex + 1)}
+          >
+            <ChevronRightIcon />
+          </Button>
+        </div>
 
         <div
           className="touch-pan-y"
