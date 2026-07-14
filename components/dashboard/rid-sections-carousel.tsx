@@ -105,6 +105,8 @@ export function RidSectionsCarousel({
         className="md:hidden"
         swipeHint="Swipe left/right · Illegal Drugs · Criminal Gangs · Surrendered · Foreign National · IEL"
         ariaLabel="RID sections"
+        scrollToTopOnChange
+        clipSlides
         slides={slides}
       />
 

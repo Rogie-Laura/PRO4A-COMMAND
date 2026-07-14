@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useState, type ReactNode } from "react"
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -17,6 +17,10 @@ type SwipeCarouselProps = {
   ariaLabel?: string
   className?: string
   navigation?: "dots" | "toggle"
+  /** Scroll the carousel into view when the active slide changes (fixes blank mid-page after swipe). */
+  scrollToTopOnChange?: boolean
+  /** Clip each slide so sticky/shadow content does not bleed into the next slide. */
+  clipSlides?: boolean
 }
 
 export function SwipeCarousel({
@@ -25,8 +29,12 @@ export function SwipeCarousel({
   ariaLabel = "Swipe carousel",
   className,
   navigation = "dots",
+  scrollToTopOnChange = false,
+  clipSlides = false,
 }: SwipeCarouselProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const previousIndexRef = useRef(0)
   const [activeIndex, setActiveIndex] = useState(0)
 
   const updateActiveIndex = useCallback(() => {
@@ -48,10 +56,18 @@ export function SwipeCarousel({
     setActiveIndex(index)
   }
 
+  useEffect(() => {
+    if (!scrollToTopOnChange) return
+    if (activeIndex === previousIndexRef.current) return
+
+    previousIndexRef.current = activeIndex
+    rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [activeIndex, scrollToTopOnChange])
+
   if (slides.length === 0) return null
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div ref={rootRef} className={cn("scroll-mt-20 space-y-3", className)}>
       {navigation === "toggle" ? (
         <div
           className="flex rounded-lg border bg-muted/40 p-1"
@@ -85,14 +101,20 @@ export function SwipeCarousel({
       <div
         ref={scrollRef}
         onScroll={updateActiveIndex}
-        className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory items-start overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         aria-label={ariaLabel}
       >
-        {slides.map((slide) => (
+        {slides.map((slide, index) => (
           <div
             key={slide.id}
             data-slide
-            className="w-full shrink-0 snap-center snap-always px-0.5"
+            aria-hidden={index !== activeIndex}
+            className={cn(
+              // `min-w-full basis-full` keeps each slide exactly one viewport wide inside the scroller
+              "min-w-full shrink-0 grow-0 basis-full snap-start snap-always px-0.5",
+              clipSlides && "overflow-hidden",
+              index !== activeIndex && "pointer-events-none",
+            )}
           >
             {slide.content}
           </div>
