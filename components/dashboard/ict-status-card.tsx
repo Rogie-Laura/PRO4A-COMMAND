@@ -1,6 +1,5 @@
 import { ArchiveX, Monitor, MonitorOff, Package, Shield } from "lucide-react"
 
-import { IctOfficeCards } from "@/components/dashboard/ict-office-cards"
 import {
   Card,
   CardContent,
@@ -90,18 +89,27 @@ export function IctStatusCard({
   section,
   variant,
   className,
-  compactOffices = false,
+  onSelect,
 }: {
   section: IctStatusSection
   variant: IctStatusVariant
   className?: string
-  compactOffices?: boolean
+  onSelect?: () => void
 }) {
   const styles = ICT_STATUS_VARIANTS[variant]
   const StatusIcon = styles.Icon
+  const isInteractive = Boolean(onSelect)
 
-  return (
-    <Card className={cn("flex h-full gap-0 overflow-hidden", styles.card, className)}>
+  const card = (
+    <Card
+      className={cn(
+        "flex h-full gap-0 overflow-hidden text-left transition-colors",
+        styles.card,
+        isInteractive &&
+          "cursor-pointer hover:brightness-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        className,
+      )}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start gap-4">
           <div
@@ -124,20 +132,25 @@ export function IctStatusCard({
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col space-y-4">
-        <div className={cn("grid gap-2", compactOffices ? "grid-cols-1" : "gap-3 sm:grid-cols-2")}>
+        <div className="grid gap-2 sm:grid-cols-2">
           <BreakdownStat label="2025 & Below" value={section.breakdown.year2025Below} />
           <BreakdownStat label="As of January 2026" value={section.breakdown.asOfJanuary2026} />
         </div>
 
-        <div className={cn("mt-auto border-t pt-4", styles.divider)}>
-          <p className="mb-3 text-sm font-medium text-foreground">Breakdown by PPO</p>
-          <IctOfficeCards
-            offices={section.offices}
-            countClassName={styles.count}
-            compact={compactOffices}
-          />
-        </div>
+        {isInteractive ? (
+          <p className="mt-auto text-sm text-muted-foreground">Tap card for breakdown by PPO</p>
+        ) : null}
       </CardContent>
     </Card>
+  )
+
+  if (!onSelect) {
+    return card
+  }
+
+  return (
+    <button type="button" onClick={onSelect} className="block h-full w-full">
+      {card}
+    </button>
   )
 }

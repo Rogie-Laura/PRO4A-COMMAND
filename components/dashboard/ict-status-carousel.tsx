@@ -15,12 +15,14 @@ type IctStatusCarouselProps = {
     variant: IctStatusVariant
     section: IctStatusSection
   }>
+  onSelect?: (slide: { variant: IctStatusVariant; section: IctStatusSection }) => void
   swipeHint?: string
   ariaLabel?: string
 }
 
 export function IctStatusCarousel({
   slides,
+  onSelect,
   swipeHint,
   ariaLabel = "ICT equipment cards",
 }: IctStatusCarouselProps) {
@@ -64,7 +66,11 @@ export function IctStatusCarousel({
             data-slide
             className="w-full shrink-0 snap-center snap-always px-0.5"
           >
-            <IctStatusCard section={slide.section} variant={slide.variant} />
+            <IctStatusCard
+              section={slide.section}
+              variant={slide.variant}
+              onSelect={onSelect ? () => onSelect(slide) : undefined}
+            />
           </div>
         ))}
       </div>

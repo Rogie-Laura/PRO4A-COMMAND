@@ -1,9 +1,8 @@
 import { Monitor } from "lucide-react"
 
 import { IctEquipmentRefreshButton } from "@/components/dashboard/ict-equipment-refresh-button"
+import { IctEquipmentStatusSections } from "@/components/dashboard/ict-equipment-status-sections"
 import { IctServiceableExtras } from "@/components/dashboard/ict-serviceable-extras"
-import { IctStatusCard } from "@/components/dashboard/ict-status-card"
-import { IctStatusCarousel } from "@/components/dashboard/ict-status-carousel"
 import {
   Card,
   CardContent,
@@ -139,32 +138,10 @@ export async function IctEquipmentContent() {
         breakdown={data.grandTotal.breakdown}
       />
 
-      <div className="space-y-4">
-        <SectionHeading title="Device Condition" />
-        <IctStatusCarousel
-          slides={statusSlides}
-          swipeHint="Swipe left for Serviceable · Unserviceable · BER"
-          ariaLabel="ICT equipment condition cards"
-        />
-        <div className="hidden items-stretch gap-4 lg:grid lg:grid-cols-3">
-          <IctStatusCard section={data.serviceable} variant="serviceable" compactOffices />
-          <IctStatusCard section={data.unserviceable} variant="unserviceable" compactOffices />
-          <IctStatusCard section={data.ber} variant="ber" compactOffices />
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <SectionHeading title="Device Source" />
-        <IctStatusCarousel
-          slides={acquisitionSlides}
-          swipeHint="Swipe left for PNP Issued by NHQ · Procured by PRO"
-          ariaLabel="ICT equipment source cards"
-        />
-        <div className="hidden items-stretch gap-4 lg:grid lg:grid-cols-2">
-          <IctStatusCard section={data.pnpIssuedByNhq} variant="pnpNhq" compactOffices />
-          <IctStatusCard section={data.procuredByPro} variant="procuredPro" compactOffices />
-        </div>
-      </div>
+      <IctEquipmentStatusSections
+        conditionSlides={statusSlides}
+        sourceSlides={acquisitionSlides}
+      />
 
       <div className="space-y-4">
         <SectionHeading title="Serviceable Device Breakdown" />
