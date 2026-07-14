@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, type ReactNode, type TouchEvent } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 import { CriminalGangsCards } from "@/components/dashboard/criminal-gangs-cards"
@@ -34,8 +34,6 @@ type RidSlide = {
   content: ReactNode
 }
 
-const SWIPE_THRESHOLD_PX = 56
-
 export function RidSectionsCarousel({
   illegalDrugs,
   criminalGangs,
@@ -44,7 +42,6 @@ export function RidSectionsCarousel({
   intelEligibility,
 }: RidSectionsCarouselProps) {
   const rootRef = useRef<HTMLDivElement>(null)
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const previousIndexRef = useRef(0)
 
@@ -134,33 +131,6 @@ export function RidSectionsCarousel({
     rootRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }, [activeIndex])
 
-  function handleTouchStart(event: TouchEvent<HTMLDivElement>) {
-    const touch = event.changedTouches[0]
-    if (!touch) return
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY }
-  }
-
-  function handleTouchEnd(event: TouchEvent<HTMLDivElement>) {
-    const start = touchStartRef.current
-    const touch = event.changedTouches[0]
-    touchStartRef.current = null
-    if (!start || !touch) return
-
-    const dx = touch.clientX - start.x
-    const dy = touch.clientY - start.y
-
-    // Prefer vertical page scroll when the gesture is mostly up/down.
-    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy) * 1.15) {
-      return
-    }
-
-    if (dx < 0) {
-      goToIndex(activeIndex + 1)
-    } else {
-      goToIndex(activeIndex - 1)
-    }
-  }
-
   const activeSlide = slides[activeIndex]
   const prevSlide = slides[activeIndex - 1]
   const nextSlide = slides[activeIndex + 1]
@@ -204,12 +174,7 @@ export function RidSectionsCarousel({
           </Button>
         </div>
 
-        <div
-          className="touch-pan-y"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          aria-label="RID sections"
-        >
+        <div aria-label="RID sections">
           {/* Active section only — avoids blank space from taller sibling slides. */}
           {activeSlide?.content}
         </div>
