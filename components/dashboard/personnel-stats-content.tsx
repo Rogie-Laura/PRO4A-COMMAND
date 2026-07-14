@@ -4,6 +4,7 @@ import { AdminHoldingSectionLoader } from "@/components/dashboard/admin-holding-
 import { DashboardLoading } from "@/components/dashboard/dashboard-loading"
 import { DetailedPersonnelSectionsLoader } from "@/components/dashboard/detailed-personnel-sections-loader"
 import { PersonnelStatsPrimary } from "@/components/dashboard/personnel-stats-primary"
+import { RprmdUploadStatus } from "@/components/dashboard/rprmd-upload-status"
 import { SchoolingSectionsLoader } from "@/components/dashboard/schooling-sections-loader"
 import { SectionErrorBoundary } from "@/components/dashboard/section-error-boundary"
 import { SectionLoading } from "@/components/dashboard/section-loading"
@@ -11,6 +12,8 @@ import { SectionLoading } from "@/components/dashboard/section-loading"
 export function PersonnelStatsContent() {
   return (
     <div className="space-y-6">
+      <RprmdUploadStatus />
+
       <SectionErrorBoundary label="RPRMD">
         <Suspense fallback={<DashboardLoading />}>
           <PersonnelStatsPrimary />
