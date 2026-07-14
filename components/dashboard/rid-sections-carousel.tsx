@@ -139,8 +139,8 @@ export function RidSectionsCarousel({
 
   return (
     <>
-      <div ref={rootRef} className="scroll-mt-28 space-y-3 md:hidden">
-        <div className="sticky top-14 z-20 -mx-1 grid grid-cols-[1fr_auto_1fr] items-center gap-1 border-b border-border/60 bg-background/95 px-1 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+      <div ref={rootRef} className="scroll-mt-20 space-y-3 md:hidden">
+        <div className="sticky top-0 z-20 grid grid-cols-[1fr_auto_1fr] items-center gap-1 rounded-lg border bg-background px-1 py-1 shadow-sm">
           <Button
             type="button"
             variant="ghost"
