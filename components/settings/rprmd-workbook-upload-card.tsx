@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useTransition } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react"
 
@@ -11,6 +11,7 @@ import {
   beginRprmdWorkbookUploadAction,
   finalizeRprmdWorkbookUploadAction,
 } from "@/app/(dashboard)/settings/actions"
+import { useUploadConfirmation } from "@/components/settings/use-upload-confirmation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -31,6 +32,7 @@ import type { PersonnelRecord } from "@/lib/personnel-types"
 import { parseRprmdWorkbookXlsx } from "@/lib/rprmd-workbook-xlsx-parser"
 import type { RprmdWorkbookUploadBatchInfo } from "@/lib/rprmd-workbook-types"
 import { formatServerActionError } from "@/lib/server-action-errors"
+import { validateXlsxFile } from "@/lib/upload-file-validation"
 import { cn } from "@/lib/utils"
 
 const UPLOAD_CHUNK_SIZE = 500
@@ -66,27 +68,10 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
   const [success, setSuccess] = useState<string | null>(null)
   const [summary, setSummary] = useState<UploadSummary | null>(null)
   const [batch, setBatch] = useState(latestBatch)
-  const [progress, setProgress] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
 
-  function handleUpload() {
-    const file = fileInputRef.current?.files?.[0]
-    setError(null)
-    setSuccess(null)
-    setSummary(null)
-    setProgress(null)
-
-    if (!file) {
-      setError("Pumili muna ng Excel file (.xlsx).")
-      return
-    }
-
-    if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      setError("Excel (.xlsx) lang ang tinatanggap.")
-      return
-    }
-
-    startTransition(async () => {
+  const { isPending, openConfirmation, confirmDialog } = useUploadConfirmation({
+    validateFile: validateXlsxFile,
+    onUpload: async (file, { setProgress }) => {
       let batchId: string | null = null
 
       try {
@@ -131,90 +116,104 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
         }
 
         const message = formatServerActionError(uploadError, "Hindi ma-upload ang RPRMD workbook.")
-        setError(
+        throw new Error(
           message.includes("413") || message.toLowerCase().includes("too large")
             ? "Masyadong malaki ang request. Subukan ulit — na-chunk na ang upload sa latest version."
             : message,
         )
-      } finally {
-        setProgress(null)
       }
-    })
+    },
+  })
+
+  function handleUploadClick() {
+    const file = fileInputRef.current?.files?.[0]
+    setError(null)
+    setSuccess(null)
+    setSummary(null)
+
+    if (!file) {
+      setError("Pumili muna ng Excel file (.xlsx).")
+      return
+    }
+
+    openConfirmation(file)
   }
 
   return (
-    <Card className={cn(UPLOAD_CARD_CLASS, compact && "shadow-sm")}>
-      <CardHeader className={compact ? "pb-3" : undefined}>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheetIcon className="size-5 text-primary" />
-          Upload Alphalist Workbook
-        </CardTitle>
-        <CardDescription>
-          Alphalist sheet (yellow tab) para sa personnel stats, Mandatory at Specialized Schooling
-          (walang Authority column), at Detailed tabs (walang Authority). Hindi kasama ang RPHAS
-          sheet. Malaking file ay pinoprocess sa browser bago i-upload nang pa-chunk.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {batch ? (
-          <div className={UPLOAD_STATUS_BOX_CLASS}>
-            <p className="font-medium">Latest upload</p>
-            <p className="mt-1 text-muted-foreground">{batch.filename}</p>
-            <p className="text-xs text-muted-foreground">
-              {batch.uploadedByLabel ? `${batch.uploadedByLabel} · ` : ""}
-              {formatPhilippinesDateTime(batch.createdAt)}
-            </p>
-          </div>
-        ) : (
-          <p className={UPLOAD_EMPTY_STATE_CLASS}>
-            Wala pang na-upload na Alphalist workbook. Mag-upload ng RPRMD Excel export.
-          </p>
-        )}
-
-        <div className={UPLOAD_DROPZONE_CLASS}>
-          <label className="block space-y-2 text-sm">
-            <span className="font-medium">Excel file (.xlsx)</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              disabled={isPending}
-              className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
-            />
-          </label>
-
-          <Button onClick={handleUpload} disabled={isPending}>
-            <UploadIcon />
-            {isPending ? "Ina-upload... (huwag isara ang page)" : "Upload to Supabase"}
-          </Button>
-        </div>
-
-        {progress ? <p className="text-sm text-muted-foreground">{progress}</p> : null}
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        {success ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p> : null}
-
-        {summary ? (
-          <div className="rounded-lg border bg-muted/10 p-4 text-sm">
-            <p className="font-medium">Upload summary</p>
-            <p className="mt-1 text-muted-foreground">Sheet: {summary.alphalistSheetName}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Badge variant="secondary">
-                Personnel: {summary.personnelCount.toLocaleString()}
-              </Badge>
-              <Badge variant="secondary">
-                Mandatory: {summary.mandatoryCount.toLocaleString()}
-              </Badge>
-              <Badge variant="secondary">
-                Specialized: {summary.specializedCount.toLocaleString()}
-              </Badge>
-              <Badge variant="outline">NHQ: {summary.detailedNhq.toLocaleString()}</Badge>
-              <Badge variant="outline">NOSUs: {summary.detailedNosus.toLocaleString()}</Badge>
-              <Badge variant="outline">RSU: {summary.detailedRsu.toLocaleString()}</Badge>
-              <Badge variant="outline">RHQ&PPO: {summary.detailedRhqPpo.toLocaleString()}</Badge>
+    <>
+      {confirmDialog}
+      <Card className={cn(UPLOAD_CARD_CLASS, compact && "shadow-sm")}>
+        <CardHeader className={compact ? "pb-3" : undefined}>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheetIcon className="size-5 text-primary" />
+            Upload Alphalist Workbook
+          </CardTitle>
+          <CardDescription>
+            Alphalist sheet (yellow tab) para sa personnel stats, Mandatory at Specialized Schooling
+            (walang Authority column), at Detailed tabs (walang Authority). Hindi kasama ang RPHAS
+            sheet. Malaking file ay pinoprocess sa browser bago i-upload nang pa-chunk.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {batch ? (
+            <div className={UPLOAD_STATUS_BOX_CLASS}>
+              <p className="font-medium">Latest upload</p>
+              <p className="mt-1 text-muted-foreground">{batch.filename}</p>
+              <p className="text-xs text-muted-foreground">
+                {batch.uploadedByLabel ? `${batch.uploadedByLabel} · ` : ""}
+                {formatPhilippinesDateTime(batch.createdAt)}
+              </p>
             </div>
+          ) : (
+            <p className={UPLOAD_EMPTY_STATE_CLASS}>
+              Wala pang na-upload na Alphalist workbook. Mag-upload ng RPRMD Excel export.
+            </p>
+          )}
+
+          <div className={UPLOAD_DROPZONE_CLASS}>
+            <label className="block space-y-2 text-sm">
+              <span className="font-medium">Excel file (.xlsx)</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                disabled={isPending}
+                className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
+              />
+            </label>
+
+            <Button onClick={handleUploadClick} disabled={isPending}>
+              <UploadIcon />
+              {isPending ? "Ina-upload..." : "Upload to Supabase"}
+            </Button>
           </div>
-        ) : null}
-      </CardContent>
-    </Card>
+
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {success ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p> : null}
+
+          {summary ? (
+            <div className="rounded-lg border bg-muted/10 p-4 text-sm">
+              <p className="font-medium">Upload summary</p>
+              <p className="mt-1 text-muted-foreground">Sheet: {summary.alphalistSheetName}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge variant="secondary">
+                  Personnel: {summary.personnelCount.toLocaleString()}
+                </Badge>
+                <Badge variant="secondary">
+                  Mandatory: {summary.mandatoryCount.toLocaleString()}
+                </Badge>
+                <Badge variant="secondary">
+                  Specialized: {summary.specializedCount.toLocaleString()}
+                </Badge>
+                <Badge variant="outline">NHQ: {summary.detailedNhq.toLocaleString()}</Badge>
+                <Badge variant="outline">NOSUs: {summary.detailedNosus.toLocaleString()}</Badge>
+                <Badge variant="outline">RSU: {summary.detailedRsu.toLocaleString()}</Badge>
+                <Badge variant="outline">RHQ&PPO: {summary.detailedRhqPpo.toLocaleString()}</Badge>
+              </div>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+    </>
   )
 }

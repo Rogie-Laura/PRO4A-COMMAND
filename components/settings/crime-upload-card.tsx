@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useTransition } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react"
 
@@ -10,6 +10,7 @@ import {
   beginCrimeUploadAction,
   finalizeCrimeUploadAction,
 } from "@/app/(dashboard)/settings/actions"
+import { useUploadConfirmation } from "@/components/settings/use-upload-confirmation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +23,8 @@ import {
 import type { CrimeUploadBatchInfo } from "@/lib/crime-records"
 import { parseCrimeXlsx, type ParsedCrimeRecord } from "@/lib/crime-xlsx-parser"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
+import { formatServerActionError } from "@/lib/server-action-errors"
+import { validateXlsxFile } from "@/lib/upload-file-validation"
 import { cn } from "@/lib/utils"
 import {
   UPLOAD_CARD_CLASS,
@@ -62,27 +65,10 @@ export function CrimeUploadCard({ latestBatch, compact = false }: CrimeUploadCar
   const [success, setSuccess] = useState<string | null>(null)
   const [summary, setSummary] = useState<UploadSummary | null>(null)
   const [batch, setBatch] = useState(latestBatch)
-  const [progress, setProgress] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
 
-  function handleUpload() {
-    const file = fileInputRef.current?.files?.[0]
-    setError(null)
-    setSuccess(null)
-    setSummary(null)
-    setProgress(null)
-
-    if (!file) {
-      setError("Pumili muna ng Excel file (.xlsx).")
-      return
-    }
-
-    if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      setError("Excel (.xlsx) lang ang tinatanggap.")
-      return
-    }
-
-    startTransition(async () => {
+  const { isPending, openConfirmation, confirmDialog } = useUploadConfirmation({
+    validateFile: validateXlsxFile,
+    onUpload: async (file, { setProgress }) => {
       let batchId: string | null = null
 
       try {
@@ -132,99 +118,116 @@ export function CrimeUploadCard({ latestBatch, compact = false }: CrimeUploadCar
           }
         }
 
-        setError(
-          uploadError instanceof Error ? uploadError.message : "Hindi ma-upload ang crime stats.",
+        const message = formatServerActionError(uploadError, "Hindi ma-upload ang crime stats.")
+        throw new Error(
+          message.includes("413") || message.toLowerCase().includes("too large")
+            ? "Masyadong malaki ang request. Subukan ulit — na-chunk na ang upload sa latest version."
+            : message,
         )
-      } finally {
-        setProgress(null)
       }
-    })
+    },
+  })
+
+  function handleUploadClick() {
+    const file = fileInputRef.current?.files?.[0]
+    setError(null)
+    setSuccess(null)
+    setSummary(null)
+
+    if (!file) {
+      setError("Pumili muna ng Excel file (.xlsx).")
+      return
+    }
+
+    openConfirmation(file)
   }
 
   return (
-    <Card className={cn(UPLOAD_CARD_CLASS, compact && "shadow-sm")}>
-      <CardHeader className={compact ? "pb-3" : undefined}>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheetIcon className="size-5 text-primary" />
-          Upload Crime Stats
-        </CardTitle>
-        <CardDescription>
-          Super Admin lang. PNP-CRAS export (CRAS-112) — kukunin ang INDEX crime rows lang
-          (Column2), mula 2026 pataas, gamit ang Column1 bilang crime at Column2 bilang
-          category. Kasama ang ppo, stn, pcp, region, province, municipal, barangay, day,
-          typeofPlace, dateCommitted, timeCommitted, modus, casestatus, lat, at lng. Legacy at
-          CIRAS incident export ay suportado pa rin. Malaking file ay pinoprocess sa browser
-          bago i-upload nang pa-chunk.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {batch ? (
-          <div className={UPLOAD_STATUS_BOX_CLASS}>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">Latest upload</p>
-              <Badge variant="outline">{batch.recordCount.toLocaleString()} records</Badge>
+    <>
+      {confirmDialog}
+      <Card className={cn(UPLOAD_CARD_CLASS, compact && "shadow-sm")}>
+        <CardHeader className={compact ? "pb-3" : undefined}>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheetIcon className="size-5 text-primary" />
+            Upload Crime Stats
+          </CardTitle>
+          <CardDescription>
+            Super Admin lang. PNP-CRAS export (CRAS-112) — kukunin ang INDEX crime rows lang
+            (Column2), mula 2026 pataas, gamit ang Column1 bilang crime at Column2 bilang
+            category. Kasama ang ppo, stn, pcp, region, province, municipal, barangay, day,
+            typeofPlace, dateCommitted, timeCommitted, modus, casestatus, lat, at lng. Legacy at
+            CIRAS incident export ay suportado pa rin. Malaking file ay pinoprocess sa browser
+            bago i-upload nang pa-chunk.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {batch ? (
+            <div className={UPLOAD_STATUS_BOX_CLASS}>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium">Latest upload</p>
+                <Badge variant="outline">{batch.recordCount.toLocaleString()} records</Badge>
+              </div>
+              <p className="mt-1 text-muted-foreground">{batch.filename}</p>
+              <p className="text-xs text-muted-foreground">
+                {batch.uploadedByLabel ? `${batch.uploadedByLabel} · ` : ""}
+                {formatPhilippinesDateTime(batch.createdAt)}
+              </p>
             </div>
-            <p className="mt-1 text-muted-foreground">{batch.filename}</p>
-            <p className="text-xs text-muted-foreground">
-              {batch.uploadedByLabel ? `${batch.uploadedByLabel} · ` : ""}
-              {formatPhilippinesDateTime(batch.createdAt)}
+          ) : (
+            <p className={UPLOAD_EMPTY_STATE_CLASS}>
+              Wala pang na-upload na crime stats. Mag-upload ng PNP-CRAS o CIRAS Excel export.
             </p>
+          )}
+
+          <div className={UPLOAD_DROPZONE_CLASS}>
+            <label className="block space-y-2 text-sm">
+              <span className="font-medium">Excel file (.xlsx)</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                disabled={isPending}
+                className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
+              />
+            </label>
+
+            <Button onClick={handleUploadClick} disabled={isPending}>
+              <UploadIcon />
+              {isPending ? "Ina-upload..." : "Upload to Supabase"}
+            </Button>
           </div>
-        ) : (
-          <p className={UPLOAD_EMPTY_STATE_CLASS}>
-            Wala pang na-upload na crime stats. Mag-upload ng PNP-CRAS o CIRAS Excel export.
-          </p>
-        )}
 
-        <div className={UPLOAD_DROPZONE_CLASS}>
-          <label className="block space-y-2 text-sm">
-            <span className="font-medium">Excel file (.xlsx)</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              disabled={isPending}
-              className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
-            />
-          </label>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {success ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p> : null}
 
-          <Button onClick={handleUpload} disabled={isPending}>
-            <UploadIcon />
-            {isPending ? "Ina-upload... (huwag isara ang page)" : "Upload to Supabase"}
-          </Button>
-        </div>
-
-        {progress ? <p className="text-sm text-muted-foreground">{progress}</p> : null}
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        {success ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p> : null}
-
-        {summary ? (
-          <div className="rounded-lg border bg-muted/10 p-4 text-sm">
-            <p className="font-medium">Upload summary</p>
-            <p className="mt-1 text-muted-foreground">
-              {summary.insertedCount.toLocaleString()} valid rows
-              {summary.skippedRows > 0
-                ? ` · ${summary.skippedRows.toLocaleString()} skipped`
-                : ""}
-              {summary.skippedFilteredRows > 0
-                ? ` (${summary.skippedFilteredRows.toLocaleString()} non-INDEX o pre-2026)`
-                : ""}
-              {summary.skippedInvalidCategoryRows > 0
-                ? ` (${summary.skippedInvalidCategoryRows.toLocaleString()} invalid category)`
-                : ""}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Badge variant="secondary">
-                Index: {summary.indexVolume.toLocaleString()}
-              </Badge>
-              <Badge variant="secondary">
-                Non-index: {summary.nonIndexVolume.toLocaleString()}
-              </Badge>
-              {summary.year ? <Badge variant="secondary">Year: {summary.year}</Badge> : null}
+          {summary ? (
+            <div className="rounded-lg border bg-muted/10 p-4 text-sm">
+              <p className="font-medium">Upload summary</p>
+              <p className="mt-1 text-muted-foreground">
+                {summary.insertedCount.toLocaleString()} valid rows
+                {summary.skippedRows > 0
+                  ? ` · ${summary.skippedRows.toLocaleString()} skipped`
+                  : ""}
+                {summary.skippedFilteredRows > 0
+                  ? ` (${summary.skippedFilteredRows.toLocaleString()} non-INDEX o pre-2026)`
+                  : ""}
+                {summary.skippedInvalidCategoryRows > 0
+                  ? ` (${summary.skippedInvalidCategoryRows.toLocaleString()} invalid category)`
+                  : ""}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge variant="secondary">
+                  Index: {summary.indexVolume.toLocaleString()}
+                </Badge>
+                <Badge variant="secondary">
+                  Non-index: {summary.nonIndexVolume.toLocaleString()}
+                </Badge>
+                {summary.year ? <Badge variant="secondary">Year: {summary.year}</Badge> : null}
+              </div>
             </div>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+          ) : null}
+        </CardContent>
+      </Card>
+    </>
   )
 }

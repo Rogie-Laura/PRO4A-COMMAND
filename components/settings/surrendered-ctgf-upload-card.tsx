@@ -1,10 +1,11 @@
 "use client"
 
-import { useRef, useState, useTransition } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react"
 
 import { uploadSurrenderedCtgfWorkbookAction } from "@/app/(dashboard)/settings/actions"
+import { useUploadConfirmation } from "@/components/settings/use-upload-confirmation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,6 +24,7 @@ import {
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
 import { formatServerActionError } from "@/lib/server-action-errors"
 import type { SurrenderedCtgfUploadBatchInfo } from "@/lib/surrendered-ctgf-types"
+import { validateXlsxFile } from "@/lib/upload-file-validation"
 import { cn } from "@/lib/utils"
 
 type SurrenderedCtgfUploadCardProps = {
@@ -39,9 +41,26 @@ export function SurrenderedCtgfUploadCard({
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [batch, setBatch] = useState(latestBatch)
-  const [isPending, startTransition] = useTransition()
 
-  function handleUpload() {
+  const { isPending, openConfirmation, confirmDialog } = useUploadConfirmation({
+    validateFile: validateXlsxFile,
+    onUpload: async (file, { setProgress }) => {
+      setProgress("Ina-upload ang surrendered CTGs workbook...")
+      const formData = new FormData()
+      formData.set("file", file)
+      const result = await uploadSurrenderedCtgfWorkbookAction(formData).catch((uploadError) => {
+        throw new Error(formatServerActionError(uploadError, "Hindi ma-upload ang surrendered CTGs workbook."))
+      })
+      setBatch(result.batch)
+      setSuccess("Na-upload ang surrendered CTGs workbook.")
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+      router.refresh()
+    },
+  })
+
+  function handleUploadClick() {
     const file = fileInputRef.current?.files?.[0]
     setError(null)
     setSuccess(null)
@@ -51,83 +70,64 @@ export function SurrenderedCtgfUploadCard({
       return
     }
 
-    if (!file.name.toLowerCase().endsWith(".xlsx")) {
-      setError("Excel (.xlsx) lang ang tinatanggap. Gamitin ang SURRENDERED CTGs AND FAs.xlsx.")
-      return
-    }
-
-    const formData = new FormData()
-    formData.set("file", file)
-
-    startTransition(async () => {
-      try {
-        const result = await uploadSurrenderedCtgfWorkbookAction(formData)
-        setBatch(result.batch)
-        setSuccess("Na-upload ang surrendered CTGs workbook.")
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ""
-        }
-        router.refresh()
-      } catch (uploadError) {
-        setError(
-          formatServerActionError(uploadError, "Hindi ma-upload ang surrendered CTGs workbook."),
-        )
-      }
-    })
+    openConfirmation(file)
   }
 
   return (
-    <Card className={cn(UPLOAD_CARD_CLASS, compact && "shadow-sm")}>
-      <CardHeader className={compact ? "pb-3" : undefined}>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheetIcon className="size-5 text-primary" />
-          Upload Surrendered CTGs and FAs
-        </CardTitle>
-        <CardDescription>
-          SURRENDERED CTGs AND FAs.xlsx — province/unit table ng Arrested, Died, Surrendered, at
-          Grand Total.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {batch ? (
-          <div className={UPLOAD_STATUS_BOX_CLASS}>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">Latest upload</p>
-              <Badge variant="outline">{batch.filename}</Badge>
+    <>
+      {confirmDialog}
+      <Card className={cn(UPLOAD_CARD_CLASS, compact && "shadow-sm")}>
+        <CardHeader className={compact ? "pb-3" : undefined}>
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheetIcon className="size-5 text-primary" />
+            Upload Surrendered CTGs and FAs
+          </CardTitle>
+          <CardDescription>
+            SURRENDERED CTGs AND FAs.xlsx — province/unit table ng Arrested, Died, Surrendered, at
+            Grand Total.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {batch ? (
+            <div className={UPLOAD_STATUS_BOX_CLASS}>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium">Latest upload</p>
+                <Badge variant="outline">{batch.filename}</Badge>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {batch.uploadedByLabel ? `${batch.uploadedByLabel} · ` : ""}
+                {formatPhilippinesDateTime(batch.createdAt)}
+              </p>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {batch.uploadedByLabel ? `${batch.uploadedByLabel} · ` : ""}
-              {formatPhilippinesDateTime(batch.createdAt)}
+          ) : (
+            <p className={UPLOAD_EMPTY_STATE_CLASS}>
+              Wala pang na-upload na surrendered CTGs file. Pumili ng SURRENDERED CTGs AND FAs.xlsx
+              sa ibaba.
             </p>
+          )}
+
+          <div className={UPLOAD_DROPZONE_CLASS}>
+            <label className="block space-y-2 text-sm">
+              <span className="font-medium">Choose file (.xlsx)</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                disabled={isPending}
+                className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
+              />
+            </label>
+
+            <Button onClick={handleUploadClick} disabled={isPending} className="w-full sm:w-auto">
+              <UploadIcon />
+              {isPending ? "Ina-upload..." : "Upload to Supabase"}
+            </Button>
           </div>
-        ) : (
-          <p className={UPLOAD_EMPTY_STATE_CLASS}>
-            Wala pang na-upload na surrendered CTGs file. Pumili ng SURRENDERED CTGs AND FAs.xlsx
-            sa ibaba.
-          </p>
-        )}
 
-        <div className={UPLOAD_DROPZONE_CLASS}>
-          <label className="block space-y-2 text-sm">
-            <span className="font-medium">Choose file (.xlsx)</span>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              disabled={isPending}
-              className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-foreground hover:file:bg-primary/90"
-            />
-          </label>
-
-          <Button onClick={handleUpload} disabled={isPending} className="w-full sm:w-auto">
-            <UploadIcon />
-            {isPending ? "Ina-upload..." : "Upload to Supabase"}
-          </Button>
-        </div>
-
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        {success ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p> : null}
-      </CardContent>
-    </Card>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {success ? <p className="text-sm text-emerald-600 dark:text-emerald-400">{success}</p> : null}
+        </CardContent>
+      </Card>
+    </>
   )
 }
