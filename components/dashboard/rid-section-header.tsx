@@ -1,13 +1,10 @@
 import { formatPhilippinesUploadedAt } from "@/lib/format-datetime"
-import { cn } from "@/lib/utils"
 
 type RidSectionHeaderProps = {
   title: string
   description?: string
   uploadedAt?: string | null
   dataReady?: boolean
-  /** Hide the title on mobile where the sticky pager bar already shows the section name. */
-  hideTitleOnMobile?: boolean
 }
 
 export function RidSectionHeader({
@@ -15,16 +12,13 @@ export function RidSectionHeader({
   description,
   uploadedAt,
   dataReady = false,
-  hideTitleOnMobile = false,
 }: RidSectionHeaderProps) {
   const uploadedLabel =
     dataReady && uploadedAt ? formatPhilippinesUploadedAt(uploadedAt) : null
 
   return (
     <div>
-      <h2 className={cn("text-lg font-semibold", hideTitleOnMobile && "hidden md:block")}>
-        {title}
-      </h2>
+      <h2 className="text-lg font-semibold">{title}</h2>
       {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
       {uploadedLabel ? (
         <p className="mt-1 text-xs text-muted-foreground">{uploadedLabel}</p>

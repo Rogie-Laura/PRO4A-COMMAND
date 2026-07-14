@@ -58,7 +58,6 @@ export function RidSectionsCarousel({
             description="HVI at SLI accomplishments"
             uploadedAt={illegalDrugs.lastUpdated}
             dataReady={illegalDrugs.dataReady}
-            hideTitleOnMobile
           />
           <IllegalDrugsCards analytics={illegalDrugs} />
         </section>
@@ -76,7 +75,6 @@ export function RidSectionsCarousel({
             description="Drug Groups, Gun-for-Hire, at Other Criminal Groups"
             uploadedAt={criminalGangs.lastUpdated}
             dataReady={criminalGangs.dataReady}
-            hideTitleOnMobile
           />
           <CriminalGangsCards analytics={criminalGangs} />
         </section>
@@ -116,7 +114,6 @@ export function RidSectionsCarousel({
             description="Authorized vs actual strength, training, seminar, at related intel personnel metrics"
             uploadedAt={intelEligibility.lastUpdated}
             dataReady={intelEligibility.dataReady}
-            hideTitleOnMobile
           />
           <IntelEligibilityCards analytics={intelEligibility} />
         </section>
@@ -143,50 +140,39 @@ export function RidSectionsCarousel({
   return (
     <>
       <div ref={rootRef} className="scroll-mt-2 space-y-3 md:hidden">
-        <div className="sticky top-0 z-20 -mx-4 border-b border-border bg-background px-4 pb-2 pt-0 sm:-mx-6 sm:px-6">
-          <div className="overflow-hidden rounded-lg border bg-background shadow-sm">
-            <div className="flex items-center justify-center gap-2 border-b bg-muted/40 px-2 py-1.5">
-              <span className="truncate text-sm font-semibold leading-tight">
-                {activeSlide?.navLabel}
-              </span>
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                {activeIndex + 1}/{slides.length}
-              </span>
-            </div>
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1 px-1 py-1">
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={!canGoPrev}
-                aria-label={prevSlide ? `Previous: ${prevSlide.navLabel}` : "Previous section"}
-                onClick={() => goToIndex(activeIndex - 1)}
-                className="h-auto min-h-8 justify-start gap-0.5 px-1.5 py-1.5 text-left"
-              >
-                <ChevronLeftIcon className="size-4 shrink-0" />
-                <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
-                  {prevSlide?.navLabel ?? ""}
-                </span>
-              </Button>
+        {/* Flat sub-header attached under the app header (not a floating card) */}
+        <div className="sticky top-0 z-20 -mx-4 -mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-1 border-b border-border bg-background px-2 py-1.5 sm:-mx-6 sm:-mt-6 sm:px-4">
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={!canGoPrev}
+            aria-label={prevSlide ? `Previous: ${prevSlide.navLabel}` : "Previous section"}
+            onClick={() => goToIndex(activeIndex - 1)}
+            className="h-auto min-h-8 justify-start gap-0.5 px-1.5 py-1.5 text-left"
+          >
+            <ChevronLeftIcon className="size-4 shrink-0" />
+            <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
+              {prevSlide?.navLabel ?? ""}
+            </span>
+          </Button>
 
-              <span aria-hidden className="px-1 text-muted-foreground/40">
-                ·
-              </span>
+          <span className="px-1 text-xs font-semibold tabular-nums text-muted-foreground">
+            {activeIndex + 1}/{slides.length}
+          </span>
 
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={!canGoNext}
-                aria-label={nextSlide ? `Next: ${nextSlide.navLabel}` : "Next section"}
-                onClick={() => goToIndex(activeIndex + 1)}
-                className="h-auto min-h-8 justify-end gap-0.5 px-1.5 py-1.5 text-right"
-              >
-                <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
-                  {nextSlide?.navLabel ?? ""}
-                </span>
-                <ChevronRightIcon className="size-4 shrink-0" />
-              </Button>
-            </div>
-          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={!canGoNext}
+            aria-label={nextSlide ? `Next: ${nextSlide.navLabel}` : "Next section"}
+            onClick={() => goToIndex(activeIndex + 1)}
+            className="h-auto min-h-8 justify-end gap-0.5 px-1.5 py-1.5 text-right"
+          >
+            <span className="min-w-0 truncate text-[11px] font-medium leading-tight">
+              {nextSlide?.navLabel ?? ""}
+            </span>
+            <ChevronRightIcon className="size-4 shrink-0" />
+          </Button>
         </div>
 
         <div aria-label="RID sections" className="relative z-0">
