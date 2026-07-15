@@ -47,7 +47,7 @@ export const MAIN_NAV: NavLink[] = [
     logoSrc: PRO4A_LOGO.src,
     description: "Regional ranking, alert level, and terrorism threat status",
   },
-  { title: "RPRMD", href: "/rprmd", icon: BarChart3, description: DIVISION_CONFIG.rprmd.fullName, activePaths: ["/rprmd", "/rprmd/upload"], divisionId: "rprmd" },
+  { title: "RPRMD", href: "/rprmd", icon: BarChart3, logoSrc: DIVISION_NAV_LOGOS.rprmd, description: DIVISION_CONFIG.rprmd.fullName, activePaths: ["/rprmd", "/rprmd/upload"], divisionId: "rprmd" },
   { title: "RID", href: "/rid", icon: Search, logoSrc: DIVISION_NAV_LOGOS.rid, description: DIVISION_CONFIG.rid.fullName, divisionId: "rid" },
   {
     title: "ROD",

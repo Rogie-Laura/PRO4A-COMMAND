@@ -25,6 +25,7 @@ export const PRO4A_LOGO = {
 
 /** Division logos used in sidebar navigation (instead of generic icons). */
 export const DIVISION_NAV_LOGOS = {
+  rprmd: "/logos/RPRMD.png",
   rid: "/logos/RID.png",
   rod: "/logos/ROD.png",
   rcadd: "/logos/rcadd.png",
@@ -36,4 +37,4 @@ export const PRO4A_APP_TAGLINE = "Operational Dashboard"
 
 export const COMMAND_BRAND_BG = "#05070f"
 
-export const COMMAND_ICON_VERSION = "6"
+export const COMMAND_ICON_VERSION = "7"
