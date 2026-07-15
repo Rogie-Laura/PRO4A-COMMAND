@@ -3,12 +3,18 @@ import { unstable_cache } from "next/cache"
 import { BMI_CATEGORIES, type BmiCategoryId } from "@/lib/bmi-config"
 import { formatMonthKeyLabel } from "@/lib/bmi-month"
 import {
+  fetchBmiRecordsByNameToken,
   fetchTwoRecentBmiBatchesForComparison,
   type BmiComparisonRow,
   type BmiMonthBatch,
 } from "@/lib/bmi-records"
 import { HEALTH_ANALYTICS_CACHE_TAG } from "@/lib/health-analytics"
-import type { BmiPersonnelDetail, BmiTrackingSummary } from "@/lib/health-types"
+import type {
+  BmiMovementBucket,
+  BmiMovementPerson,
+  BmiTrackingSummary,
+  BmiTrendPoint,
+} from "@/lib/health-types"
 
 export { formatMonthKeyLabel }
 
@@ -182,70 +188,181 @@ function formatComparisonName(row: BmiComparisonRow): string {
   return row.fullName || row.rankFullname || "Unknown"
 }
 
-function toPersonnelDetail(key: string, row: BmiComparisonRow): BmiPersonnelDetail {
-  return {
-    id: key,
-    rank: row.rank,
-    name: formatComparisonName(row),
-    unit: row.subUnit || row.assignment || "—",
-    age: row.age != null ? String(row.age) : "—",
-  }
-}
-
-export type BmiCoveragePersonnel = {
-  /** In the previous month but missing from the current month (no updated BMI). */
-  notUpdated: BmiPersonnelDetail[]
-  /** In the current month but not present in the previous month (newly recorded). */
-  newlyRecorded: BmiPersonnelDetail[]
-}
-
-function buildCoveragePersonnel(
-  current: BmiMonthBatch,
-  previous: BmiMonthBatch,
-): BmiCoveragePersonnel {
-  const currentMap = buildKeyedMap(current.rows)
-  const previousMap = buildKeyedMap(previous.rows)
-
-  const notUpdated: BmiPersonnelDetail[] = []
-  for (const [key, prev] of previousMap) {
-    if (!currentMap.has(key)) notUpdated.push(toPersonnelDetail(key, prev))
-  }
-
-  const newlyRecorded: BmiPersonnelDetail[] = []
-  for (const [key, curr] of currentMap) {
-    if (!previousMap.has(key)) newlyRecorded.push(toPersonnelDetail(key, curr))
-  }
-
-  const byName = (a: BmiPersonnelDetail, b: BmiPersonnelDetail) =>
-    a.name.localeCompare(b.name, "en", { sensitivity: "base" })
-
-  notUpdated.sort(byName)
-  newlyRecorded.sort(byName)
-
-  return { notUpdated, newlyRecorded }
-}
-
-async function loadBmiCoveragePersonnel(): Promise<BmiCoveragePersonnel> {
-  try {
-    const pair = await fetchTwoRecentBmiBatchesForComparison()
-    if (!pair) return { notUpdated: [], newlyRecorded: [] }
-    return buildCoveragePersonnel(pair.current, pair.previous)
-  } catch {
-    return { notUpdated: [], newlyRecorded: [] }
-  }
-}
-
-const getCachedBmiCoveragePersonnel = unstable_cache(
-  loadBmiCoveragePersonnel,
-  ["bmi-coverage-personnel-v1"],
-  { revalidate: false, tags: [HEALTH_ANALYTICS_CACHE_TAG] },
-)
-
-export async function getBmiCoveragePersonnel(): Promise<BmiCoveragePersonnel> {
-  return getCachedBmiCoveragePersonnel()
-}
-
 // Re-exported for reuse in labels/config validation elsewhere if needed.
 export const BMI_CATEGORY_LABELS = Object.fromEntries(
   BMI_CATEGORIES.map((category) => [category.id, category.label]),
 ) as Record<BmiCategoryId, string>
+
+function categoryLabel(id: BmiCategoryId | null | undefined): string | null {
+  return id ? (BMI_CATEGORY_LABELS[id] ?? null) : null
+}
+
+/** Longest alphabetic token from a name — used to narrow the trend lookup query. */
+function longestToken(fullName: string): string {
+  const tokens = String(fullName ?? "")
+    .replace(/[^A-Za-z\s]/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length >= 3)
+  if (tokens.length === 0) return ""
+  return tokens.reduce((longest, token) => (token.length > longest.length ? token : longest), "")
+}
+
+function toMovementPerson(
+  key: string,
+  prev: BmiComparisonRow | undefined,
+  curr: BmiComparisonRow | undefined,
+): BmiMovementPerson {
+  const base = curr ?? prev
+  const prevWeight = prev?.weightKg ?? null
+  const currWeight = curr?.weightKg ?? null
+  const deltaKg =
+    prevWeight != null && currWeight != null
+      ? Math.round((currWeight - prevWeight) * 10) / 10
+      : null
+
+  return {
+    id: key,
+    key,
+    filterToken: longestToken(base?.fullName || base?.rankFullname || ""),
+    rank: base?.rank ?? "",
+    name: base ? formatComparisonName(base) : "Unknown",
+    unit: base?.subUnit || base?.assignment || "—",
+    prevWeightKg: prevWeight,
+    currWeightKg: currWeight,
+    deltaKg,
+    prevCategoryLabel: categoryLabel(prev?.categoryId),
+    currCategoryLabel: categoryLabel(curr?.categoryId),
+  }
+}
+
+/** All personnel drilldown buckets for the two most recent BMI snapshots. */
+export type BmiMovementDetail = Record<BmiMovementBucket, BmiMovementPerson[]>
+
+export type { BmiMovementBucket }
+
+function emptyMovementDetail(): BmiMovementDetail {
+  return {
+    gained: [],
+    lost: [],
+    maintained: [],
+    improved: [],
+    worsened: [],
+    unchanged: [],
+    notUpdated: [],
+    newlyRecorded: [],
+  }
+}
+
+function buildMovementDetail(
+  current: BmiMonthBatch,
+  previous: BmiMonthBatch,
+): BmiMovementDetail {
+  const currentMap = buildKeyedMap(current.rows)
+  const previousMap = buildKeyedMap(previous.rows)
+  const detail = emptyMovementDetail()
+
+  for (const [key, curr] of currentMap) {
+    const prev = previousMap.get(key)
+    if (!prev) {
+      detail.newlyRecorded.push(toMovementPerson(key, undefined, curr))
+      continue
+    }
+
+    const person = toMovementPerson(key, prev, curr)
+
+    if (person.deltaKg != null) {
+      if (person.deltaKg > MAINTAIN_THRESHOLD_KG) detail.gained.push(person)
+      else if (person.deltaKg < -MAINTAIN_THRESHOLD_KG) detail.lost.push(person)
+      else detail.maintained.push(person)
+    }
+
+    const prevOrdinal = prev.categoryId != null ? CATEGORY_ORDINAL[prev.categoryId] : null
+    const currOrdinal = curr.categoryId != null ? CATEGORY_ORDINAL[curr.categoryId] : null
+    if (prevOrdinal != null && currOrdinal != null) {
+      if (currOrdinal < prevOrdinal) detail.improved.push(person)
+      else if (currOrdinal > prevOrdinal) detail.worsened.push(person)
+      else detail.unchanged.push(person)
+    }
+  }
+
+  for (const [key, prev] of previousMap) {
+    if (!currentMap.has(key)) detail.notUpdated.push(toMovementPerson(key, prev, undefined))
+  }
+
+  const byName = (a: BmiMovementPerson, b: BmiMovementPerson) =>
+    a.name.localeCompare(b.name, "en", { sensitivity: "base" })
+  // Weight buckets read best largest-change first; others alphabetical.
+  detail.gained.sort((a, b) => (b.deltaKg ?? 0) - (a.deltaKg ?? 0))
+  detail.lost.sort((a, b) => (a.deltaKg ?? 0) - (b.deltaKg ?? 0))
+  detail.maintained.sort(byName)
+  detail.improved.sort(byName)
+  detail.worsened.sort(byName)
+  detail.unchanged.sort(byName)
+  detail.notUpdated.sort(byName)
+  detail.newlyRecorded.sort(byName)
+
+  return detail
+}
+
+async function loadBmiMovementDetail(): Promise<BmiMovementDetail> {
+  try {
+    const pair = await fetchTwoRecentBmiBatchesForComparison()
+    if (!pair) return emptyMovementDetail()
+    return buildMovementDetail(pair.current, pair.previous)
+  } catch {
+    return emptyMovementDetail()
+  }
+}
+
+const getCachedBmiMovementDetail = unstable_cache(
+  loadBmiMovementDetail,
+  ["bmi-movement-detail-v1"],
+  { revalidate: false, tags: [HEALTH_ANALYTICS_CACHE_TAG] },
+)
+
+export async function getBmiMovementDetail(): Promise<BmiMovementDetail> {
+  return getCachedBmiMovementDetail()
+}
+
+export async function getBmiMovementBucket(
+  bucket: BmiMovementBucket,
+): Promise<BmiMovementPerson[]> {
+  const detail = await getCachedBmiMovementDetail()
+  return detail[bucket] ?? []
+}
+
+/**
+ * One personnel's weight/BMI trend across ALL stored months, resolved by matching
+ * the order-insensitive name key. `filterToken` narrows the DB scan to a surname.
+ */
+export async function getBmiPersonTrend(
+  key: string,
+  filterToken: string,
+): Promise<BmiTrendPoint[]> {
+  const token = filterToken.trim()
+  if (!key || !token) return []
+
+  let candidates
+  try {
+    candidates = await fetchBmiRecordsByNameToken(token)
+  } catch {
+    return []
+  }
+
+  const byMonth = new Map<string, BmiTrendPoint>()
+  for (const row of candidates) {
+    if (!row.periodMonth) continue
+    if (bmiPersonKey(row.fullName || row.rankFullname) !== key) continue
+    // First row per month wins (stable across duplicates).
+    if (byMonth.has(row.periodMonth)) continue
+    byMonth.set(row.periodMonth, {
+      monthKey: row.periodMonth,
+      monthLabel: formatMonthKeyLabel(row.periodMonth),
+      weightKg: row.weightKg,
+      bmiResult: row.bmiResult,
+      categoryLabel: categoryLabel(row.categoryId),
+    })
+  }
+
+  return Array.from(byMonth.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+}

@@ -45,7 +45,11 @@ export async function HealthAndBmiContent() {
         </Card>
       )}
 
-      <BmiCategoryCards categories={data.categories} totalAssessed={data.totalAssessed} />
+      <BmiCategoryCards
+        categories={data.categories}
+        totalAssessed={data.totalAssessed}
+        assessmentMonthLabel={tracking.available ? tracking.currentMonthLabel : null}
+      />
 
       {data.dataReady ? <BmiTrackingCards tracking={tracking} /> : null}
     </div>

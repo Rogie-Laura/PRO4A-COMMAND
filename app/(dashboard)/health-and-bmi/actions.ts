@@ -3,9 +3,14 @@
 import { updateTag } from "next/cache"
 
 import { isBmiDrilldownCategory, type BmiCategoryId } from "@/lib/bmi-config"
-import { getBmiCoveragePersonnel } from "@/lib/bmi-tracking"
+import { getBmiMovementBucket, getBmiPersonTrend } from "@/lib/bmi-tracking"
 import { fetchBmiPersonnelForCategory, HEALTH_ANALYTICS_CACHE_TAG } from "@/lib/health-analytics"
-import type { BmiPersonnelDetail } from "@/lib/health-types"
+import type {
+  BmiMovementBucket,
+  BmiMovementPerson,
+  BmiPersonnelDetail,
+  BmiTrendPoint,
+} from "@/lib/health-types"
 
 export async function refreshHealthAndBmiData() {
   updateTag(HEALTH_ANALYTICS_CACHE_TAG)
@@ -21,9 +26,15 @@ export async function fetchBmiCategoryPersonnelAction(
   return fetchBmiPersonnelForCategory(categoryId)
 }
 
-export async function fetchBmiCoveragePersonnelAction(
-  kind: "not-updated" | "newly-recorded",
-): Promise<BmiPersonnelDetail[]> {
-  const coverage = await getBmiCoveragePersonnel()
-  return kind === "not-updated" ? coverage.notUpdated : coverage.newlyRecorded
+export async function fetchBmiMovementPersonnelAction(
+  bucket: BmiMovementBucket,
+): Promise<BmiMovementPerson[]> {
+  return getBmiMovementBucket(bucket)
+}
+
+export async function fetchBmiPersonTrendAction(
+  key: string,
+  filterToken: string,
+): Promise<BmiTrendPoint[]> {
+  return getBmiPersonTrend(key, filterToken)
 }

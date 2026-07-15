@@ -683,6 +683,70 @@ async function fetchComparisonRows(batchId: string): Promise<BmiComparisonRow[]>
   return rows
 }
 
+export type BmiTrendCandidateRow = {
+  fullName: string
+  rankFullname: string
+  weightKg: number | null
+  bmiResult: number | null
+  categoryId: BmiCategoryId | null
+  periodMonth: string | null
+  createdAt: string
+}
+
+/**
+ * Rows across ALL stored months whose full name contains `token` (a surname or
+ * long name token). The caller narrows these to a single person by exact name key.
+ */
+export async function fetchBmiRecordsByNameToken(token: string): Promise<BmiTrendCandidateRow[]> {
+  const trimmed = token.trim()
+  if (!trimmed) return []
+
+  const supabase = createAdminClient()
+  const escaped = trimmed.replace(/[%_]/g, (match) => `\\${match}`)
+  const rows: BmiTrendCandidateRow[] = []
+  let from = 0
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("bmi_records")
+      .select(
+        "full_name, rank_fullname, weight_kg, bmi_result, bmi_category_id, bmi_upload_batches!inner(period_month, created_at)",
+      )
+      .ilike("full_name", `%${escaped}%`)
+      .order("id", { ascending: true })
+      .range(from, from + FETCH_PAGE_SIZE - 1)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    if (!data || data.length === 0) break
+
+    for (const row of data) {
+      const batch = row.bmi_upload_batches as unknown as
+        | { period_month: string | null; created_at: string }
+        | { period_month: string | null; created_at: string }[]
+        | null
+      const batchInfo = Array.isArray(batch) ? batch[0] : batch
+
+      rows.push({
+        fullName: row.full_name ?? "",
+        rankFullname: row.rank_fullname ?? "",
+        weightKg: row.weight_kg != null ? Number(row.weight_kg) : null,
+        bmiResult: row.bmi_result != null ? Number(row.bmi_result) : null,
+        categoryId: (row.bmi_category_id as BmiCategoryId | null) ?? null,
+        periodMonth: batchInfo?.period_month ?? null,
+        createdAt: batchInfo?.created_at ?? "",
+      })
+    }
+
+    if (data.length < FETCH_PAGE_SIZE) break
+    from += FETCH_PAGE_SIZE
+  }
+
+  return rows
+}
+
 /**
  * The two newest monthly snapshots (current + previous) with their per-person rows,
  * for month-over-month weight and BMI-category movement. Returns null when fewer

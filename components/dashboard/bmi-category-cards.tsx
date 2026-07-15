@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils"
 type BmiCategoryCardsProps = {
   categories: BmiCategoryCount[]
   totalAssessed: number
+  /** Latest snapshot month, shown under the "Personnel Assessed" total. */
+  assessmentMonthLabel?: string | null
 }
 
 type SelectedCategory = {
@@ -26,7 +28,11 @@ type SelectedCategory = {
   personnel: BmiPersonnelDetail[]
 }
 
-export function BmiCategoryCards({ categories, totalAssessed }: BmiCategoryCardsProps) {
+export function BmiCategoryCards({
+  categories,
+  totalAssessed,
+  assessmentMonthLabel,
+}: BmiCategoryCardsProps) {
   const [selectedCategory, setSelectedCategory] = useState<SelectedCategory | null>(null)
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -79,7 +85,15 @@ export function BmiCategoryCards({ categories, totalAssessed }: BmiCategoryCards
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">With recorded BMI classification</p>
+            <p className="text-sm text-muted-foreground">
+              With recorded BMI classification
+              {assessmentMonthLabel ? (
+                <>
+                  {" · "}
+                  <span className="font-medium text-foreground">{assessmentMonthLabel}</span>
+                </>
+              ) : null}
+            </p>
           </CardContent>
         </Card>
 

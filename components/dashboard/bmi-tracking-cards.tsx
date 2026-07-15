@@ -11,10 +11,14 @@ import {
   UserXIcon,
 } from "lucide-react"
 
-import { fetchBmiCoveragePersonnelAction } from "@/app/(dashboard)/health-and-bmi/actions"
-import { BmiPersonnelSheet } from "@/components/dashboard/bmi-personnel-sheet"
+import { fetchBmiMovementPersonnelAction } from "@/app/(dashboard)/health-and-bmi/actions"
+import { BmiMovementSheet } from "@/components/dashboard/bmi-movement-sheet"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { BmiPersonnelDetail, BmiTrackingSummary } from "@/lib/health-types"
+import type {
+  BmiMovementBucket,
+  BmiMovementPerson,
+  BmiTrackingSummary,
+} from "@/lib/health-types"
 import { cn } from "@/lib/utils"
 
 type BmiTrackingCardsProps = {
@@ -22,15 +26,13 @@ type BmiTrackingCardsProps = {
 }
 
 type StatCard = {
-  key: string
+  bucket: BmiMovementBucket
   label: string
   value: number
   hint: string
   icon: typeof TrendingUpIcon
   glass: string
 }
-
-type CoverageKind = "not-updated" | "newly-recorded"
 
 function formatSignedKg(value: number) {
   const rounded = Math.round(value * 10) / 10
@@ -40,34 +42,35 @@ function formatSignedKg(value: number) {
 
 export function BmiTrackingCards({ tracking }: BmiTrackingCardsProps) {
   const [open, setOpen] = useState(false)
-  const [sheetLabel, setSheetLabel] = useState<string | null>(null)
-  const [personnel, setPersonnel] = useState<BmiPersonnelDetail[]>([])
+  const [sheetTitle, setSheetTitle] = useState<string | null>(null)
+  const [sheetDescription, setSheetDescription] = useState<string | undefined>(undefined)
+  const [personnel, setPersonnel] = useState<BmiMovementPerson[]>([])
   const [isPending, startTransition] = useTransition()
 
   if (!tracking.available) {
     return (
       <Card className="border-dashed border-muted-foreground/25 bg-muted/15 backdrop-blur-md">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Weight & BMI tracking (buwan-sa-buwan)</CardTitle>
+          <CardTitle className="text-base">Weight &amp; BMI Tracking (month-over-month)</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          Isang buwan pa lang ang naka-store. Mag-upload ng pangalawang buwan (hal. May 2026) sa
-          Settings gamit ang parehong <span className="font-medium">With BMI List</span> na format
-          para awtomatikong lumabas dito kung sino ang tumaba, gumaan, at ang paggalaw ng BMI
-          category.
+          Only one month is stored so far. Upload a second month (e.g. May 2026) in Settings using
+          the same <span className="font-medium">With BMI List</span> format so this section can
+          automatically show who gained or lost weight and how BMI categories moved.
         </CardContent>
       </Card>
     )
   }
 
-  function openCoverage(kind: CoverageKind, label: string) {
+  function openBucket(bucket: BmiMovementBucket, title: string, description?: string) {
     if (isPending) return
-    setSheetLabel(label)
+    setSheetTitle(title)
+    setSheetDescription(description)
     setPersonnel([])
     setOpen(true)
     startTransition(async () => {
       try {
-        const list = await fetchBmiCoveragePersonnelAction(kind)
+        const list = await fetchBmiMovementPersonnelAction(bucket)
         setPersonnel(list)
       } catch {
         setPersonnel([])
@@ -78,34 +81,35 @@ export function BmiTrackingCards({ tracking }: BmiTrackingCardsProps) {
   function handleOpenChange(nextOpen: boolean) {
     setOpen(nextOpen)
     if (!nextOpen) {
-      setSheetLabel(null)
+      setSheetTitle(null)
+      setSheetDescription(undefined)
       setPersonnel([])
     }
   }
 
   const weightCards: StatCard[] = [
     {
-      key: "gained",
-      label: "Tumaba",
+      bucket: "gained",
+      label: "Gained Weight",
       value: tracking.weight.gained,
-      hint: `Mas mabigat nang higit 0.5 kg vs ${tracking.previousMonthLabel}`,
+      hint: `Heavier by more than 0.5 kg vs ${tracking.previousMonthLabel}`,
       icon: TrendingUpIcon,
       glass: "border-rose-400/35 bg-rose-500/15 dark:border-rose-400/25 dark:bg-rose-500/10",
     },
     {
-      key: "lost",
-      label: "Gumaan",
+      bucket: "lost",
+      label: "Lost Weight",
       value: tracking.weight.lost,
-      hint: `Mas magaan nang higit 0.5 kg vs ${tracking.previousMonthLabel}`,
+      hint: `Lighter by more than 0.5 kg vs ${tracking.previousMonthLabel}`,
       icon: TrendingDownIcon,
       glass:
         "border-emerald-400/35 bg-emerald-500/15 dark:border-emerald-400/25 dark:bg-emerald-500/10",
     },
     {
-      key: "maintained",
-      label: "Walang binago",
+      bucket: "maintained",
+      label: "Maintained",
       value: tracking.weight.maintained,
-      hint: "Nasa loob ng ±0.5 kg (halos pareho)",
+      hint: "Within ±0.5 kg (about the same)",
       icon: MinusIcon,
       glass: "border-slate-400/35 bg-slate-500/15 dark:border-slate-400/25 dark:bg-slate-500/10",
     },
@@ -113,27 +117,27 @@ export function BmiTrackingCards({ tracking }: BmiTrackingCardsProps) {
 
   const categoryCards: StatCard[] = [
     {
-      key: "improved",
-      label: "Bumaba ang category",
+      bucket: "improved",
+      label: "Improved Category",
       value: tracking.category.improved,
-      hint: "Napunta sa mas magaang BMI class (hal. Obese → Overweight)",
+      hint: "Moved to a leaner BMI class (e.g. Obese → Overweight)",
       icon: ArrowDownRightIcon,
       glass:
         "border-emerald-400/35 bg-emerald-500/15 dark:border-emerald-400/25 dark:bg-emerald-500/10",
     },
     {
-      key: "worsened",
-      label: "Tumaas ang category",
+      bucket: "worsened",
+      label: "Worsened Category",
       value: tracking.category.worsened,
-      hint: "Napunta sa mas mabigat na BMI class (hal. Overweight → Obese)",
+      hint: "Moved to a heavier BMI class (e.g. Overweight → Obese)",
       icon: ArrowUpRightIcon,
       glass: "border-rose-400/35 bg-rose-500/15 dark:border-rose-400/25 dark:bg-rose-500/10",
     },
     {
-      key: "unchanged",
-      label: "Pareho ang category",
+      bucket: "unchanged",
+      label: "Same Category",
       value: tracking.category.unchanged,
-      hint: "Nanatili sa parehong BMI class",
+      hint: "Stayed in the same BMI class",
       icon: MinusIcon,
       glass: "border-slate-400/35 bg-slate-500/15 dark:border-slate-400/25 dark:bg-slate-500/10",
     },
@@ -144,103 +148,141 @@ export function BmiTrackingCards({ tracking }: BmiTrackingCardsProps) {
       <div className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h2 className="text-lg font-semibold">Weight &amp; BMI tracking</h2>
+            <h2 className="text-lg font-semibold">Weight &amp; BMI Tracking</h2>
             <p className="text-sm text-muted-foreground">
-              Paghahambing: {tracking.previousMonthLabel} → {tracking.currentMonthLabel}
+              Comparison: {tracking.previousMonthLabel} → {tracking.currentMonthLabel}
             </p>
           </div>
           <p className="text-xs text-muted-foreground">
-            {tracking.matchedCount.toLocaleString()} personnel ang nagkatugma sa parehong buwan
+            {tracking.matchedCount.toLocaleString()} personnel matched across both months
           </p>
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">Timbang (weight)</p>
+          <p className="text-sm font-medium text-muted-foreground">Weight</p>
           <div className="grid gap-4 sm:grid-cols-3">
             {weightCards.map((card) => (
-              <StatCardView key={card.key} card={card} />
+              <StatCardButton
+                key={card.bucket}
+                card={card}
+                disabled={isPending || card.value === 0}
+                onClick={() => openBucket(card.bucket, card.label, card.hint)}
+              />
             ))}
           </div>
           {tracking.weight.avgDeltaKg != null ? (
             <p className="text-xs text-muted-foreground">
-              Average na pagbabago ng timbang:{" "}
+              Average weight change:{" "}
               <span className="font-medium tabular-nums">
                 {formatSignedKg(tracking.weight.avgDeltaKg)}
               </span>{" "}
-              kada tao · net na kabuuan:{" "}
+              per person · net total:{" "}
               <span className="font-medium tabular-nums">
                 {formatSignedKg(tracking.weight.netDeltaKg)}
               </span>{" "}
-              ({tracking.weight.withWeightData.toLocaleString()} na may timbang sa dalawang buwan)
+              ({tracking.weight.withWeightData.toLocaleString()} with weight in both months)
             </p>
           ) : null}
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">BMI category movement</p>
+          <p className="text-sm font-medium text-muted-foreground">BMI Category Movement</p>
           <div className="grid gap-4 sm:grid-cols-3">
             {categoryCards.map((card) => (
-              <StatCardView key={card.key} card={card} />
+              <StatCardButton
+                key={card.bucket}
+                card={card}
+                disabled={isPending || card.value === 0}
+                onClick={() => openBucket(card.bucket, card.label, card.hint)}
+              />
             ))}
           </div>
           <p className="text-xs text-muted-foreground">
-            Batay sa {tracking.category.withCategoryData.toLocaleString()} personnel na may BMI class
-            sa dalawang buwan.
+            Based on {tracking.category.withCategoryData.toLocaleString()} personnel with a BMI class
+            in both months.
           </p>
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">Coverage (assessment)</p>
+          <p className="text-sm font-medium text-muted-foreground">Coverage</p>
           <div className="grid gap-4 sm:grid-cols-2">
-            <CoverageCardButton
+            <StatCardButton
+              card={{
+                bucket: "notUpdated",
+                label: "No Updated BMI",
+                value: tracking.onlyPreviousCount,
+                hint: `Recorded in ${tracking.previousMonthLabel} but missing in ${tracking.currentMonthLabel}${
+                  tracking.onlyPreviousCount > 0 ? " · tap to view" : ""
+                }`,
+                icon: UserXIcon,
+                glass:
+                  "border-amber-400/35 bg-amber-500/15 dark:border-amber-400/25 dark:bg-amber-500/10",
+              }}
               disabled={isPending || tracking.onlyPreviousCount === 0}
-              label="Walang updated BMI"
-              value={tracking.onlyPreviousCount}
-              hint={`May record noong ${tracking.previousMonthLabel} pero wala sa ${tracking.currentMonthLabel}${
-                tracking.onlyPreviousCount > 0 ? " · i-tap para makita" : ""
-              }`}
-              icon={UserXIcon}
-              glass="border-amber-400/35 bg-amber-500/15 dark:border-amber-400/25 dark:bg-amber-500/10"
               onClick={() =>
-                openCoverage(
-                  "not-updated",
-                  `Walang updated BMI (${tracking.currentMonthLabel})`,
+                openBucket(
+                  "notUpdated",
+                  `No Updated BMI (${tracking.currentMonthLabel})`,
+                  `In ${tracking.previousMonthLabel}, not in ${tracking.currentMonthLabel}`,
                 )
               }
             />
-            <CoverageCardButton
+            <StatCardButton
+              card={{
+                bucket: "newlyRecorded",
+                label: "Newly Recorded",
+                value: tracking.onlyCurrentCount,
+                hint: `New assessment in ${tracking.currentMonthLabel}, not in ${tracking.previousMonthLabel}${
+                  tracking.onlyCurrentCount > 0 ? " · tap to view" : ""
+                }`,
+                icon: UserCheckIcon,
+                glass:
+                  "border-sky-400/35 bg-sky-500/15 dark:border-sky-400/25 dark:bg-sky-500/10",
+              }}
               disabled={isPending || tracking.onlyCurrentCount === 0}
-              label="Bagong na-record"
-              value={tracking.onlyCurrentCount}
-              hint={`Bagong assessment sa ${tracking.currentMonthLabel}, wala noong ${tracking.previousMonthLabel}${
-                tracking.onlyCurrentCount > 0 ? " · i-tap para makita" : ""
-              }`}
-              icon={UserCheckIcon}
-              glass="border-sky-400/35 bg-sky-500/15 dark:border-sky-400/25 dark:bg-sky-500/10"
               onClick={() =>
-                openCoverage("newly-recorded", `Bagong na-record (${tracking.currentMonthLabel})`)
+                openBucket(
+                  "newlyRecorded",
+                  `Newly Recorded (${tracking.currentMonthLabel})`,
+                  `In ${tracking.currentMonthLabel}, not in ${tracking.previousMonthLabel}`,
+                )
               }
             />
           </div>
         </div>
       </div>
 
-      <BmiPersonnelSheet
-        categoryLabel={sheetLabel}
+      <BmiMovementSheet
+        title={sheetTitle}
+        description={sheetDescription}
         personnel={personnel}
         isLoading={open && isPending}
         open={open}
         onOpenChange={handleOpenChange}
-        describe={(count) => `${count.toLocaleString()} personnel`}
       />
     </>
   )
 }
 
-function StatCardView({ card }: { card: StatCard }) {
+function StatCardButton({
+  card,
+  disabled,
+  onClick,
+}: {
+  card: StatCard
+  disabled: boolean
+  onClick: () => void
+}) {
   const Icon = card.icon
-  return (
-    <Card className={cn("gap-0 overflow-hidden backdrop-blur-md shadow-sm", card.glass)}>
+  const inner = (
+    <Card
+      className={cn(
+        "gap-0 overflow-hidden shadow-sm backdrop-blur-md",
+        card.glass,
+        !disabled &&
+          "transition-colors hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      )}
+    >
       <CardHeader className="pb-2">
         <CardDescription className="flex items-center gap-1.5 font-medium">
           <Icon className="size-4" />
@@ -255,56 +297,14 @@ function StatCardView({ card }: { card: StatCard }) {
       </CardContent>
     </Card>
   )
-}
-
-function CoverageCardButton({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  glass,
-  disabled,
-  onClick,
-}: {
-  label: string
-  value: number
-  hint: string
-  icon: typeof TrendingUpIcon
-  glass: string
-  disabled: boolean
-  onClick: () => void
-}) {
-  const card = (
-    <Card
-      className={cn(
-        "gap-0 overflow-hidden backdrop-blur-md shadow-sm",
-        glass,
-        !disabled &&
-          "transition-colors hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-      )}
-    >
-      <CardHeader className="pb-2">
-        <CardDescription className="flex items-center gap-1.5 font-medium">
-          <Icon className="size-4" />
-          {label}
-        </CardDescription>
-        <CardTitle className="text-2xl font-bold tabular-nums sm:text-3xl">
-          {value.toLocaleString()}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </CardContent>
-    </Card>
-  )
 
   if (disabled) {
-    return <div>{card}</div>
+    return <div>{inner}</div>
   }
 
   return (
-    <button type="button" onClick={onClick} className="text-left disabled:cursor-wait">
-      {card}
+    <button type="button" onClick={onClick} className="w-full text-left disabled:cursor-wait">
+      {inner}
     </button>
   )
 }
