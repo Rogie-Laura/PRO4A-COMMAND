@@ -11,6 +11,7 @@ import { AppBrandMark } from "@/components/dashboard/app-brand-mark"
 import type { AppSession } from "@/lib/auth/get-session"
 import { isDivisionUploader, isSuperAdmin } from "@/lib/auth/roles"
 import { getSessionHomeHref } from "@/lib/auth/session-access"
+import { COMMAND_ICON_VERSION } from "@/lib/brand-config"
 import { isNavLinkActive, MAIN_NAV, type NavLink } from "@/lib/navigation-config"
 import {
   Sidebar,
@@ -65,6 +66,24 @@ function shouldRenderLink(link: NavLink, session: AppSession) {
   return true
 }
 
+function NavLinkIcon({ link }: { link: NavLink }) {
+  if (link.logoSrc) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={`${link.logoSrc}?v=${COMMAND_ICON_VERSION}`}
+        alt=""
+        width={20}
+        height={20}
+        className="size-5 shrink-0 rounded-sm object-contain"
+      />
+    )
+  }
+
+  const Icon: LucideIcon = link.icon
+  return <Icon />
+}
+
 function NavLinkItem({
   link,
   pathname,
@@ -79,7 +98,6 @@ function NavLinkItem({
   accessible: boolean
 }) {
   const { setOpenMobile } = useSidebar()
-  const Icon: LucideIcon = link.icon
   const isActive = accessible && isNavLinkActive(pathname, link)
 
   if (!accessible) {
@@ -94,7 +112,9 @@ function NavLinkItem({
               : undefined
           }
         >
-          <Icon className="text-muted-foreground/70" />
+          <span className={link.logoSrc ? "opacity-70" : undefined}>
+            <NavLinkIcon link={link} />
+          </span>
           <span className="text-muted-foreground/70">{link.title}</span>
           <Lock className="ml-auto size-3.5 text-muted-foreground/50" />
         </SidebarMenuButton>
@@ -126,7 +146,7 @@ function NavLinkItem({
           />
         )}
       >
-        <Icon />
+        <NavLinkIcon link={link} />
         <span>{link.title}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>

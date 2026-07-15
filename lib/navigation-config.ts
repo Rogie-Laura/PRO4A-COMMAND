@@ -18,11 +18,14 @@ import {
 } from "lucide-react"
 
 import type { DivisionId } from "@/lib/division-scope"
+import { DIVISION_NAV_LOGOS, PRO4A_LOGO } from "@/lib/brand-config"
 
 export type NavLink = {
   title: string
   href: string
   icon: LucideIcon
+  /** Division / section logo shown in the sidebar instead of the Lucide icon. */
+  logoSrc?: string
   /** Shown in sidebar tooltip when collapsed. */
   description?: string
   /** Additional routes that should highlight this nav item as active. */
@@ -40,14 +43,16 @@ export const MAIN_NAV: NavLink[] = [
     title: "PRO4A Status",
     href: "/pro4a-status",
     icon: Activity,
+    logoSrc: PRO4A_LOGO.src,
     description: "Regional ranking, alert level, and terrorism threat status",
   },
   { title: "RPRMD", href: "/rprmd", icon: BarChart3, activePaths: ["/rprmd", "/rprmd/upload"], divisionId: "rprmd" },
-  { title: "RID", href: "/rid", icon: Search, divisionId: "rid" },
+  { title: "RID", href: "/rid", icon: Search, logoSrc: DIVISION_NAV_LOGOS.rid, divisionId: "rid" },
   {
     title: "ROD",
     href: "/police-intervention",
     icon: Scale,
+    logoSrc: DIVISION_NAV_LOGOS.rod,
     activePaths: ["/police-intervention"],
     divisionId: "rod",
   },
@@ -58,7 +63,7 @@ export const MAIN_NAV: NavLink[] = [
     activePaths: ["/rlrdd", "/mobility", "/firearms", "/camps-offices"],
     divisionId: "rlrdd",
   },
-  { title: "RCADD", href: "/rcadd", icon: Users, divisionId: "rcadd" },
+  { title: "RCADD", href: "/rcadd", icon: Users, logoSrc: DIVISION_NAV_LOGOS.rcadd, divisionId: "rcadd" },
   { title: "RCD", href: "/rcd", icon: FileText, hidden: true, divisionId: "rcd" },
   {
     title: "RIDMD",
@@ -80,6 +85,7 @@ export const MAIN_NAV: NavLink[] = [
     title: "RICTMD",
     href: "/ict-equipment-inventory",
     icon: Monitor,
+    logoSrc: DIVISION_NAV_LOGOS.rictmd,
     activePaths: ["/ict-equipment-inventory", "/ict-equipment-inventory/upload"],
     divisionId: "rictmd",
   },
@@ -87,6 +93,7 @@ export const MAIN_NAV: NavLink[] = [
     title: "Health and BMI",
     href: "/health-and-bmi",
     icon: HeartPulse,
+    logoSrc: DIVISION_NAV_LOGOS.rictmd,
     divisionId: "rictmd",
   },
   { title: "Station Profiles", href: "/station-profiles", icon: MapPinned, hidden: true },
