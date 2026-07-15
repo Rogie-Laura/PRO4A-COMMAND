@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 
+import { CommunityMobilizationUploadCard } from "@/components/settings/community-mobilization-upload-card"
 import { DrugClearingUploadCard } from "@/components/settings/drug-clearing-upload-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
 import {
@@ -10,6 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { getSession, requireDivisionUploadSession } from "@/lib/auth/get-session"
+import { getLatestCommunityMobilizationUploadBatch } from "@/lib/community-mobilization-records"
+import type { CommunityMobilizationUploadBatchInfo } from "@/lib/community-mobilization-types"
 import { getLatestDrugClearingUploadBatch } from "@/lib/drug-clearing-records"
 import type { DrugClearingUploadBatchInfo } from "@/lib/drug-clearing-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
@@ -34,6 +37,8 @@ export default async function RcaddUploadPage() {
   let uploadError: string | null = null
   let latestDrugClearingBatch: DrugClearingUploadBatchInfo | null = null
   let drugClearingUploadError: string | null = null
+  let latestCmpBatch: CommunityMobilizationUploadBatchInfo | null = null
+  let cmpUploadError: string | null = null
 
   try {
     latestBatch = await getLatestRcaddUploadBatch()
@@ -49,14 +54,24 @@ export default async function RcaddUploadPage() {
       error instanceof Error ? error.message : "Unable to load drug clearing upload status."
   }
 
+  try {
+    latestCmpBatch = await getLatestCommunityMobilizationUploadBatch()
+  } catch (error) {
+    cmpUploadError =
+      error instanceof Error
+        ? error.message
+        : "Unable to load Community Mobilization upload status."
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
         <CardHeader>
           <CardTitle className="text-base">RCADD File Upload</CardTitle>
           <CardDescription>
-            Upload ang RCADD accomplishment workbook at drug_clearing.xlsx para sa RSRI,
-            mobilized barangays, Project L.A.K.A.S, at Drug Clearing dashboard.
+            Upload ang RCADD accomplishment workbook, CMP.xlsx (Community Mobilization), at
+            drug_clearing.xlsx para sa RSRI, Project L.A.K.A.S, Community Mobilization, at Drug
+            Clearing dashboard.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -77,6 +92,19 @@ export default async function RcaddUploadPage() {
         </Card>
       ) : (
         <RcaddUploadCard latestBatch={latestBatch} compact />
+      )}
+
+      {cmpUploadError ? (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Upload Community Mobilization (CMP)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{cmpUploadError}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <CommunityMobilizationUploadCard latestBatch={latestCmpBatch} compact />
       )}
 
       {drugClearingUploadError ? (

@@ -71,6 +71,11 @@ import {
 } from "@/lib/drug-clearing-records"
 import { parseDrugClearingXlsx } from "@/lib/drug-clearing-xlsx-parser"
 import {
+  COMMUNITY_MOBILIZATION_ANALYTICS_CACHE_TAG,
+  replaceCommunityMobilizationWorkbook,
+} from "@/lib/community-mobilization-records"
+import { parseCommunityMobilizationXlsx } from "@/lib/community-mobilization-xlsx-parser"
+import {
   RCADD_ANALYTICS_CACHE_TAG,
   replaceRcaddWorkbook,
 } from "@/lib/rcadd-accomplishment-records"
@@ -1031,6 +1036,52 @@ export async function uploadDrugClearingWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang drug clearing upload. Subukan ulit.")
+  }
+}
+
+export async function uploadCommunityMobilizationWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rcadd")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_UPER_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 5 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseCommunityMobilizationXlsx(buffer)
+    const result = await replaceCommunityMobilizationWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(COMMUNITY_MOBILIZATION_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/rcadd")
+    revalidatePath("/rcadd/upload")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang Community Mobilization upload. Subukan ulit.")
   }
 }
 

@@ -20,6 +20,7 @@ import { AdminHoldingUploadCard } from "@/components/settings/admin-holding-uplo
 import { IctEquipmentUploadCard } from "@/components/settings/ict-equipment-upload-card"
 import { AlertLevelSettingsCard } from "@/components/settings/alert-level-settings-card"
 import { DrugClearingUploadCard } from "@/components/settings/drug-clearing-upload-card"
+import { CommunityMobilizationUploadCard } from "@/components/settings/community-mobilization-upload-card"
 import { RcaddUploadCard } from "@/components/settings/rcadd-upload-card"
 import { EstablishmentUploadCard } from "@/components/settings/establishment-upload-card"
 import { ThemeSettingsCard } from "@/components/settings/theme-settings-card"
@@ -68,6 +69,8 @@ import { getLatestIctEquipmentUploadBatch } from "@/lib/ict-equipment-records"
 import type { IctEquipmentUploadBatchInfo } from "@/lib/ict-equipment-types"
 import { getLatestDrugClearingUploadBatch } from "@/lib/drug-clearing-records"
 import type { DrugClearingUploadBatchInfo } from "@/lib/drug-clearing-types"
+import { getLatestCommunityMobilizationUploadBatch } from "@/lib/community-mobilization-records"
+import type { CommunityMobilizationUploadBatchInfo } from "@/lib/community-mobilization-types"
 import { getLatestRcaddUploadBatch } from "@/lib/rcadd-accomplishment-records"
 import type { RcaddUploadBatchInfo } from "@/lib/rcadd-accomplishment-types"
 import { getLatestEstablishmentUploadBatch } from "@/lib/establishment-records"
@@ -132,6 +135,8 @@ export default async function SettingsPage() {
   let rcaddUploadError: string | null = null
   let latestDrugClearingBatch: DrugClearingUploadBatchInfo | null = null
   let drugClearingUploadError: string | null = null
+  let latestCmpBatch: CommunityMobilizationUploadBatchInfo | null = null
+  let cmpUploadError: string | null = null
   let latestEstablishmentBatch: EstablishmentUploadBatchInfo | null = null
   let establishmentUploadError: string | null = null
   let alertLevel: AlertLevelId = "normal"
@@ -331,6 +336,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load drug clearing upload status from Supabase."
+    }
+
+    try {
+      latestCmpBatch = await getLatestCommunityMobilizationUploadBatch()
+    } catch (error) {
+      cmpUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load Community Mobilization upload status from Supabase."
     }
 
     try {
@@ -688,6 +702,25 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <RcaddUploadCard latestBatch={latestRcaddBatch} />
+            )}
+
+            {cmpUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Community Mobilization (CMP)</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{cmpUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration
+                    `20260715110000_create_community_mobilization_upload_batches.sql` kung wala pa
+                    ang `community_mobilization_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <CommunityMobilizationUploadCard latestBatch={latestCmpBatch} />
             )}
 
             {drugClearingUploadError ? (
