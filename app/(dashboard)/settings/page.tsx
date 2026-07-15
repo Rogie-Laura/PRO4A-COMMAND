@@ -34,7 +34,7 @@ import {
 import { listAccessTokens, type AccessTokenListItem } from "@/lib/access-tokens"
 import { getSession } from "@/lib/auth/get-session"
 import { isSuperAdmin } from "@/lib/auth/roles"
-import { getLatestBmiUploadBatch, type BmiUploadBatchInfo } from "@/lib/bmi-records"
+import { listBmiStoredMonths, type BmiUploadBatchInfo } from "@/lib/bmi-records"
 import { getLatestCrimeUploadBatch, type CrimeUploadBatchInfo } from "@/lib/crime-records"
 import {
   getLatestFirearmsUploadBatch,
@@ -94,6 +94,7 @@ export default async function SettingsPage() {
   let tokens: AccessTokenListItem[] = []
   let tokenError: string | null = null
   let latestBmiBatch: BmiUploadBatchInfo | null = null
+  let storedBmiMonths: BmiUploadBatchInfo[] = []
   let bmiUploadError: string | null = null
   let latestCrimeBatch: CrimeUploadBatchInfo | null = null
   let crimeUploadError: string | null = null
@@ -161,7 +162,8 @@ export default async function SettingsPage() {
     }
 
     try {
-      latestBmiBatch = await getLatestBmiUploadBatch()
+      storedBmiMonths = await listBmiStoredMonths()
+      latestBmiBatch = storedBmiMonths[0] ?? null
     } catch (error) {
       bmiUploadError =
         error instanceof Error
@@ -383,7 +385,7 @@ export default async function SettingsPage() {
                 </CardContent>
               </Card>
             ) : (
-              <BmiUploadCard latestBatch={latestBmiBatch} />
+              <BmiUploadCard latestBatch={latestBmiBatch} storedMonths={storedBmiMonths} />
             )}
 
             {crimeUploadError ? (

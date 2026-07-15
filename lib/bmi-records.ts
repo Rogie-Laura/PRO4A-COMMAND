@@ -10,12 +10,36 @@ import type { ParsedBmiRecord } from "@/lib/bmi-xlsx-parser"
 const INSERT_CHUNK_SIZE = 1000
 const FETCH_PAGE_SIZE = 1000
 
+const MAX_RETAINED_MONTHS = 12
+
 export type BmiUploadBatchInfo = {
   id: string
   filename: string
   uploadedByLabel: string | null
   recordCount: number
   createdAt: string
+  periodMonth: string | null
+}
+
+/** Minimal per-person row used for month-over-month tracking. */
+export type BmiComparisonRow = {
+  rankFullname: string
+  fullName: string
+  rank: string
+  subUnit: string
+  assignment: string
+  age: number | null
+  weightKg: number | null
+  categoryId: BmiCategoryId | null
+  bmiResult: number | null
+}
+
+export type BmiMonthBatch = {
+  id: string
+  filename: string
+  periodMonth: string | null
+  createdAt: string
+  rows: BmiComparisonRow[]
 }
 
 export type StoredBmiRecord = {
@@ -48,6 +72,7 @@ type StoredBmiBatchRow = {
   uploaded_by_label: string | null
   record_count: number
   created_at: string
+  period_month: string | null
   analytics: unknown
 }
 
@@ -57,6 +82,7 @@ function mapBatch(row: {
   uploaded_by_label: string | null
   record_count: number
   created_at: string
+  period_month?: string | null
 }): BmiUploadBatchInfo {
   return {
     id: row.id,
@@ -64,7 +90,30 @@ function mapBatch(row: {
     uploadedByLabel: row.uploaded_by_label,
     recordCount: row.record_count,
     createdAt: row.created_at,
+    periodMonth: row.period_month ?? null,
   }
+}
+
+/** The dominant YYYY-MM among the records' Date Taken values (null if none dated). */
+function deriveMonthKey(records: ParsedBmiRecord[]): string | null {
+  const counts = new Map<string, number>()
+  for (const record of records) {
+    if (!record.dateTaken) continue
+    const monthKey = record.dateTaken.slice(0, 7)
+    if (monthKey.length !== 7) continue
+    counts.set(monthKey, (counts.get(monthKey) ?? 0) + 1)
+  }
+
+  let best: string | null = null
+  let bestCount = 0
+  for (const [monthKey, count] of counts) {
+    if (count > bestCount) {
+      bestCount = count
+      best = monthKey
+    }
+  }
+
+  return best
 }
 
 function mapStoredRecord(row: {
@@ -166,7 +215,8 @@ async function getLatestStoredBmiBatch(): Promise<StoredBmiBatchRow | null> {
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from("bmi_upload_batches")
-    .select("id, filename, uploaded_by_label, record_count, created_at, analytics")
+    .select("id, filename, uploaded_by_label, record_count, created_at, period_month, analytics")
+    .order("period_month", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle()
@@ -351,6 +401,7 @@ export async function replaceBmiRecords({
 }: ReplaceBmiRecordsInput): Promise<ReplaceBmiRecordsResult> {
   const supabase = createAdminClient()
   const uploadedAt = new Date().toISOString()
+  const periodMonth = deriveMonthKey(records)
   const analytics = buildHealthAnalyticsSummaryFromParsedRecords(records, {
     fileName: filename,
     lastUpdated: uploadedAt,
@@ -362,9 +413,10 @@ export async function replaceBmiRecords({
       filename,
       uploaded_by_label: uploadedByLabel,
       record_count: records.length,
+      period_month: periodMonth,
       analytics,
     })
-    .select("id, filename, uploaded_by_label, record_count, created_at")
+    .select("id, filename, uploaded_by_label, record_count, created_at, period_month")
     .single()
 
   if (batchError || !batch) {
@@ -384,17 +436,143 @@ export async function replaceBmiRecords({
     }
   }
 
-  const { error: cleanupError } = await supabase
-    .from("bmi_upload_batches")
-    .delete()
-    .neq("id", batch.id)
+  // Retain one batch per month: only replace a prior upload for the SAME month
+  // (or the untagged legacy batch when this upload has no dated rows).
+  const replaceSameMonth = supabase.from("bmi_upload_batches").delete().neq("id", batch.id)
+  const { error: cleanupError } = periodMonth
+    ? await replaceSameMonth.eq("period_month", periodMonth)
+    : await replaceSameMonth.is("period_month", null)
 
   if (cleanupError) {
     throw new Error(cleanupError.message)
   }
 
+  await pruneOldBmiMonths(supabase)
+
   return {
     batch: mapBatch(batch),
     insertedCount: records.length,
+  }
+}
+
+/** Keep only the most recent MAX_RETAINED_MONTHS monthly snapshots. */
+async function pruneOldBmiMonths(supabase: ReturnType<typeof createAdminClient>) {
+  const { data, error } = await supabase
+    .from("bmi_upload_batches")
+    .select("period_month")
+    .not("period_month", "is", null)
+
+  if (error || !data) return
+
+  const months = Array.from(new Set(data.map((row) => row.period_month as string))).sort((a, b) =>
+    b.localeCompare(a),
+  )
+
+  const monthsToDrop = months.slice(MAX_RETAINED_MONTHS)
+  if (monthsToDrop.length === 0) return
+
+  await supabase.from("bmi_upload_batches").delete().in("period_month", monthsToDrop)
+}
+
+/** All stored monthly snapshots, newest month first. */
+export async function listBmiStoredMonths(): Promise<BmiUploadBatchInfo[]> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("bmi_upload_batches")
+    .select("id, filename, uploaded_by_label, record_count, created_at, period_month")
+    .order("period_month", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data ?? []).map(mapBatch)
+}
+
+async function fetchComparisonRows(batchId: string): Promise<BmiComparisonRow[]> {
+  const supabase = createAdminClient()
+  const rows: BmiComparisonRow[] = []
+  let from = 0
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("bmi_records")
+      .select("rank_fullname, full_name, rank, sub_unit, assignment, age, weight_kg, bmi_category_id, bmi_result")
+      .eq("batch_id", batchId)
+      .order("id", { ascending: true })
+      .range(from, from + FETCH_PAGE_SIZE - 1)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    if (!data || data.length === 0) break
+
+    for (const row of data) {
+      rows.push({
+        rankFullname: row.rank_fullname ?? "",
+        fullName: row.full_name ?? "",
+        rank: row.rank ?? "",
+        subUnit: row.sub_unit ?? "",
+        assignment: row.assignment ?? "",
+        age: row.age != null ? Number(row.age) : null,
+        weightKg: row.weight_kg != null ? Number(row.weight_kg) : null,
+        categoryId: (row.bmi_category_id as BmiCategoryId | null) ?? null,
+        bmiResult: row.bmi_result != null ? Number(row.bmi_result) : null,
+      })
+    }
+
+    if (data.length < FETCH_PAGE_SIZE) break
+    from += FETCH_PAGE_SIZE
+  }
+
+  return rows
+}
+
+/**
+ * The two newest monthly snapshots (current + previous) with their per-person rows,
+ * for month-over-month weight and BMI-category movement. Returns null when fewer
+ * than two months are stored.
+ */
+export async function fetchTwoRecentBmiBatchesForComparison(): Promise<{
+  current: BmiMonthBatch
+  previous: BmiMonthBatch
+} | null> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("bmi_upload_batches")
+    .select("id, filename, created_at, period_month")
+    .order("period_month", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(2)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if (!data || data.length < 2) return null
+
+  const [currentMeta, previousMeta] = data
+  const [currentRows, previousRows] = await Promise.all([
+    fetchComparisonRows(currentMeta.id),
+    fetchComparisonRows(previousMeta.id),
+  ])
+
+  return {
+    current: {
+      id: currentMeta.id,
+      filename: currentMeta.filename,
+      periodMonth: currentMeta.period_month ?? null,
+      createdAt: currentMeta.created_at,
+      rows: currentRows,
+    },
+    previous: {
+      id: previousMeta.id,
+      filename: previousMeta.filename,
+      periodMonth: previousMeta.period_month ?? null,
+      createdAt: previousMeta.created_at,
+      rows: previousRows,
+    },
   }
 }

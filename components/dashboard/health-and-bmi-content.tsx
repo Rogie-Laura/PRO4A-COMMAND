@@ -1,8 +1,10 @@
 import { BmiCategoryCards } from "@/components/dashboard/bmi-category-cards"
+import { BmiTrackingCards } from "@/components/dashboard/bmi-tracking-cards"
 import { HealthAndBmiRefreshButton } from "@/components/dashboard/health-and-bmi-refresh-button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getHealthAnalytics } from "@/lib/health-analytics"
+import { getBmiTracking } from "@/lib/bmi-tracking"
 
 export function HealthAndBmiLoading() {
   return (
@@ -18,7 +20,7 @@ export function HealthAndBmiLoading() {
 }
 
 export async function HealthAndBmiContent() {
-  const data = await getHealthAnalytics()
+  const [data, tracking] = await Promise.all([getHealthAnalytics(), getBmiTracking()])
 
   return (
     <div className="relative space-y-6">
@@ -44,6 +46,8 @@ export async function HealthAndBmiContent() {
       )}
 
       <BmiCategoryCards categories={data.categories} totalAssessed={data.totalAssessed} />
+
+      {data.dataReady ? <BmiTrackingCards tracking={tracking} /> : null}
     </div>
   )
 }

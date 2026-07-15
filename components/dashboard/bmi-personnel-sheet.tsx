@@ -17,6 +17,8 @@ type BmiPersonnelSheetProps = {
   isLoading?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
+  /** Overrides the default "N personnel in this BMI category" description. */
+  describe?: (count: number) => string
 }
 
 function PersonCard({ person }: { person: BmiPersonnelDetail }) {
@@ -55,6 +57,7 @@ export function BmiPersonnelSheet({
   isLoading = false,
   open,
   onOpenChange,
+  describe,
 }: BmiPersonnelSheetProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,7 +69,9 @@ export function BmiPersonnelSheet({
               <DialogDescription>
                 {isLoading
                   ? "Loading personnel list…"
-                  : `${personnel.length.toLocaleString()} personnel in this BMI category`}
+                  : describe
+                    ? describe(personnel.length)
+                    : `${personnel.length.toLocaleString()} personnel in this BMI category`}
               </DialogDescription>
             </DialogHeader>
 

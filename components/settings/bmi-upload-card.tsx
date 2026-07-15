@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { BMI_CATEGORIES } from "@/lib/bmi-config"
+import { formatMonthKeyLabel } from "@/lib/bmi-month"
 import type { BmiUploadBatchInfo } from "@/lib/bmi-records"
 import { formatPhilippinesDateTime } from "@/lib/format-datetime"
 import {
@@ -27,6 +28,7 @@ import { validateXlsxFile } from "@/lib/upload-file-validation"
 
 type BmiUploadCardProps = {
   latestBatch: BmiUploadBatchInfo | null
+  storedMonths?: BmiUploadBatchInfo[]
 }
 
 type UploadSummary = {
@@ -35,7 +37,7 @@ type UploadSummary = {
   categoryPreview: Partial<Record<(typeof BMI_CATEGORIES)[number]["id"], number>>
 }
 
-export function BmiUploadCard({ latestBatch }: BmiUploadCardProps) {
+export function BmiUploadCard({ latestBatch, storedMonths = [] }: BmiUploadCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -89,8 +91,10 @@ export function BmiUploadCard({ latestBatch }: BmiUploadCardProps) {
           </CardTitle>
           <CardDescription>
             Super Admin lang. Gamitin ang sample Excel format (Rank Fullname, SubUnitDesc, Assignment,
-            BMI Class, Age, Height, Weight, atbp.). Kapag may upload, iyon ang gagamitin ng Health &
-            BMI dashboard. Maaaring tumagal ng 1–2 minuto ang malaking file (~14k rows).
+            BMI Class, Age, Height, Weight, atbp.). Naka-tag ang bawat upload ayon sa buwan ng{" "}
+            <span className="font-medium">Date Taken</span>, kaya iniingatan ang bawat buwan — hindi
+            na binubura ang naunang buwan. Kailangan ng dalawang buwan para lumabas ang weight/BMI
+            tracking. Maaaring tumagal ng 1–2 minuto ang malaking file (~14k rows).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -112,6 +116,26 @@ export function BmiUploadCard({ latestBatch }: BmiUploadCardProps) {
               & BMI page.
             </p>
           )}
+
+          {storedMonths.length > 0 ? (
+            <div className="rounded-lg border bg-muted/10 p-4 text-sm">
+              <p className="font-medium">Naka-store na buwan ({storedMonths.length})</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {storedMonths.map((month) => (
+                  <Badge key={month.id} variant="secondary">
+                    {month.periodMonth ? formatMonthKeyLabel(month.periodMonth) : month.filename} ·{" "}
+                    {month.recordCount.toLocaleString()}
+                  </Badge>
+                ))}
+              </div>
+              {storedMonths.length < 2 ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Mag-upload ng isa pang buwan (hal. May 2026) para lumabas ang buwan-sa-buwan na
+                  tracking sa Health &amp; BMI page.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className={UPLOAD_DROPZONE_CLASS}>
             <label className="block space-y-2 text-sm">
