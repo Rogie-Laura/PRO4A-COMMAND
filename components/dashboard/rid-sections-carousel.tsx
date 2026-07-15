@@ -7,12 +7,14 @@ import { useDashboardToolbarNav } from "@/components/dashboard/dashboard-toolbar
 import { ForeignNationalTable } from "@/components/dashboard/foreign-national-table"
 import { IllegalDrugsCards } from "@/components/dashboard/illegal-drugs-cards"
 import { IntelEligibilityCards } from "@/components/dashboard/intel-eligibility-cards"
+import { RandomDrugTestPanel } from "@/components/dashboard/random-drug-test-panel"
 import { RidSectionHeader } from "@/components/dashboard/rid-section-header"
 import { SurrenderedCtgfTable } from "@/components/dashboard/surrendered-ctgf-table"
 import type { CriminalGangsAnalytics } from "@/lib/criminal-gangs-types"
 import type { ForeignNationalAnalytics } from "@/lib/foreign-national-types"
 import type { IllegalDrugsAnalytics } from "@/lib/illegal-drugs-types"
 import type { IntelEligibilityAnalytics } from "@/lib/intel-eligibility-types"
+import type { RandomDrugTestAnalytics } from "@/lib/random-drug-test-types"
 import type { SurrenderedCtgfAnalytics } from "@/lib/surrendered-ctgf-types"
 import { cn } from "@/lib/utils"
 
@@ -22,6 +24,7 @@ type RidSectionsCarouselProps = {
   surrenderedCtgf: SurrenderedCtgfAnalytics
   foreignNational: ForeignNationalAnalytics
   intelEligibility: IntelEligibilityAnalytics
+  randomDrugTest: RandomDrugTestAnalytics
 }
 
 type RidSlide = {
@@ -39,6 +42,7 @@ export function RidSectionsCarousel({
   surrenderedCtgf,
   foreignNational,
   intelEligibility,
+  randomDrugTest,
 }: RidSectionsCarouselProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
@@ -115,6 +119,23 @@ export function RidSectionsCarousel({
             dataReady={intelEligibility.dataReady}
           />
           <IntelEligibilityCards analytics={intelEligibility} />
+        </section>
+      ),
+    },
+    {
+      id: "random-drug-test",
+      label: "Random Drug Test",
+      navLabel: "Random Drug Test",
+      dotClassName: "bg-cyan-500",
+      content: (
+        <section className="space-y-4">
+          <RidSectionHeader
+            title="Random Drug Test"
+            description="Personnel who underwent random drug testing by unit/office"
+            uploadedAt={randomDrugTest.lastUpdated}
+            dataReady={randomDrugTest.dataReady}
+          />
+          <RandomDrugTestPanel analytics={randomDrugTest} />
         </section>
       ),
     },

@@ -66,6 +66,11 @@ import {
 } from "@/lib/terrorism-threat-records"
 import { parseTerrorismThreatXlsx } from "@/lib/terrorism-threat-xlsx-parser"
 import {
+  RANDOM_DRUG_TEST_ANALYTICS_CACHE_TAG,
+  replaceRandomDrugTestWorkbook,
+} from "@/lib/random-drug-test-records"
+import { parseRandomDrugTestXlsx } from "@/lib/random-drug-test-xlsx-parser"
+import {
   DRUG_CLEARING_ANALYTICS_CACHE_TAG,
   replaceDrugClearingWorkbook,
 } from "@/lib/drug-clearing-records"
@@ -760,6 +765,52 @@ export async function uploadTerrorismThreatWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang terrorism threat upload. Subukan ulit.")
+  }
+}
+
+export async function uploadRandomDrugTestWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rid")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx).")
+    }
+
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_UPER_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 5 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseRandomDrugTestXlsx(buffer)
+    const result = await replaceRandomDrugTestWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(RANDOM_DRUG_TEST_ANALYTICS_CACHE_TAG)
+    revalidatePath("/settings")
+    revalidatePath("/rid")
+    revalidatePath("/rid/upload")
+
+    return {
+      batch: result.batch,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang Random Drug Test upload. Subukan ulit.")
   }
 }
 

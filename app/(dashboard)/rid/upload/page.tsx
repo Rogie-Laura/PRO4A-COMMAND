@@ -4,6 +4,7 @@ import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-up
 import { ForeignNationalUploadCard } from "@/components/settings/foreign-national-upload-card"
 import { IllegalDrugsUploadCard } from "@/components/settings/illegal-drugs-upload-card"
 import { IntelEligibilityUploadCard } from "@/components/settings/intel-eligibility-upload-card"
+import { RandomDrugTestUploadCard } from "@/components/settings/random-drug-test-upload-card"
 import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctgf-upload-card"
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
 import {
@@ -18,12 +19,14 @@ import { getLatestCriminalGangsUploadBatch } from "@/lib/criminal-gangs-records"
 import { getLatestForeignNationalUploadBatch } from "@/lib/foreign-national-records"
 import { getLatestIllegalDrugsUploadBatch } from "@/lib/illegal-drugs-records"
 import { getLatestIntelEligibilityUploadBatch } from "@/lib/intel-eligibility-records"
+import { getLatestRandomDrugTestUploadBatch } from "@/lib/random-drug-test-records"
 import { getLatestSurrenderedCtgfUploadBatch } from "@/lib/surrendered-ctgf-records"
 import { getLatestTerrorismThreatUploadBatch } from "@/lib/terrorism-threat-records"
 import type { CriminalGangsUploadBatchInfo } from "@/lib/criminal-gangs-types"
 import type { ForeignNationalUploadBatchInfo } from "@/lib/foreign-national-types"
 import type { IllegalDrugsUploadBatchInfo } from "@/lib/illegal-drugs-types"
 import type { IntelEligibilityUploadBatchInfo } from "@/lib/intel-eligibility-types"
+import type { RandomDrugTestUploadBatchInfo } from "@/lib/random-drug-test-types"
 import type { SurrenderedCtgfUploadBatchInfo } from "@/lib/surrendered-ctgf-types"
 import type { TerrorismThreatUploadBatchInfo } from "@/lib/terrorism-threat-types"
 
@@ -48,12 +51,14 @@ export default async function RidUploadPage() {
   let latestSurrenderedCtgfBatch: SurrenderedCtgfUploadBatchInfo | null = null
   let latestTerrorismThreatBatch: TerrorismThreatUploadBatchInfo | null = null
   let latestForeignNationalBatch: ForeignNationalUploadBatchInfo | null = null
+  let latestRandomDrugTestBatch: RandomDrugTestUploadBatchInfo | null = null
   let intelEligibilityUploadError: string | null = null
   let illegalDrugsUploadError: string | null = null
   let criminalGangsUploadError: string | null = null
   let surrenderedCtgfUploadError: string | null = null
   let terrorismThreatUploadError: string | null = null
   let foreignNationalUploadError: string | null = null
+  let randomDrugTestUploadError: string | null = null
 
   try {
     latestIntelEligibilityBatch = await getLatestIntelEligibilityUploadBatch()
@@ -99,6 +104,13 @@ export default async function RidUploadPage() {
       error instanceof Error ? error.message : "Unable to load foreign national upload status."
   }
 
+  try {
+    latestRandomDrugTestBatch = await getLatestRandomDrugTestUploadBatch()
+  } catch (error) {
+    randomDrugTestUploadError =
+      error instanceof Error ? error.message : "Unable to load Random Drug Test upload status."
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Card className="border-dashed border-muted-foreground/25 bg-muted/10">
@@ -107,7 +119,7 @@ export default async function RidUploadPage() {
           <CardDescription>
             Upload ang Intelligence Eligibility List.xlsx, ILLEGAL DRUGS.xlsx, ACCOMPLISHMENTS ON
             CRIMINAL GANGS.xlsx, SURRENDERED CTGs AND FAs.xlsx, Incident Report Involving Foreign
-            National.xlsx, at TERRORISM THREAT LEVEL.xlsx.
+            National.xlsx, TERRORISM THREAT LEVEL.xlsx, at RANDOM DRUG TEST.xlsx.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -193,6 +205,19 @@ export default async function RidUploadPage() {
         </Card>
       ) : (
         <ForeignNationalUploadCard latestBatch={latestForeignNationalBatch} compact />
+      )}
+
+      {randomDrugTestUploadError ? (
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle>Upload Random Drug Test</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-destructive">{randomDrugTestUploadError}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <RandomDrugTestUploadCard latestBatch={latestRandomDrugTestBatch} compact />
       )}
     </div>
   )

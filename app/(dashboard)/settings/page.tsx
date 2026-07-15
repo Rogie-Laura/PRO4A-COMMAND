@@ -11,6 +11,7 @@ import { LegislativeAgendaUploadCard } from "@/components/settings/legislative-a
 import { StationClassificationUploadCard } from "@/components/settings/station-classification-upload-card"
 import { TerrorismThreatUploadCard } from "@/components/settings/terrorism-threat-upload-card"
 import { IllegalDrugsUploadCard } from "@/components/settings/illegal-drugs-upload-card"
+import { RandomDrugTestUploadCard } from "@/components/settings/random-drug-test-upload-card"
 import { CriminalGangsUploadCard } from "@/components/settings/criminal-gangs-upload-card"
 import { IntelEligibilityUploadCard } from "@/components/settings/intel-eligibility-upload-card"
 import { SurrenderedCtgfUploadCard } from "@/components/settings/surrendered-ctgf-upload-card"
@@ -53,6 +54,8 @@ import { getLatestTerrorismThreatUploadBatch } from "@/lib/terrorism-threat-reco
 import type { TerrorismThreatUploadBatchInfo } from "@/lib/terrorism-threat-types"
 import { getLatestIllegalDrugsUploadBatch } from "@/lib/illegal-drugs-records"
 import type { IllegalDrugsUploadBatchInfo } from "@/lib/illegal-drugs-types"
+import { getLatestRandomDrugTestUploadBatch } from "@/lib/random-drug-test-records"
+import type { RandomDrugTestUploadBatchInfo } from "@/lib/random-drug-test-types"
 import { getLatestCriminalGangsUploadBatch } from "@/lib/criminal-gangs-records"
 import type { CriminalGangsUploadBatchInfo } from "@/lib/criminal-gangs-types"
 import { getLatestIntelEligibilityUploadBatch } from "@/lib/intel-eligibility-records"
@@ -117,6 +120,8 @@ export default async function SettingsPage() {
   let terrorismThreatUploadError: string | null = null
   let latestIllegalDrugsBatch: IllegalDrugsUploadBatchInfo | null = null
   let illegalDrugsUploadError: string | null = null
+  let latestRandomDrugTestBatch: RandomDrugTestUploadBatchInfo | null = null
+  let randomDrugTestUploadError: string | null = null
   let latestIntelEligibilityBatch: IntelEligibilityUploadBatchInfo | null = null
   let intelEligibilityUploadError: string | null = null
   let latestCriminalGangsBatch: CriminalGangsUploadBatchInfo | null = null
@@ -255,6 +260,15 @@ export default async function SettingsPage() {
         error instanceof Error
           ? error.message
           : "Unable to load illegal drugs upload status from Supabase."
+    }
+
+    try {
+      latestRandomDrugTestBatch = await getLatestRandomDrugTestUploadBatch()
+    } catch (error) {
+      randomDrugTestUploadError =
+        error instanceof Error
+          ? error.message
+          : "Unable to load Random Drug Test upload status from Supabase."
     }
 
     try {
@@ -558,6 +572,25 @@ export default async function SettingsPage() {
               </Card>
             ) : (
               <IllegalDrugsUploadCard latestBatch={latestIllegalDrugsBatch} />
+            )}
+
+            {randomDrugTestUploadError ? (
+              <Card className="border-destructive/30">
+                <CardHeader>
+                  <CardTitle>Upload Random Drug Test</CardTitle>
+                  <CardDescription>Supabase PRO4A_COMMAND connection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-destructive">{randomDrugTestUploadError}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    I-run muna ang Supabase migration
+                    `20260715123000_create_random_drug_test_upload_batches.sql` kung wala pa ang
+                    `random_drug_test_upload_batches` table.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <RandomDrugTestUploadCard latestBatch={latestRandomDrugTestBatch} />
             )}
 
             {intelEligibilityUploadError ? (
