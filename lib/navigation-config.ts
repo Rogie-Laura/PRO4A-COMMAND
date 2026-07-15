@@ -98,7 +98,6 @@ export const MAIN_NAV: NavLink[] = [
     title: RMDU_NAV.title,
     href: RMDU_NAV.href,
     icon: HeartPulse,
-    logoSrc: DIVISION_NAV_LOGOS.rictmd,
     description: RMDU_NAV.fullName,
     divisionId: "rictmd",
   },
