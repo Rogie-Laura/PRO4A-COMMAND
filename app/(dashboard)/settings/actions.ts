@@ -11,8 +11,15 @@ import {
 import { requireSuperAdminSession, requireDivisionUploadSession, requireAlertLevelManageSession, requireCrimeUploadSession } from "@/lib/auth/get-session"
 import type { AccessKeyRole } from "@/lib/auth/roles"
 import type { DivisionId } from "@/lib/division-scope"
-import { getLatestBmiUploadBatch, replaceBmiRecords } from "@/lib/bmi-records"
-import { parseBmiXlsx } from "@/lib/bmi-xlsx-parser"
+import {
+  abortBmiUploadBatch,
+  appendBmiRecordsChunk,
+  beginBmiUploadBatch,
+  finalizeBmiUploadBatch,
+  getLatestBmiUploadBatch,
+  replaceBmiRecords,
+} from "@/lib/bmi-records"
+import { parseBmiXlsx, type ParsedBmiRecord } from "@/lib/bmi-xlsx-parser"
 import { CRIME_ANALYTICS_CACHE_TAG } from "@/lib/crime-analytics"
 import {
   abortCrimeUploadBatch,
@@ -136,6 +143,7 @@ import {
 import { parseIctEquipmentXlsx } from "@/lib/ict-equipment-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
+const MAX_BMI_RECORDS_CHUNK = 800
 const MAX_CRIME_UPLOAD_BYTES = 25 * 1024 * 1024
 const MAX_CRIME_RECORDS_CHUNK = 500
 const MAX_FIREARMS_UPLOAD_BYTES = 5 * 1024 * 1024
@@ -259,6 +267,60 @@ export async function uploadBmiRecordsAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang upload. Subukan ulit o bawasan ang laki ng file.")
+  }
+}
+
+export async function beginBmiUploadAction(filename: string) {
+  const session = await requireSuperAdminSession()
+  const trimmed = filename.trim()
+
+  if (!trimmed.toLowerCase().endsWith(".xlsx")) {
+    throw new Error("Excel (.xlsx) lang ang tinatanggap.")
+  }
+
+  return beginBmiUploadBatch(trimmed, session.label)
+}
+
+export async function appendBmiRecordsChunkAction(batchId: string, records: ParsedBmiRecord[]) {
+  await requireSuperAdminSession()
+
+  if (!batchId.trim()) {
+    throw new Error("Missing upload batch.")
+  }
+
+  if (records.length === 0) {
+    return
+  }
+
+  if (records.length > MAX_BMI_RECORDS_CHUNK) {
+    throw new Error(`Too many records in one chunk (max ${MAX_BMI_RECORDS_CHUNK}).`)
+  }
+
+  await appendBmiRecordsChunk(batchId, records)
+}
+
+export async function abortBmiUploadAction(batchId: string) {
+  await requireSuperAdminSession()
+  if (!batchId.trim()) return
+  await abortBmiUploadBatch(batchId)
+}
+
+export async function finalizeBmiUploadAction(batchId: string) {
+  await requireSuperAdminSession()
+
+  if (!batchId.trim()) {
+    throw new Error("Missing upload batch.")
+  }
+
+  const result = await finalizeBmiUploadBatch(batchId)
+
+  updateTag(HEALTH_ANALYTICS_CACHE_TAG)
+  revalidatePath("/settings")
+  revalidatePath("/health-and-bmi")
+
+  return {
+    batch: result.batch,
+    insertedCount: result.insertedCount,
   }
 }
 

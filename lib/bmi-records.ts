@@ -455,6 +455,159 @@ export async function replaceBmiRecords({
   }
 }
 
+export async function beginBmiUploadBatch(
+  filename: string,
+  uploadedByLabel: string,
+): Promise<BmiUploadBatchInfo> {
+  const supabase = createAdminClient()
+  const { data: batch, error } = await supabase
+    .from("bmi_upload_batches")
+    .insert({
+      filename,
+      uploaded_by_label: uploadedByLabel,
+      record_count: 0,
+    })
+    .select("id, filename, uploaded_by_label, record_count, created_at, period_month")
+    .single()
+
+  if (error || !batch) {
+    throw new Error(error?.message ?? "Unable to create BMI upload batch.")
+  }
+
+  return mapBatch(batch)
+}
+
+export async function appendBmiRecordsChunk(batchId: string, records: ParsedBmiRecord[]) {
+  if (records.length === 0) return
+
+  const supabase = createAdminClient()
+  for (let index = 0; index < records.length; index += INSERT_CHUNK_SIZE) {
+    const chunk = records.slice(index, index + INSERT_CHUNK_SIZE).map((record) =>
+      toInsertRow(batchId, record),
+    )
+
+    const { error } = await supabase.from("bmi_records").insert(chunk)
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+}
+
+export async function abortBmiUploadBatch(batchId: string) {
+  const supabase = createAdminClient()
+  await supabase.from("bmi_upload_batches").delete().eq("id", batchId)
+}
+
+/** Reads back the stored rows to compute category counts + dominant month. */
+async function computeBmiBatchTotals(batchId: string): Promise<{
+  categoryCounts: Record<BmiCategoryId, number>
+  total: number
+  monthKey: string | null
+}> {
+  const supabase = createAdminClient()
+  const categoryCounts = Object.fromEntries(
+    BMI_CATEGORIES.map((category) => [category.id, 0]),
+  ) as Record<BmiCategoryId, number>
+  const monthTallies = new Map<string, number>()
+  let total = 0
+  let from = 0
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("bmi_records")
+      .select("bmi_category_id, date_taken")
+      .eq("batch_id", batchId)
+      .order("id", { ascending: true })
+      .range(from, from + FETCH_PAGE_SIZE - 1)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+
+    if (!data || data.length === 0) break
+
+    for (const row of data) {
+      const categoryId = row.bmi_category_id as BmiCategoryId | null
+      if (categoryId && categoryId in categoryCounts) {
+        categoryCounts[categoryId] += 1
+        total += 1
+      }
+      if (row.date_taken) {
+        const monthKey = String(row.date_taken).slice(0, 7)
+        if (monthKey.length === 7) {
+          monthTallies.set(monthKey, (monthTallies.get(monthKey) ?? 0) + 1)
+        }
+      }
+    }
+
+    if (data.length < FETCH_PAGE_SIZE) break
+    from += FETCH_PAGE_SIZE
+  }
+
+  let monthKey: string | null = null
+  let bestCount = 0
+  for (const [key, count] of monthTallies) {
+    if (count > bestCount) {
+      bestCount = count
+      monthKey = key
+    }
+  }
+
+  return { categoryCounts, total, monthKey }
+}
+
+export async function finalizeBmiUploadBatch(batchId: string): Promise<ReplaceBmiRecordsResult> {
+  const supabase = createAdminClient()
+
+  const { data: batch, error: batchError } = await supabase
+    .from("bmi_upload_batches")
+    .select("id, filename, uploaded_by_label, record_count, created_at, period_month")
+    .eq("id", batchId)
+    .single()
+
+  if (batchError || !batch) {
+    throw new Error(batchError?.message ?? "Unable to load BMI upload batch.")
+  }
+
+  const { categoryCounts, total, monthKey } = await computeBmiBatchTotals(batchId)
+
+  if (total === 0) {
+    await abortBmiUploadBatch(batchId)
+    throw new Error("No valid BMI records were saved for this upload.")
+  }
+
+  const analytics = buildHealthAnalyticsSummaryFromCategoryCounts(categoryCounts, {
+    fileName: batch.filename,
+    lastUpdated: batch.created_at,
+  })
+
+  const { error: updateError } = await supabase
+    .from("bmi_upload_batches")
+    .update({ record_count: total, period_month: monthKey, analytics })
+    .eq("id", batchId)
+
+  if (updateError) {
+    throw new Error(updateError.message)
+  }
+
+  // Retain one batch per month (replace a prior same-month upload only).
+  const replaceSameMonth = supabase.from("bmi_upload_batches").delete().neq("id", batchId)
+  const { error: cleanupError } = monthKey
+    ? await replaceSameMonth.eq("period_month", monthKey)
+    : await replaceSameMonth.is("period_month", null)
+
+  if (cleanupError) {
+    throw new Error(cleanupError.message)
+  }
+
+  await pruneOldBmiMonths(supabase)
+
+  return {
+    batch: mapBatch({ ...batch, record_count: total, period_month: monthKey }),
+    insertedCount: total,
+  }
+}
+
 /** Keep only the most recent MAX_RETAINED_MONTHS monthly snapshots. */
 async function pruneOldBmiMonths(supabase: ReturnType<typeof createAdminClient>) {
   const { data, error } = await supabase

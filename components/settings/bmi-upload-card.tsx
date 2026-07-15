@@ -1,10 +1,18 @@
 "use client"
 
 import { useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { FileSpreadsheetIcon, UploadIcon } from "lucide-react"
 
-import { uploadBmiRecordsAction } from "@/app/(dashboard)/settings/actions"
+import {
+  abortBmiUploadAction,
+  appendBmiRecordsChunkAction,
+  beginBmiUploadAction,
+  finalizeBmiUploadAction,
+} from "@/app/(dashboard)/settings/actions"
 import { useUploadConfirmation } from "@/components/settings/use-upload-confirmation"
+import { parseBmiXlsx, type ParsedBmiRecord } from "@/lib/bmi-xlsx-parser"
+import { formatServerActionError } from "@/lib/server-action-errors"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,6 +34,8 @@ import {
 } from "@/components/settings/upload-card-styles"
 import { validateXlsxFile } from "@/lib/upload-file-validation"
 
+const UPLOAD_CHUNK_SIZE = 500
+
 type BmiUploadCardProps = {
   latestBatch: BmiUploadBatchInfo | null
   storedMonths?: BmiUploadBatchInfo[]
@@ -37,7 +47,16 @@ type UploadSummary = {
   categoryPreview: Partial<Record<(typeof BMI_CATEGORIES)[number]["id"], number>>
 }
 
+function chunkRecords(records: ParsedBmiRecord[], size: number) {
+  const chunks: ParsedBmiRecord[][] = []
+  for (let index = 0; index < records.length; index += size) {
+    chunks.push(records.slice(index, index + size))
+  }
+  return chunks
+}
+
 export function BmiUploadCard({ latestBatch, storedMonths = [] }: BmiUploadCardProps) {
+  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -47,21 +66,57 @@ export function BmiUploadCard({ latestBatch, storedMonths = [] }: BmiUploadCardP
   const { isPending, openConfirmation, confirmDialog } = useUploadConfirmation({
     validateFile: validateXlsxFile,
     onUpload: async (file, { setProgress }) => {
-      setProgress("Ina-upload ang BMI records... (huwag isara ang page)")
-      const formData = new FormData()
-      formData.set("file", file)
-      const result = await uploadBmiRecordsAction(formData)
-      setBatch(result.batch)
-      setSummary({
-        insertedCount: result.insertedCount,
-        skippedRows: result.skippedRows,
-        categoryPreview: result.categoryPreview,
-      })
-      setSuccess(
-        `Na-upload ang ${result.insertedCount.toLocaleString()} BMI records sa Supabase.`,
-      )
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
+      let batchId: string | null = null
+
+      try {
+        setProgress("Binabasa ang Excel file...")
+        const parsed = parseBmiXlsx(await file.arrayBuffer())
+
+        if (parsed.records.length === 0) {
+          throw new Error("Walang valid BMI rows sa file.")
+        }
+
+        const started = await beginBmiUploadAction(file.name)
+        batchId = started.id
+
+        const chunks = chunkRecords(parsed.records, UPLOAD_CHUNK_SIZE)
+        for (let index = 0; index < chunks.length; index += 1) {
+          setProgress(`Sine-save ang records... (${index + 1}/${chunks.length})`)
+          await appendBmiRecordsChunkAction(batchId, chunks[index]!)
+        }
+
+        setProgress("Tinatapos ang upload...")
+        const result = await finalizeBmiUploadAction(batchId)
+        batchId = null
+
+        setBatch(result.batch)
+        setSummary({
+          insertedCount: result.insertedCount,
+          skippedRows: parsed.skippedRows,
+          categoryPreview: parsed.categoryPreview,
+        })
+        setSuccess(
+          `Na-upload ang ${result.insertedCount.toLocaleString()} BMI records sa Supabase.`,
+        )
+        router.refresh()
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+      } catch (uploadError) {
+        if (batchId) {
+          try {
+            await abortBmiUploadAction(batchId)
+          } catch {
+            // Best-effort cleanup for partial uploads.
+          }
+        }
+
+        const message = formatServerActionError(uploadError, "Hindi ma-upload ang BMI records.")
+        throw new Error(
+          message.includes("413") || message.toLowerCase().includes("too large")
+            ? "Masyadong malaki ang request. Subukan ulit — na-chunk na ang upload sa latest version."
+            : message,
+        )
       }
     },
   })
