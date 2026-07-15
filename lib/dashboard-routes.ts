@@ -1,6 +1,13 @@
+import { DIVISION_CONFIG, RMDU_NAV } from "@/lib/division-scope"
+
 export type DashboardRouteMeta = {
   title: string
   description?: string
+}
+
+function divisionMeta(divisionId: keyof typeof DIVISION_CONFIG): DashboardRouteMeta {
+  const division = DIVISION_CONFIG[divisionId]
+  return { title: division.label, description: division.fullName }
 }
 
 export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
@@ -9,62 +16,59 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
     title: "PRO4A Status",
     description: "Regional ranking, alert level, and terrorism threat status",
   },
-  "/rprmd": { title: "RPRMD" },
+  "/rprmd": divisionMeta("rprmd"),
   "/rprmd/upload": {
     title: "Upload File",
     description: "RPRMD admin holding workbook upload",
   },
-  "/rid": { title: "RID" },
+  "/rid": divisionMeta("rid"),
   "/rid/upload": {
     title: "Upload File",
     description: "RID Intelligence Eligibility, illegal drugs, criminal gangs, surrendered CTGs, and terrorism threat uploads",
   },
-  "/rcadd": { title: "RCADD" },
+  "/rcadd": divisionMeta("rcadd"),
   "/rcadd/upload": {
     title: "Upload File",
     description: "RCADD accomplishment workbook upload",
   },
-  "/rcd": { title: "RCD" },
-  "/rpsmd": { title: "RPSMD" },
-  "/rlrdd": {
-    title: "RLRDD",
-    description: "Regional Logistics, Research and Development Division",
-  },
-  "/ridmd": {
-    title: "RIDMD",
-    description: "Regional Investigation and Detection Management Division",
-  },
+  "/rcd": divisionMeta("rcd"),
+  "/rpsmd": divisionMeta("rpsmd"),
+  "/rlrdd": divisionMeta("rlrdd"),
+  "/ridmd": divisionMeta("ridmd"),
   "/mobility": {
     title: "Mobility",
-    description: "Regional fleet registry and vehicle distribution",
+    description: DIVISION_CONFIG.rlrdd.fullName,
   },
-  "/firearms": { title: "Firearms" },
-  "/camps-offices": { title: "Camps and Offices" },
-  "/crime-statistics": { title: "Crime Statistics" },
+  "/firearms": {
+    title: "Firearms",
+    description: DIVISION_CONFIG.rlrdd.fullName,
+  },
+  "/camps-offices": {
+    title: "Camps and Offices",
+    description: DIVISION_CONFIG.rlrdd.fullName,
+  },
+  "/crime-statistics": {
+    title: "Crime Statistics",
+    description: DIVISION_CONFIG.ridmd.fullName,
+  },
   "/comparative-crime-stats": {
     title: "Comparative Crime Stats",
-    description: "Year-over-year and period crime volume comparison",
+    description: DIVISION_CONFIG.ridmd.fullName,
   },
-  "/police-intervention": { title: "Police Intervention" },
+  "/police-intervention": divisionMeta("rod"),
   "/police-intervention/upload": {
     title: "Upload File",
     description: "ROD establishment workbook upload",
   },
-  "/trainings-and-education": {
-    title: "Trainings and Education",
-    description: "Regional training programs and education records",
-  },
-  "/ict-equipment-inventory": {
-    title: "Inventory of ICT Equipment",
-    description: "Regional ICT assets and equipment registry",
-  },
+  "/trainings-and-education": divisionMeta("retd"),
+  "/ict-equipment-inventory": divisionMeta("rictmd"),
   "/ict-equipment-inventory/upload": {
     title: "Upload File",
     description: "RICTMD ICT inventory workbook upload",
   },
   "/health-and-bmi": {
-    title: "Health and BMI",
-    description: "Personnel body mass index classification",
+    title: RMDU_NAV.title,
+    description: RMDU_NAV.fullName,
   },
   "/station-profiles": { title: "Station Profiles" },
   "/rlrdd/upload": {

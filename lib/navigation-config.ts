@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 
 import type { DivisionId } from "@/lib/division-scope"
+import { DIVISION_CONFIG, RMDU_NAV } from "@/lib/division-scope"
 import { DIVISION_NAV_LOGOS, PRO4A_LOGO } from "@/lib/brand-config"
 
 export type NavLink = {
@@ -46,13 +47,14 @@ export const MAIN_NAV: NavLink[] = [
     logoSrc: PRO4A_LOGO.src,
     description: "Regional ranking, alert level, and terrorism threat status",
   },
-  { title: "RPRMD", href: "/rprmd", icon: BarChart3, activePaths: ["/rprmd", "/rprmd/upload"], divisionId: "rprmd" },
-  { title: "RID", href: "/rid", icon: Search, logoSrc: DIVISION_NAV_LOGOS.rid, divisionId: "rid" },
+  { title: "RPRMD", href: "/rprmd", icon: BarChart3, description: DIVISION_CONFIG.rprmd.fullName, activePaths: ["/rprmd", "/rprmd/upload"], divisionId: "rprmd" },
+  { title: "RID", href: "/rid", icon: Search, logoSrc: DIVISION_NAV_LOGOS.rid, description: DIVISION_CONFIG.rid.fullName, divisionId: "rid" },
   {
     title: "ROD",
     href: "/police-intervention",
     icon: Scale,
     logoSrc: DIVISION_NAV_LOGOS.rod,
+    description: DIVISION_CONFIG.rod.fullName,
     activePaths: ["/police-intervention"],
     divisionId: "rod",
   },
@@ -60,16 +62,17 @@ export const MAIN_NAV: NavLink[] = [
     title: "RLRDD",
     href: "/rlrdd",
     icon: Car,
+    description: DIVISION_CONFIG.rlrdd.fullName,
     activePaths: ["/rlrdd", "/mobility", "/firearms", "/camps-offices"],
     divisionId: "rlrdd",
   },
-  { title: "RCADD", href: "/rcadd", icon: Users, logoSrc: DIVISION_NAV_LOGOS.rcadd, divisionId: "rcadd" },
-  { title: "RCD", href: "/rcd", icon: FileText, hidden: true, divisionId: "rcd" },
+  { title: "RCADD", href: "/rcadd", icon: Users, logoSrc: DIVISION_NAV_LOGOS.rcadd, description: DIVISION_CONFIG.rcadd.fullName, divisionId: "rcadd" },
+  { title: "RCD", href: "/rcd", icon: FileText, description: DIVISION_CONFIG.rcd.fullName, divisionId: "rcd" },
   {
     title: "RIDMD",
     href: "/ridmd",
     icon: Shield,
-    description: "Regional Investigation and Detection Management Division",
+    description: DIVISION_CONFIG.ridmd.fullName,
     activePaths: ["/ridmd", "/ridmd/upload", "/crime-statistics", "/comparative-crime-stats"],
     divisionId: "ridmd",
   },
@@ -77,23 +80,26 @@ export const MAIN_NAV: NavLink[] = [
     title: "RETD",
     href: "/trainings-and-education",
     icon: GraduationCap,
+    description: DIVISION_CONFIG.retd.fullName,
     activePaths: ["/trainings-and-education", "/trainings-and-education/upload"],
     divisionId: "retd",
   },
-  { title: "RPSMD", href: "/rpsmd", icon: UserCog, divisionId: "rpsmd" },
+  { title: "RPSMD", href: "/rpsmd", icon: UserCog, description: DIVISION_CONFIG.rpsmd.fullName, divisionId: "rpsmd" },
   {
     title: "RICTMD",
     href: "/ict-equipment-inventory",
     icon: Monitor,
     logoSrc: DIVISION_NAV_LOGOS.rictmd,
+    description: DIVISION_CONFIG.rictmd.fullName,
     activePaths: ["/ict-equipment-inventory", "/ict-equipment-inventory/upload"],
     divisionId: "rictmd",
   },
   {
-    title: "Health and BMI",
-    href: "/health-and-bmi",
+    title: RMDU_NAV.title,
+    href: RMDU_NAV.href,
     icon: HeartPulse,
     logoSrc: DIVISION_NAV_LOGOS.rictmd,
+    description: RMDU_NAV.fullName,
     divisionId: "rictmd",
   },
   { title: "Station Profiles", href: "/station-profiles", icon: MapPinned, hidden: true },
@@ -175,4 +181,13 @@ export const MAIN_NAV: NavLink[] = [
 export function isNavLinkActive(pathname: string, link: NavLink) {
   if (pathname === link.href) return true
   return link.activePaths?.includes(pathname) ?? false
+}
+
+/** Best-matching sidebar nav item for the current route (used by the app header). */
+export function getActiveNavLink(pathname: string): NavLink | undefined {
+  const candidates = MAIN_NAV.filter(
+    (link) => !link.hidden && !link.uploadOnly && isNavLinkActive(pathname, link),
+  )
+
+  return candidates.find((link) => link.href === pathname) ?? candidates[0]
 }

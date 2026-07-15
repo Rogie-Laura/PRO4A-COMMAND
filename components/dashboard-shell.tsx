@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation"
 
 import { DashboardLayoutClient } from "@/components/dashboard-layout-client"
 import { getDashboardRouteMeta } from "@/lib/dashboard-routes"
+import { getActiveNavLink } from "@/lib/navigation-config"
 import type { AppSession } from "@/lib/auth/get-session"
 
 type DashboardShellProps = {
@@ -13,7 +14,11 @@ type DashboardShellProps = {
 
 export function DashboardShell({ session, children }: DashboardShellProps) {
   const pathname = usePathname()
-  const { title, description } = getDashboardRouteMeta(pathname)
+  const routeMeta = getDashboardRouteMeta(pathname)
+  const activeNav = getActiveNavLink(pathname)
+
+  const title = routeMeta.title
+  const description = routeMeta.description ?? activeNav?.description
 
   return (
     <DashboardLayoutClient title={title} description={description} session={session}>
