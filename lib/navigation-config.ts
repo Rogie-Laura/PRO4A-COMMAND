@@ -84,7 +84,7 @@ export const MAIN_NAV: NavLink[] = [
     activePaths: ["/trainings-and-education", "/trainings-and-education/upload"],
     divisionId: "retd",
   },
-  { title: "RPSMD", href: "/rpsmd", icon: UserCog, description: DIVISION_CONFIG.rpsmd.fullName, divisionId: "rpsmd" },
+  { title: "RPSMD", href: "/rpsmd", icon: UserCog, logoSrc: DIVISION_NAV_LOGOS.rpsmd, description: DIVISION_CONFIG.rpsmd.fullName, divisionId: "rpsmd" },
   {
     title: "RICTMD",
     href: "/ict-equipment-inventory",
