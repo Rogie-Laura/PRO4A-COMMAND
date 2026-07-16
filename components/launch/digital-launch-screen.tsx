@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Cinzel, Source_Sans_3 } from "next/font/google"
 
 import {
@@ -28,7 +28,37 @@ const bodyFont = Source_Sans_3({
   variable: "--font-launch-body",
 })
 
-type LaunchPhase = "ready" | "charging" | "live"
+type LaunchPhase = "ready" | "launching" | "success"
+
+type LaunchStep = {
+  title: string
+  detail: string
+  progress: number
+  durationMs: number
+}
+
+const LAUNCH_STEPS: LaunchStep[] = [
+  {
+    title: "LOADING",
+    detail: "Initializing PRO4A COMMAND systems…",
+    progress: 28,
+    durationMs: 1700,
+  },
+  {
+    title: "DEPLOYING TO THE NET",
+    detail: "Connecting regional nodes across CALABARZON…",
+    progress: 58,
+    durationMs: 2100,
+  },
+  {
+    title: "FINISHING SET-UP",
+    detail: "Securing command channels and dashboard modules…",
+    progress: 88,
+    durationMs: 1900,
+  },
+]
+
+const DASHBOARD_HREF = "/pro4a-status"
 
 type Particle = {
   x: number
@@ -36,7 +66,6 @@ type Particle = {
   vx: number
   vy: number
   radius: number
-  /** 0..1 — mostly gold, some blue accents */
   hueMix: number
   twinklePhase: number
 }
@@ -50,7 +79,7 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
   const burstRef = useRef(0)
 
   useEffect(() => {
-    if (phase === "live" && phaseRef.current !== "live") {
+    if (phase === "success" && phaseRef.current !== "success") {
       burstRef.current = 1
     }
     phaseRef.current = phase
@@ -102,8 +131,8 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
     function step(time: number) {
       context.clearRect(0, 0, width, height)
 
-      const charging = phaseRef.current === "charging"
-      const speed = charging ? 2.4 : 1
+      const active = phaseRef.current === "launching" || phaseRef.current === "success"
+      const speed = phaseRef.current === "launching" ? 2.4 : phaseRef.current === "success" ? 1.6 : 1
       const centerX = width / 2
       const centerY = height * 0.42
       const burst = burstRef.current
@@ -113,8 +142,7 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
       }
 
       for (const particle of particles) {
-        if (charging) {
-          // Drift slightly toward the center while charging.
+        if (phaseRef.current === "launching") {
           particle.vx += (centerX - particle.x) * 0.00002
           particle.vy += (centerY - particle.y) * 0.00002
         }
@@ -129,8 +157,6 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
 
         particle.x += particle.vx * speed
         particle.y += particle.vy * speed
-
-        // Gentle friction keeps burst velocities from persisting.
         particle.vx *= 0.995
         particle.vy *= 0.995
 
@@ -154,7 +180,7 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
           if (distSq > LINK_DISTANCE * LINK_DISTANCE) continue
 
           const dist = Math.sqrt(distSq)
-          const alpha = (1 - dist / LINK_DISTANCE) * (charging ? 0.4 : 0.22)
+          const alpha = (1 - dist / LINK_DISTANCE) * (active ? 0.4 : 0.22)
           const blue = (a.hueMix + b.hueMix) / 2 > 0.82
 
           context.strokeStyle = blue
@@ -212,7 +238,6 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
     window.addEventListener("resize", resize)
 
     if (reducedMotion) {
-      // Draw a single static frame for reduced-motion users.
       step(0)
       window.cancelAnimationFrame(animationFrame)
     } else {
@@ -229,37 +254,64 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
     }
   }, [])
 
-  return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden
-      className="pointer-events-none absolute inset-0"
-    />
-  )
+  return <canvas ref={canvasRef} aria-hidden className="pointer-events-none absolute inset-0" />
 }
 
 export function DigitalLaunchScreen() {
+  const router = useRouter()
   const [phase, setPhase] = useState<LaunchPhase>("ready")
+  const [stepIndex, setStepIndex] = useState(0)
+  const [progress, setProgress] = useState(0)
   const [burstKey, setBurstKey] = useState(0)
+  const [fadeOut, setFadeOut] = useState(false)
+
+  const currentStep = LAUNCH_STEPS[stepIndex] ?? LAUNCH_STEPS[0]!
 
   useEffect(() => {
-    if (phase !== "charging") return
+    if (phase !== "launching") return
+
+    const step = LAUNCH_STEPS[stepIndex]
+    if (!step) return
+
+    setProgress(step.progress)
 
     const timer = window.setTimeout(() => {
-      setPhase("live")
-    }, 2200)
+      if (stepIndex < LAUNCH_STEPS.length - 1) {
+        setStepIndex((value) => value + 1)
+        return
+      }
+
+      setProgress(100)
+      setBurstKey((value) => value + 1)
+      setPhase("success")
+    }, step.durationMs)
 
     return () => window.clearTimeout(timer)
-  }, [phase])
+  }, [phase, stepIndex])
+
+  useEffect(() => {
+    if (phase !== "success") return
+
+    const fadeTimer = window.setTimeout(() => {
+      setFadeOut(true)
+    }, 900)
+
+    const redirectTimer = window.setTimeout(() => {
+      router.push(DASHBOARD_HREF)
+    }, 1800)
+
+    return () => {
+      window.clearTimeout(fadeTimer)
+      window.clearTimeout(redirectTimer)
+    }
+  }, [phase, router])
 
   function handleLaunch() {
     if (phase !== "ready") return
     setBurstKey((value) => value + 1)
-    setPhase("charging")
-  }
-
-  function handleReset() {
-    setPhase("ready")
+    setStepIndex(0)
+    setProgress(0)
+    setPhase("launching")
   }
 
   return (
@@ -267,7 +319,8 @@ export function DigitalLaunchScreen() {
       className={cn(
         displayFont.variable,
         bodyFont.variable,
-        "relative min-h-dvh overflow-hidden text-[#f4efe2]",
+        "relative h-dvh max-h-dvh overflow-hidden text-[#f4efe2] transition-opacity duration-700",
+        fadeOut && "opacity-0",
         bodyFont.className,
       )}
       style={{
@@ -300,17 +353,17 @@ export function DigitalLaunchScreen() {
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute left-1/2 top-[42%] size-[min(90vw,40rem)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c9a227]/20",
-          phase === "charging" && "animate-launch-pulse",
-          phase === "live" && "scale-150 opacity-0 transition-all duration-[1600ms] ease-out",
+          "pointer-events-none absolute left-1/2 top-[40%] size-[min(78vw,34rem)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c9a227]/20",
+          phase === "launching" && "animate-launch-pulse",
+          phase === "success" && "scale-150 opacity-0 transition-all duration-[1600ms] ease-out",
         )}
       />
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute left-1/2 top-[42%] size-[min(70vw,28rem)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c9a227]/25",
-          phase === "charging" && "animate-launch-pulse-delayed",
-          phase === "live" && "scale-[1.8] opacity-0 transition-all duration-[1800ms] ease-out",
+          "pointer-events-none absolute left-1/2 top-[40%] size-[min(58vw,24rem)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#c9a227]/25",
+          phase === "launching" && "animate-launch-pulse-delayed",
+          phase === "success" && "scale-[1.8] opacity-0 transition-all duration-[1800ms] ease-out",
         )}
       />
 
@@ -322,40 +375,40 @@ export function DigitalLaunchScreen() {
         />
       ) : null}
 
-      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-5 py-8 sm:px-8 sm:py-10">
-        <header className="flex items-center justify-between gap-4">
+      <div className="relative z-10 mx-auto flex h-full w-full max-w-5xl flex-col px-5 py-4 sm:px-8 sm:py-6">
+        <header className="flex shrink-0 items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Image
               src={`${PNP_LOGO.src}?v=${COMMAND_ICON_VERSION}`}
               alt={PNP_LOGO.alt}
-              width={48}
-              height={66}
+              width={40}
+              height={55}
               unoptimized
               priority
-              className="h-12 w-auto object-contain drop-shadow-[0_0_18px_rgba(201,162,39,0.25)]"
+              className="h-9 w-auto object-contain drop-shadow-[0_0_18px_rgba(201,162,39,0.25)] sm:h-11"
             />
             <Image
               src={`${PRO4A_LOGO.src}?v=${COMMAND_ICON_VERSION}`}
               alt={PRO4A_LOGO.alt}
-              width={48}
-              height={54}
+              width={40}
+              height={45}
               unoptimized
               priority
-              className="h-11 w-auto object-contain"
+              className="h-8 w-auto object-contain sm:h-10"
             />
           </div>
-          <p className="hidden text-right text-[11px] uppercase tracking-[0.28em] text-[#e8d5a3]/70 sm:block">
+          <p className="hidden text-right text-[10px] uppercase tracking-[0.28em] text-[#e8d5a3]/70 sm:block">
             Police Regional Office 4A
             <br />
             <span className="text-[#e8d5a3]/45">CALABARZON</span>
           </p>
         </header>
 
-        <main className="flex flex-1 flex-col items-center justify-center pb-8 pt-6 text-center">
+        <main className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
           <div
             className={cn(
-              "mb-6 w-full max-w-xl transition-all duration-700",
-              phase === "live" && "scale-[1.04]",
+              "mb-3 w-full max-w-md transition-all duration-700 sm:mb-4 sm:max-w-lg",
+              phase === "success" && "scale-[1.03]",
             )}
           >
             <Image
@@ -365,14 +418,14 @@ export function DigitalLaunchScreen() {
               height={COMMAND_BRAND.height}
               unoptimized
               priority
-              className="mx-auto h-auto w-full max-w-[22rem] drop-shadow-[0_20px_60px_rgba(201,162,39,0.22)] sm:max-w-[28rem]"
+              className="mx-auto h-auto max-h-[28vh] w-full object-contain drop-shadow-[0_20px_60px_rgba(201,162,39,0.22)] sm:max-h-[34vh]"
             />
           </div>
 
           <p
             className={cn(
               displayFont.className,
-              "text-[11px] font-semibold uppercase tracking-[0.42em] text-[#c9a227] sm:text-xs",
+              "text-[10px] font-semibold uppercase tracking-[0.42em] text-[#c9a227] sm:text-[11px]",
             )}
           >
             Official Digital Launching
@@ -381,17 +434,17 @@ export function DigitalLaunchScreen() {
           <h1
             className={cn(
               displayFont.className,
-              "mt-3 max-w-3xl text-3xl font-semibold tracking-wide text-[#f7f1e4] sm:text-5xl",
+              "mt-2 max-w-3xl text-2xl font-semibold tracking-wide text-[#f7f1e4] sm:text-4xl",
             )}
           >
             {PRO4A_APP_TITLE}
           </h1>
 
-          <p className="mt-3 max-w-xl text-sm text-[#d7d0c0]/80 sm:text-base">
+          <p className="mt-2 max-w-xl text-xs text-[#d7d0c0]/80 sm:text-sm">
             {PRO4A_APP_TAGLINE}. One Command. One Picture. One Mission.
           </p>
 
-          <div className="mt-10 flex w-full max-w-md flex-col items-center gap-4">
+          <div className="mt-6 flex w-full max-w-md flex-col items-center gap-3 sm:mt-8 sm:gap-4">
             {phase === "ready" ? (
               <>
                 <button
@@ -399,7 +452,7 @@ export function DigitalLaunchScreen() {
                   onClick={handleLaunch}
                   className={cn(
                     displayFont.className,
-                    "group relative isolate flex h-[5.5rem] w-[5.5rem] items-center justify-center rounded-full",
+                    "group relative isolate flex h-[4.75rem] w-[4.75rem] items-center justify-center rounded-full sm:h-[5.5rem] sm:w-[5.5rem]",
                     "bg-gradient-to-b from-[#e8d5a3] via-[#c9a227] to-[#8a6b12]",
                     "text-sm font-bold tracking-[0.18em] text-[#1a1408]",
                     "shadow-[0_0_0_8px_rgba(201,162,39,0.12),0_0_40px_rgba(201,162,39,0.35)]",
@@ -413,64 +466,91 @@ export function DigitalLaunchScreen() {
                   />
                   LAUNCH
                 </button>
-                <p className="text-xs uppercase tracking-[0.28em] text-[#e8d5a3]/55">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-[#e8d5a3]/55 sm:text-xs">
                   For the Regional Director
                 </p>
               </>
             ) : null}
 
-            {phase === "charging" ? (
-              <div className="space-y-3">
-                <p
-                  className={cn(
-                    displayFont.className,
-                    "animate-pulse text-lg tracking-[0.3em] text-[#e8d5a3]",
-                  )}
-                >
-                  LAUNCHING
-                </p>
-                <p className="text-sm text-[#d7d0c0]/70">Activating PRO4A COMMAND systems…</p>
-              </div>
-            ) : null}
-
-            {phase === "live" ? (
-              <div className="animate-launch-rise space-y-5">
-                <p
-                  className={cn(
-                    displayFont.className,
-                    "text-xl tracking-[0.2em] text-[#e8d5a3] sm:text-2xl",
-                  )}
-                >
-                  NOW LIVE
-                </p>
-                <p className="text-sm text-[#d7d0c0]/80">
-                  PRO4A COMMAND is officially launched.
-                </p>
-                <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-                  <Link
-                    href="/pro4a-status"
+            {phase === "launching" || phase === "success" ? (
+              <div
+                key={`${phase}-${stepIndex}`}
+                className="animate-launch-rise w-full space-y-4"
+                aria-live="polite"
+              >
+                <div className="space-y-2">
+                  <p
                     className={cn(
                       displayFont.className,
-                      "inline-flex h-12 items-center justify-center rounded-full px-8 text-xs font-semibold tracking-[0.22em]",
-                      "bg-[#c9a227] text-[#1a1408] transition-opacity hover:opacity-90",
+                      "text-sm tracking-[0.28em] text-[#e8d5a3] sm:text-base",
+                      phase === "launching" && "animate-pulse",
+                      phase === "success" && "text-lg tracking-[0.22em] sm:text-xl",
                     )}
                   >
-                    ENTER DASHBOARD
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="text-xs uppercase tracking-[0.22em] text-[#e8d5a3]/55 underline-offset-4 hover:text-[#e8d5a3] hover:underline"
-                  >
-                    Launch again
-                  </button>
+                    {phase === "success" ? "SUCCESSFULLY LAUNCHED" : currentStep.title}
+                  </p>
+                  <p className="text-xs text-[#d7d0c0]/75 sm:text-sm">
+                    {phase === "success"
+                      ? "Entering PRO4A COMMAND…"
+                      : currentStep.detail}
+                  </p>
                 </div>
+
+                <div className="mx-auto w-full max-w-sm space-y-2">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-[#e8d5a3]/15">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-[#8a6b12] via-[#c9a227] to-[#e8d5a3] transition-[width] duration-1000 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.2em] text-[#e8d5a3]/45">
+                    <span>
+                      {phase === "success"
+                        ? "Complete"
+                        : `Stage ${stepIndex + 1} of ${LAUNCH_STEPS.length}`}
+                    </span>
+                    <span>{progress}%</span>
+                  </div>
+                </div>
+
+                {phase === "launching" ? (
+                  <ul className="mx-auto flex max-w-sm flex-col gap-1.5 text-left">
+                    {LAUNCH_STEPS.map((step, index) => {
+                      const done = index < stepIndex
+                      const active = index === stepIndex
+                      return (
+                        <li
+                          key={step.title}
+                          className={cn(
+                            "flex items-center gap-2 text-[11px] tracking-wide transition-opacity",
+                            done && "text-[#e8d5a3]/80",
+                            active && "text-[#f4efe2]",
+                            !done && !active && "text-[#e8d5a3]/30",
+                          )}
+                        >
+                          <span
+                            aria-hidden
+                            className={cn(
+                              "inline-flex size-1.5 shrink-0 rounded-full",
+                              done && "bg-[#c9a227]",
+                              active && "animate-pulse bg-[#e8d5a3]",
+                              !done && !active && "bg-[#e8d5a3]/25",
+                            )}
+                          />
+                          <span className={cn(displayFont.className, "text-[10px] tracking-[0.16em]")}>
+                            {step.title}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ) : null}
               </div>
             ) : null}
           </div>
         </main>
 
-        <footer className="flex flex-col items-center gap-1 text-center text-[10px] uppercase tracking-[0.24em] text-[#e8d5a3]/35 sm:flex-row sm:justify-between sm:text-left">
+        <footer className="flex shrink-0 flex-col items-center gap-1 text-center text-[9px] uppercase tracking-[0.24em] text-[#e8d5a3]/35 sm:flex-row sm:justify-between sm:text-left sm:text-[10px]">
           <span>Assess · Adapt · Active · Achieve</span>
           <span>PRO CALABARZON</span>
         </footer>
