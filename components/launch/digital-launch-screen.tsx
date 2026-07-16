@@ -72,7 +72,17 @@ type Particle = {
 
 const LINK_DISTANCE = 150
 const POINTER_LINK_DISTANCE = 220
-const MIN_DRIFT_SPEED = 0.22
+const MIN_DRIFT_SPEED = 0.5
+const EXPLOSION_RADIUS = 190
+const EXPLOSION_FORCE = 5.5
+
+type Explosion = {
+  x: number
+  y: number
+  /** milliseconds since spawn */
+  age: number
+  life: number
+}
 
 function ParticleField({ phase }: { phase: LaunchPhase }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -101,8 +111,27 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
     let width = 0
     let height = 0
     let particles: Particle[] = []
+    let explosions: Explosion[] = []
     let animationFrame = 0
+    let lastFrameTime = 0
+    let nextExplosionAt = 1200 + Math.random() * 2000
     const pointer = { x: -9999, y: -9999, active: false }
+
+    function spawnExplosion(x: number, y: number) {
+      explosions.push({ x, y, age: 0, life: 900 })
+
+      for (const particle of particles) {
+        const dx = particle.x - x
+        const dy = particle.y - y
+        const dist = Math.hypot(dx, dy)
+        if (dist > EXPLOSION_RADIUS) continue
+
+        const falloff = 1 - dist / EXPLOSION_RADIUS
+        const norm = Math.max(dist, 0.001)
+        particle.vx += (dx / norm) * EXPLOSION_FORCE * falloff
+        particle.vy += (dy / norm) * EXPLOSION_FORCE * falloff
+      }
+    }
 
     function resize() {
       const parent = canvas.parentElement
@@ -121,8 +150,8 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
       particles = Array.from({ length: targetCount }, () => ({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.35,
-        vy: (Math.random() - 0.5) * 0.35,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: (Math.random() - 0.5) * 0.8,
         radius: 1 + Math.random() * 1.8,
         hueMix: Math.random(),
         twinklePhase: Math.random() * Math.PI * 2,
@@ -131,6 +160,9 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
 
     function step(time: number) {
       context.clearRect(0, 0, width, height)
+
+      const delta = lastFrameTime === 0 ? 16 : Math.min(48, time - lastFrameTime)
+      lastFrameTime = time
 
       const active = phaseRef.current === "launching" || phaseRef.current === "success"
       const speed = phaseRef.current === "launching" ? 2.4 : phaseRef.current === "success" ? 1.6 : 1
@@ -141,6 +173,21 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
       if (burst > 0) {
         burstRef.current = Math.max(0, burst - 0.02)
       }
+
+      // Randomly detonate a cluster of dots every couple of seconds.
+      if (time >= nextExplosionAt && width > 0 && height > 0) {
+        const margin = 80
+        spawnExplosion(
+          margin + Math.random() * Math.max(1, width - margin * 2),
+          margin + Math.random() * Math.max(1, height - margin * 2),
+        )
+        nextExplosionAt = time + 1500 + Math.random() * 2500
+      }
+
+      for (const explosion of explosions) {
+        explosion.age += delta
+      }
+      explosions = explosions.filter((explosion) => explosion.age < explosion.life)
 
       for (const particle of particles) {
         if (phaseRef.current === "launching") {
@@ -159,12 +206,10 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
         particle.x += particle.vx * speed
         particle.y += particle.vy * speed
 
-        // Only damp the extra velocity from bursts/attraction. Applying friction
-        // every frame would gradually stall the idle drift, freezing the field.
-        if (burst > 0 || phaseRef.current === "launching") {
-          particle.vx *= 0.96
-          particle.vy *= 0.96
-        }
+        // Gentle friction lets explosion/launch impulses settle back down. The
+        // baseline floor below then keeps the field drifting so it never freezes.
+        particle.vx *= 0.97
+        particle.vy *= 0.97
 
         // Keep a steady baseline drift so the network never appears frozen.
         const currentSpeed = Math.hypot(particle.vx, particle.vy)
@@ -236,6 +281,35 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
         context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2)
         context.fill()
       }
+
+      for (const explosion of explosions) {
+        const t = explosion.age / explosion.life
+        const ease = 1 - Math.pow(1 - t, 3)
+        const ringRadius = EXPLOSION_RADIUS * ease
+        const fade = 1 - t
+
+        context.strokeStyle = `rgba(232, 213, 163, ${0.5 * fade})`
+        context.lineWidth = 2 * fade + 0.5
+        context.beginPath()
+        context.arc(explosion.x, explosion.y, ringRadius, 0, Math.PI * 2)
+        context.stroke()
+
+        const core = context.createRadialGradient(
+          explosion.x,
+          explosion.y,
+          0,
+          explosion.x,
+          explosion.y,
+          Math.max(1, ringRadius * 0.6),
+        )
+        core.addColorStop(0, `rgba(255, 240, 200, ${0.35 * fade})`)
+        core.addColorStop(1, "rgba(255, 240, 200, 0)")
+        context.fillStyle = core
+        context.beginPath()
+        context.arc(explosion.x, explosion.y, Math.max(1, ringRadius * 0.6), 0, Math.PI * 2)
+        context.fill()
+      }
+      context.lineWidth = 1
 
       animationFrame = window.requestAnimationFrame(step)
     }
