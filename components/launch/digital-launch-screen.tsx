@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Cinzel, Source_Sans_3 } from "next/font/google"
@@ -29,6 +29,214 @@ const bodyFont = Source_Sans_3({
 })
 
 type LaunchPhase = "ready" | "charging" | "live"
+
+type Particle = {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  radius: number
+  /** 0..1 — mostly gold, some blue accents */
+  hueMix: number
+  twinklePhase: number
+}
+
+const LINK_DISTANCE = 150
+const POINTER_LINK_DISTANCE = 220
+
+function ParticleField({ phase }: { phase: LaunchPhase }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const phaseRef = useRef<LaunchPhase>(phase)
+  const burstRef = useRef(0)
+
+  useEffect(() => {
+    if (phase === "live" && phaseRef.current !== "live") {
+      burstRef.current = 1
+    }
+    phaseRef.current = phase
+  }, [phase])
+
+  useEffect(() => {
+    const canvasEl = canvasRef.current
+    if (!canvasEl) return
+
+    const context2d = canvasEl.getContext("2d")
+    if (!context2d) return
+
+    const canvas: HTMLCanvasElement = canvasEl
+    const context: CanvasRenderingContext2D = context2d
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    let width = 0
+    let height = 0
+    let particles: Particle[] = []
+    let animationFrame = 0
+    const pointer = { x: -9999, y: -9999, active: false }
+
+    function resize() {
+      const parent = canvas.parentElement
+      if (!parent) return
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      width = parent.clientWidth
+      height = parent.clientHeight
+      canvas.width = Math.round(width * dpr)
+      canvas.height = Math.round(height * dpr)
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      context.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+      const targetCount = Math.min(110, Math.max(40, Math.round((width * height) / 16000)))
+      particles = Array.from({ length: targetCount }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        radius: 1 + Math.random() * 1.8,
+        hueMix: Math.random(),
+        twinklePhase: Math.random() * Math.PI * 2,
+      }))
+    }
+
+    function step(time: number) {
+      context.clearRect(0, 0, width, height)
+
+      const charging = phaseRef.current === "charging"
+      const speed = charging ? 2.4 : 1
+      const centerX = width / 2
+      const centerY = height * 0.42
+      const burst = burstRef.current
+
+      if (burst > 0) {
+        burstRef.current = Math.max(0, burst - 0.02)
+      }
+
+      for (const particle of particles) {
+        if (charging) {
+          // Drift slightly toward the center while charging.
+          particle.vx += (centerX - particle.x) * 0.00002
+          particle.vy += (centerY - particle.y) * 0.00002
+        }
+
+        if (burst > 0) {
+          const dx = particle.x - centerX
+          const dy = particle.y - centerY
+          const dist = Math.max(40, Math.hypot(dx, dy))
+          particle.vx += (dx / dist) * burst * 0.6
+          particle.vy += (dy / dist) * burst * 0.6
+        }
+
+        particle.x += particle.vx * speed
+        particle.y += particle.vy * speed
+
+        // Gentle friction keeps burst velocities from persisting.
+        particle.vx *= 0.995
+        particle.vy *= 0.995
+
+        if (particle.x < -20) particle.x = width + 20
+        if (particle.x > width + 20) particle.x = -20
+        if (particle.y < -20) particle.y = height + 20
+        if (particle.y > height + 20) particle.y = -20
+      }
+
+      context.lineWidth = 1
+
+      for (let i = 0; i < particles.length; i += 1) {
+        const a = particles[i]!
+
+        for (let j = i + 1; j < particles.length; j += 1) {
+          const b = particles[j]!
+          const dx = a.x - b.x
+          const dy = a.y - b.y
+          const distSq = dx * dx + dy * dy
+
+          if (distSq > LINK_DISTANCE * LINK_DISTANCE) continue
+
+          const dist = Math.sqrt(distSq)
+          const alpha = (1 - dist / LINK_DISTANCE) * (charging ? 0.4 : 0.22)
+          const blue = (a.hueMix + b.hueMix) / 2 > 0.82
+
+          context.strokeStyle = blue
+            ? `rgba(96, 165, 250, ${alpha})`
+            : `rgba(201, 162, 39, ${alpha})`
+          context.beginPath()
+          context.moveTo(a.x, a.y)
+          context.lineTo(b.x, b.y)
+          context.stroke()
+        }
+
+        if (pointer.active) {
+          const dx = a.x - pointer.x
+          const dy = a.y - pointer.y
+          const dist = Math.hypot(dx, dy)
+
+          if (dist < POINTER_LINK_DISTANCE) {
+            const alpha = (1 - dist / POINTER_LINK_DISTANCE) * 0.35
+            context.strokeStyle = `rgba(232, 213, 163, ${alpha})`
+            context.beginPath()
+            context.moveTo(a.x, a.y)
+            context.lineTo(pointer.x, pointer.y)
+            context.stroke()
+          }
+        }
+      }
+
+      for (const particle of particles) {
+        const twinkle = 0.55 + 0.45 * Math.sin(time * 0.0012 + particle.twinklePhase)
+        const blue = particle.hueMix > 0.82
+
+        context.fillStyle = blue
+          ? `rgba(147, 197, 253, ${0.5 * twinkle})`
+          : `rgba(232, 213, 163, ${0.65 * twinkle})`
+        context.beginPath()
+        context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2)
+        context.fill()
+      }
+
+      animationFrame = window.requestAnimationFrame(step)
+    }
+
+    function handlePointerMove(event: PointerEvent) {
+      const rect = canvas.getBoundingClientRect()
+      pointer.x = event.clientX - rect.left
+      pointer.y = event.clientY - rect.top
+      pointer.active = true
+    }
+
+    function handlePointerLeave() {
+      pointer.active = false
+    }
+
+    resize()
+    window.addEventListener("resize", resize)
+
+    if (reducedMotion) {
+      // Draw a single static frame for reduced-motion users.
+      step(0)
+      window.cancelAnimationFrame(animationFrame)
+    } else {
+      animationFrame = window.requestAnimationFrame(step)
+      window.addEventListener("pointermove", handlePointerMove)
+      window.addEventListener("pointerleave", handlePointerLeave)
+    }
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame)
+      window.removeEventListener("resize", resize)
+      window.removeEventListener("pointermove", handlePointerMove)
+      window.removeEventListener("pointerleave", handlePointerLeave)
+    }
+  }, [])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden
+      className="pointer-events-none absolute inset-0"
+    />
+  )
+}
 
 export function DigitalLaunchScreen() {
   const [phase, setPhase] = useState<LaunchPhase>("ready")
@@ -76,6 +284,17 @@ export function DigitalLaunchScreen() {
           backgroundSize: "48px 48px",
           maskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
         }}
+      />
+
+      <ParticleField phase={phase} />
+
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#c9a227]/50 to-transparent"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#c9a227]/30 to-transparent"
       />
 
       <div
