@@ -4,7 +4,8 @@ import { canSessionAccessPath, getSessionHomeHref, normalizeDivisionScope } from
 import type { AccessKeyRole } from "@/lib/auth/roles"
 import { getSessionCookieName, verifySessionToken } from "@/lib/auth/session"
 
-const PUBLIC_PATHS = ["/login"]
+const PUBLIC_PATHS = ["/login", "/digital-launch"]
+const CEREMONY_PATHS = ["/digital-launch"]
 
 function isPatrollersApi(pathname: string) {
   return pathname.startsWith("/api/establishments/")
@@ -60,6 +61,10 @@ export async function middleware(request: NextRequest) {
 
     if (pathname === "/login") {
       return NextResponse.redirect(new URL(getSessionHomeHref(appSession), request.url))
+    }
+
+    if (CEREMONY_PATHS.includes(pathname)) {
+      return NextResponse.next()
     }
 
     if (!canSessionAccessPath(appSession, pathname)) {
