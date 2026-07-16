@@ -72,6 +72,7 @@ type Particle = {
 
 const LINK_DISTANCE = 150
 const POINTER_LINK_DISTANCE = 220
+const MIN_DRIFT_SPEED = 0.22
 
 function ParticleField({ phase }: { phase: LaunchPhase }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -157,8 +158,24 @@ function ParticleField({ phase }: { phase: LaunchPhase }) {
 
         particle.x += particle.vx * speed
         particle.y += particle.vy * speed
-        particle.vx *= 0.995
-        particle.vy *= 0.995
+
+        // Only damp the extra velocity from bursts/attraction. Applying friction
+        // every frame would gradually stall the idle drift, freezing the field.
+        if (burst > 0 || phaseRef.current === "launching") {
+          particle.vx *= 0.96
+          particle.vy *= 0.96
+        }
+
+        // Keep a steady baseline drift so the network never appears frozen.
+        const currentSpeed = Math.hypot(particle.vx, particle.vy)
+        if (currentSpeed < MIN_DRIFT_SPEED) {
+          const angle =
+            currentSpeed > 0.0001
+              ? Math.atan2(particle.vy, particle.vx)
+              : Math.random() * Math.PI * 2
+          particle.vx = Math.cos(angle) * MIN_DRIFT_SPEED
+          particle.vy = Math.sin(angle) * MIN_DRIFT_SPEED
+        }
 
         if (particle.x < -20) particle.x = width + 20
         if (particle.x > width + 20) particle.x = -20
