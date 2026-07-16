@@ -7,6 +7,7 @@ export type PersonnelRecord = {
   birthDate: string
   lastPromotionDate: string
   designation: string
+  designationDate: string
   pStatus: string
   gender: string
   civilStatus: string

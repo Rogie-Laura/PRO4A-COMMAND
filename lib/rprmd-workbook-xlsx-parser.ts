@@ -41,6 +41,17 @@ function formatPersonnelDate(value: unknown): string {
     return `${month}/${day}/${year}`
   }
 
+  if (typeof value === "number" && Number.isFinite(value) && value > 20000 && value < 80000) {
+    // Excel serial date (days since 1899-12-30).
+    const parsed = new Date(Date.UTC(1899, 11, 30) + Math.round(value) * 86400000)
+    if (!Number.isNaN(parsed.getTime())) {
+      const month = parsed.getUTCMonth() + 1
+      const day = parsed.getUTCDate()
+      const year = parsed.getUTCFullYear()
+      return `${month}/${day}/${year}`
+    }
+  }
+
   return String(value ?? "").trim()
 }
 

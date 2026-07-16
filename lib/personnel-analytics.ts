@@ -65,7 +65,7 @@ async function loadPersonnelAnalytics(): Promise<PersonnelAnalytics> {
   }
 }
 
-export const PERSONNEL_ANALYTICS_CACHE_TAG = "personnel-analytics-alphalist-v1"
+export const PERSONNEL_ANALYTICS_CACHE_TAG = "personnel-analytics-alphalist-v2"
 
 /** Cached until manual refresh — no repeat Google Sheet fetch on revisit. */
 const getCachedPersonnelAnalytics = unstable_cache(

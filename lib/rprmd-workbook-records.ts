@@ -12,7 +12,7 @@ import type {
 import type { SchoolingRecord } from "@/lib/schooling-types"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export const RPRMD_WORKBOOK_CACHE_TAG = "rprmd-workbook-v2"
+export const RPRMD_WORKBOOK_CACHE_TAG = "rprmd-workbook-v3"
 
 export type RprmdWorkbookMetaChunk = {
   alphalistSheetName: string

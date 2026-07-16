@@ -45,6 +45,7 @@ export function mapPersonnelRow(row: Record<string, string>): PersonnelRecord {
     birthDate: row.BirthDate ?? "",
     lastPromotionDate: row["Last Promotion Date"] ?? "",
     designation: row.Designation ?? "",
+    designationDate: row["Designation Date"] ?? "",
     pStatus: row.PStatus ?? "",
     gender: row.Gender ?? "",
     civilStatus: row["Civil Status"] ?? "",
