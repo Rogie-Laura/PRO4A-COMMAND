@@ -1,12 +1,11 @@
 import Link from "next/link"
-import { ArrowDownRight, ArrowUpRight, Minus, Users } from "lucide-react"
+import { Users } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { sumStrengthCounts } from "@/lib/personnel-gains-losses-parser"
 import type {
   PersonnelGainLossLine,
   PersonnelGainsLosses,
-  PersonnelStrengthSnapshot,
   StrengthCounts,
 } from "@/lib/personnel-gains-losses-types"
 import { cn } from "@/lib/utils"
@@ -15,130 +14,94 @@ type PersonnelGainsLossesCardProps = {
   data: PersonnelGainsLosses | null
 }
 
-function formatCounts(counts: StrengthCounts) {
-  return `${counts.pco.toLocaleString()} PCO · ${counts.pnco.toLocaleString()} PNCO · ${counts.nup.toLocaleString()} NUP`
+function formatNumber(value: number) {
+  return value.toLocaleString()
 }
 
-function StrengthPanel({
-  label,
-  snapshot,
-  tone,
+function CountCells({
+  counts,
+  emphasize = false,
+  muteZeros = false,
 }: {
-  label: string
-  snapshot: PersonnelStrengthSnapshot
-  tone: "opening" | "closing"
+  counts: StrengthCounts
+  emphasize?: boolean
+  muteZeros?: boolean
 }) {
-  const toneClass =
-    tone === "opening"
-      ? "border-orange-500/20 bg-orange-500/5"
-      : "border-sky-500/20 bg-sky-500/5"
-
-  const valueClass =
-    tone === "opening"
-      ? "text-orange-600 dark:text-orange-400"
-      : "text-sky-600 dark:text-sky-400"
+  const values = [counts.pco, counts.pnco, counts.nup, counts.total]
 
   return (
-    <Card className={cn("gap-0 overflow-hidden py-0 shadow-none", toneClass)}>
-      <CardHeader className="border-b border-border/40 pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-sm">{label}</CardTitle>
-          <Badge variant="outline" className="text-xs">
-            {tone === "opening" ? "Opening" : "Closing"}
-          </Badge>
-        </div>
-        <CardDescription className="text-xs">{snapshot.asOf}</CardDescription>
-      </CardHeader>
-      <CardContent className="py-4">
-        <p className={cn("text-3xl font-bold tabular-nums sm:text-4xl", valueClass)}>
-          {snapshot.counts.total.toLocaleString()}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">total personnel</p>
-        <p className="mt-2 text-xs text-muted-foreground">{formatCounts(snapshot.counts)}</p>
-      </CardContent>
-    </Card>
+    <>
+      {values.map((value, index) => {
+        const muted = muteZeros && value === 0
+        return (
+          <td
+            key={index}
+            className={cn(
+              "px-3 py-2 text-right tabular-nums",
+              emphasize && "font-semibold",
+              index === 3 && "font-semibold",
+              muted && "text-muted-foreground/50",
+            )}
+          >
+            {muted ? "—" : formatNumber(value)}
+          </td>
+        )
+      })}
+    </>
   )
 }
 
-function MovementList({
-  title,
+function MovementRows({
+  prefix,
   items,
-  emptyLabel,
   tone,
 }: {
-  title: string
+  prefix: "add:" | "less:"
   items: PersonnelGainLossLine[]
-  emptyLabel: string
   tone: "gain" | "loss"
 }) {
-  const toneClass =
-    tone === "gain"
-      ? "border-emerald-500/20 bg-emerald-500/5"
-      : "border-red-500/20 bg-red-500/5"
+  if (items.length === 0) {
+    return (
+      <tr className="border-b border-border/40">
+        <td className="px-3 py-2 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground/80">{prefix}</span>{" "}
+          {tone === "gain" ? "Walang gain" : "Walang loss"}
+        </td>
+        <td className="px-3 py-2 text-right text-muted-foreground/50">—</td>
+        <td className="px-3 py-2 text-right text-muted-foreground/50">—</td>
+        <td className="px-3 py-2 text-right text-muted-foreground/50">—</td>
+        <td className="px-3 py-2 text-right text-muted-foreground/50">—</td>
+      </tr>
+    )
+  }
 
   return (
-    <Card className={cn("gap-0 overflow-hidden py-0 shadow-none", toneClass)}>
-      <CardHeader className="border-b border-border/40 pb-3">
-        <CardTitle className="text-sm">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="py-4">
-        {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{emptyLabel}</p>
-        ) : (
-          <ul className="space-y-3">
-            {items.map((item) => (
-              <li key={`${title}-${item.category}`} className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground">{item.category}</p>
-                  <p className="text-xs text-muted-foreground">{formatCounts(item.counts)}</p>
-                </div>
-                <p className="shrink-0 text-lg font-semibold tabular-nums">
-                  {item.counts.total.toLocaleString()}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function NetChangePanel({ opening, closing }: { opening: StrengthCounts; closing: StrengthCounts }) {
-  const change = closing.total - opening.total
-  const direction = change > 0 ? "up" : change < 0 ? "down" : "flat"
-
-  const colorClass =
-    direction === "up"
-      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-      : direction === "down"
-        ? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300"
-        : "border-border bg-muted/40 text-muted-foreground"
-
-  const Icon =
-    direction === "up" ? ArrowUpRight : direction === "down" ? ArrowDownRight : Minus
-
-  return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center rounded-xl border px-4 py-5 text-center sm:px-6",
-        colorClass,
-      )}
-    >
-      <Icon className="mb-2 size-6" />
-      <p className="text-xs font-medium uppercase tracking-wide opacity-80">Net change</p>
-      <p className="mt-1 text-2xl font-bold tabular-nums sm:text-3xl">
-        {change > 0 ? "+" : ""}
-        {change.toLocaleString()}
-      </p>
-      <p className="mt-1 text-xs opacity-90">
-        {direction === "up"
-          ? "Net gain sa personnel strength"
-          : direction === "down"
-            ? "Net loss sa personnel strength"
-            : "Walang net change"}
-      </p>
-    </div>
+    <>
+      {items.map((item) => (
+        <tr
+          key={`${prefix}-${item.category}`}
+          className={cn(
+            "border-b border-border/40",
+            tone === "gain" ? "bg-emerald-500/5" : "bg-red-500/5",
+          )}
+        >
+          <td className="px-3 py-2 text-sm">
+            <span className="font-medium text-foreground/80">{prefix}</span>{" "}
+            <span
+              className={cn(
+                "font-medium",
+                tone === "gain"
+                  ? "text-emerald-700 dark:text-emerald-300"
+                  : "text-red-700 dark:text-red-300",
+              )}
+            >
+              {item.category}
+            </span>
+          </td>
+          <CountCells counts={item.counts} muteZeros />
+        </tr>
+      ))}
+    </>
   )
 }
 
@@ -155,16 +118,20 @@ export function PersonnelGainsLossesCard({ data }: PersonnelGainsLossesCardProps
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Walang G&amp;L data pa. Mag-upload ng bagong Alphalist workbook sa{" "}
+            Walang G&amp;L data pa. Mag-upload ulit ng Alphalist workbook sa{" "}
             <Link href="/rprmd/upload" className="font-medium text-primary underline-offset-4 hover:underline">
               RPRMD → Upload File
-            </Link>
-            .
+            </Link>{" "}
+            para makita ang gains at losses.
           </p>
         </CardContent>
       </Card>
     )
   }
+
+  const gainTotals = sumStrengthCounts(data.gains)
+  const lossTotals = sumStrengthCounts(data.losses)
+  const net = data.closing.counts.total - data.opening.counts.total
 
   return (
     <Card className="overflow-hidden">
@@ -177,30 +144,77 @@ export function PersonnelGainsLossesCard({ data }: PersonnelGainsLossesCardProps
             </CardTitle>
             <CardDescription>{data.title}</CardDescription>
           </div>
-          <Link
-            href="/rprmd"
-            className="text-xs font-medium text-primary underline-offset-4 hover:underline"
-          >
-            View RPRMD personnel
-          </Link>
+          <div className="text-right">
+            <p
+              className={cn(
+                "text-sm font-semibold tabular-nums",
+                net > 0
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : net < 0
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-muted-foreground",
+              )}
+            >
+              Net {net > 0 ? "+" : ""}
+              {formatNumber(net)}
+            </p>
+            <Link
+              href="/rprmd"
+              className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+            >
+              View RPRMD personnel
+            </Link>
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr]">
-          <StrengthPanel label="Opening strength" snapshot={data.opening} tone="opening" />
-          <NetChangePanel opening={data.opening.counts} closing={data.closing.counts} />
-          <StrengthPanel label="Closing strength" snapshot={data.closing} tone="closing" />
+      <CardContent>
+        <div className="overflow-x-auto rounded-lg border border-border/60">
+          <table className="w-full min-w-[32rem] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border/60 bg-muted/40">
+                <th className="px-3 py-2 text-left font-medium text-muted-foreground" />
+                <th className="px-3 py-2 text-right font-medium text-muted-foreground">PCOs</th>
+                <th className="px-3 py-2 text-right font-medium text-muted-foreground">PNCOs</th>
+                <th className="px-3 py-2 text-right font-medium text-muted-foreground">NUP</th>
+                <th className="px-3 py-2 text-right font-medium text-muted-foreground">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-border/40 bg-orange-500/5">
+                <td className="px-3 py-2.5 font-medium text-orange-700 dark:text-orange-300">
+                  {data.opening.asOf}
+                </td>
+                <CountCells counts={data.opening.counts} emphasize />
+              </tr>
+
+              <MovementRows prefix="add:" items={data.gains} tone="gain" />
+
+              <tr className="border-b border-border/40 bg-muted/20">
+                <td className="px-3 py-2 text-sm font-medium text-muted-foreground">Total gains</td>
+                <CountCells counts={gainTotals} muteZeros />
+              </tr>
+
+              <MovementRows prefix="less:" items={data.losses} tone="loss" />
+
+              <tr className="border-b border-border/40 bg-muted/20">
+                <td className="px-3 py-2 text-sm font-medium text-muted-foreground">Total losses</td>
+                <CountCells counts={lossTotals} muteZeros />
+              </tr>
+
+              <tr className="bg-sky-500/5">
+                <td className="px-3 py-2.5 font-medium text-sky-700 dark:text-sky-300">
+                  {data.closing.asOf}
+                </td>
+                <CountCells counts={data.closing.counts} emphasize />
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <MovementList title="Gains (add)" items={data.gains} emptyLabel="Walang gain entries." tone="gain" />
-          <MovementList
-            title="Losses (less)"
-            items={data.losses}
-            emptyLabel="Walang loss entries."
-            tone="loss"
-          />
-        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Gains: {formatNumber(gainTotals.total)} · Losses: {formatNumber(lossTotals.total)} · Source:
+          G&amp;L sheet (Part 1)
+        </p>
       </CardContent>
     </Card>
   )
