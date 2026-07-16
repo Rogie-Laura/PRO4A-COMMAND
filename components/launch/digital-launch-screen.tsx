@@ -10,7 +10,6 @@ import {
   COMMAND_BRAND_VERSION,
   COMMAND_ICON_VERSION,
   PNP_LOGO,
-  PRO4A_APP_TAGLINE,
   PRO4A_APP_TITLE,
   PRO4A_LOGO,
 } from "@/lib/brand-config"
@@ -430,6 +429,34 @@ export function DigitalLaunchScreen() {
         }}
       />
 
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-[12%] top-1/2 -translate-y-1/2 opacity-[0.06] mix-blend-screen sm:-left-[6%]"
+      >
+        <Image
+          src={`${PNP_LOGO.src}?v=${COMMAND_ICON_VERSION}`}
+          alt=""
+          width={PNP_LOGO.width ?? 600}
+          height={PNP_LOGO.height ?? 800}
+          unoptimized
+          className="h-[78vh] w-auto object-contain drop-shadow-[0_0_120px_rgba(201,162,39,0.25)]"
+        />
+      </div>
+
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-[12%] top-1/2 -translate-y-1/2 opacity-[0.06] mix-blend-screen sm:-right-[6%]"
+      >
+        <Image
+          src={`${PRO4A_LOGO.src}?v=${COMMAND_ICON_VERSION}`}
+          alt=""
+          width={PRO4A_LOGO.width ?? 600}
+          height={PRO4A_LOGO.height ?? 700}
+          unoptimized
+          className="h-[78vh] w-auto object-contain drop-shadow-[0_0_120px_rgba(201,162,39,0.25)]"
+        />
+      </div>
+
       <ParticleField phase={phase} />
 
       <div
@@ -467,38 +494,21 @@ export function DigitalLaunchScreen() {
       ) : null}
 
       <div className="relative z-10 mx-auto flex h-full w-full max-w-5xl flex-col px-5 py-4 sm:px-8 sm:py-6">
-        <header className="flex shrink-0 items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Image
-              src={`${PNP_LOGO.src}?v=${COMMAND_ICON_VERSION}`}
-              alt={PNP_LOGO.alt}
-              width={40}
-              height={55}
-              unoptimized
-              priority
-              className="h-9 w-auto object-contain drop-shadow-[0_0_18px_rgba(201,162,39,0.25)] sm:h-11"
-            />
-            <Image
-              src={`${PRO4A_LOGO.src}?v=${COMMAND_ICON_VERSION}`}
-              alt={PRO4A_LOGO.alt}
-              width={40}
-              height={45}
-              unoptimized
-              priority
-              className="h-8 w-auto object-contain sm:h-10"
-            />
-          </div>
-          <p className="hidden text-right text-[10px] uppercase tracking-[0.28em] text-[#e8d5a3]/70 sm:block">
-            Police Regional Office 4A
-            <br />
-            <span className="text-[#e8d5a3]/45">CALABARZON</span>
+        <header className="flex shrink-0 items-center justify-center">
+          <p
+            className={cn(
+              displayFont.className,
+              "text-center text-xs font-semibold uppercase tracking-[0.5em] text-[#e8d5a3]/80 sm:text-sm",
+            )}
+          >
+            PRO CALABARZON
           </p>
         </header>
 
         <main className="flex min-h-0 flex-1 flex-col items-center justify-center text-center">
           <div
             className={cn(
-              "mb-3 w-full max-w-md transition-all duration-700 sm:mb-4 sm:max-w-lg",
+              "mb-4 w-full max-w-2xl transition-all duration-700 sm:mb-5 sm:max-w-3xl",
               phase === "success" && "scale-[1.03]",
             )}
           >
@@ -509,7 +519,7 @@ export function DigitalLaunchScreen() {
               height={COMMAND_BRAND.height}
               unoptimized
               priority
-              className="mx-auto h-auto max-h-[28vh] w-full object-contain drop-shadow-[0_20px_60px_rgba(201,162,39,0.22)] sm:max-h-[34vh]"
+              className="mx-auto h-auto max-h-[42vh] w-full object-contain drop-shadow-[0_20px_60px_rgba(201,162,39,0.28)] sm:max-h-[50vh]"
             />
           </div>
 
@@ -531,8 +541,13 @@ export function DigitalLaunchScreen() {
             {PRO4A_APP_TITLE}
           </h1>
 
-          <p className="mt-2 max-w-xl text-xs text-[#d7d0c0]/80 sm:text-sm">
-            {PRO4A_APP_TAGLINE}. One Command. One Picture. One Mission.
+          <p
+            className={cn(
+              displayFont.className,
+              "mt-2 max-w-xl text-xs font-medium uppercase tracking-[0.28em] text-[#d7d0c0]/80 sm:text-sm",
+            )}
+          >
+            One Command. One Dashboard. One Mission.
           </p>
 
           <div className="mt-6 flex w-full max-w-md flex-col items-center gap-3 sm:mt-8 sm:gap-4">
