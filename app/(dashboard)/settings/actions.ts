@@ -1406,6 +1406,13 @@ export async function finalizeRprmdWorkbookUploadAction(batchId: string) {
       detailedRsu: result.payload.detailed.rsu.total,
       detailedRhqPpo: result.payload.detailed.rhqPpo.total,
       alphalistSheetName: result.alphalistSheetName,
+      gainsLossesReady: Boolean(result.payload.personnelGainsLosses?.dataReady),
+      gainsTotal:
+        result.payload.personnelGainsLosses?.gains.reduce((sum, line) => sum + line.counts.total, 0) ??
+        0,
+      lossesTotal:
+        result.payload.personnelGainsLosses?.losses.reduce((sum, line) => sum + line.counts.total, 0) ??
+        0,
     },
   }
 }
@@ -1452,6 +1459,15 @@ export async function uploadRprmdWorkbookAction(formData: FormData) {
         detailedRsu: result.payload.detailed.rsu.total,
         detailedRhqPpo: result.payload.detailed.rhqPpo.total,
         alphalistSheetName: workbook.alphalistSheetName,
+        gainsLossesReady: Boolean(result.payload.personnelGainsLosses?.dataReady),
+        gainsTotal:
+          result.payload.personnelGainsLosses?.gains.reduce((sum, line) => sum + line.counts.total, 0) ??
+          0,
+        lossesTotal:
+          result.payload.personnelGainsLosses?.losses.reduce(
+            (sum, line) => sum + line.counts.total,
+            0,
+          ) ?? 0,
       },
     }
   } catch (error) {

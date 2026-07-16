@@ -51,6 +51,9 @@ type UploadSummary = {
   detailedRsu: number
   detailedRhqPpo: number
   alphalistSheetName: string
+  gainsLossesReady: boolean
+  gainsTotal: number
+  lossesTotal: number
 }
 
 function chunkRecords(records: PersonnelRecord[], size: number) {
@@ -210,6 +213,12 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
                 <Badge variant="outline">NOSUs: {summary.detailedNosus.toLocaleString()}</Badge>
                 <Badge variant="outline">RSU: {summary.detailedRsu.toLocaleString()}</Badge>
                 <Badge variant="outline">RHQ&PPO: {summary.detailedRhqPpo.toLocaleString()}</Badge>
+                <Badge variant={summary.gainsLossesReady ? "secondary" : "outline"}>
+                  G&amp;L:{" "}
+                  {summary.gainsLossesReady
+                    ? `+${summary.gainsTotal.toLocaleString()} / −${summary.lossesTotal.toLocaleString()}`
+                    : "missing"}
+                </Badge>
               </div>
             </div>
           ) : null}

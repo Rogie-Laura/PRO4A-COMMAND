@@ -12,7 +12,7 @@ import type {
 import type { SchoolingRecord } from "@/lib/schooling-types"
 import { createAdminClient } from "@/lib/supabase/admin"
 
-export const RPRMD_WORKBOOK_CACHE_TAG = "rprmd-workbook-v1"
+export const RPRMD_WORKBOOK_CACHE_TAG = "rprmd-workbook-v2"
 
 export type RprmdWorkbookMetaChunk = {
   alphalistSheetName: string
@@ -99,6 +99,7 @@ async function loadLatestRprmdWorkbookPayload(): Promise<RprmdWorkbookPayload | 
 
     return {
       ...row.analytics,
+      personnelGainsLosses: row.analytics.personnelGainsLosses ?? null,
       fileName: row.analytics.fileName || row.filename,
       lastUpdated: row.created_at ?? row.analytics.lastUpdated,
     }
