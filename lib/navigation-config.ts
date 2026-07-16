@@ -62,6 +62,7 @@ export const MAIN_NAV: NavLink[] = [
     title: "RLRDD",
     href: "/rlrdd",
     icon: Car,
+    logoSrc: DIVISION_NAV_LOGOS.rlrdd,
     description: DIVISION_CONFIG.rlrdd.fullName,
     activePaths: ["/rlrdd", "/mobility", "/firearms", "/camps-offices"],
     divisionId: "rlrdd",

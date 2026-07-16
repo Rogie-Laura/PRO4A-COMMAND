@@ -93,6 +93,7 @@ export function RprmdWorkbookUploadCard({ latestBatch, compact = false }: RprmdW
           mandatorySchooling: parsed.mandatorySchooling,
           specializedSchooling: parsed.specializedSchooling,
           detailed: parsed.detailed,
+          personnelGainsLosses: parsed.personnelGainsLosses,
         })
 
         setProgress("Tinatapos ang upload...")

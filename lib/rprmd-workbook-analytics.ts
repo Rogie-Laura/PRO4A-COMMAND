@@ -87,6 +87,7 @@ export function buildRprmdWorkbookPayload(
     specializedSchooling,
     detailed,
     detailedDashboard,
+    personnelGainsLosses: workbook.personnelGainsLosses,
   }
 }
 

@@ -4,6 +4,7 @@ import type {
   DetailedPersonnelRecord,
   DetailedPersonnelTabKey,
 } from "@/lib/detailed-personnel-types"
+import type { PersonnelGainsLosses } from "@/lib/personnel-gains-losses-types"
 import type { PersonnelAnalytics, PersonnelRecord } from "@/lib/personnel-types"
 import type { SchoolingAnalytics, SchoolingRecord } from "@/lib/schooling-types"
 
@@ -13,6 +14,7 @@ export type ParsedRprmdWorkbook = {
   mandatorySchooling: SchoolingRecord[]
   specializedSchooling: SchoolingRecord[]
   detailed: Record<DetailedPersonnelTabKey, DetailedPersonnelRecord[]>
+  personnelGainsLosses: PersonnelGainsLosses | null
 }
 
 export type RprmdWorkbookPayload = {
@@ -24,6 +26,7 @@ export type RprmdWorkbookPayload = {
   specializedSchooling: SchoolingAnalytics
   detailed: Record<DetailedPersonnelTabKey, DetailedPersonnelAnalytics>
   detailedDashboard: DetailedPersonnelDashboardData
+  personnelGainsLosses: PersonnelGainsLosses | null
 }
 
 export type RprmdWorkbookUploadBatchInfo = {

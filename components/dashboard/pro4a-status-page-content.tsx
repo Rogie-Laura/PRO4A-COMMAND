@@ -1,4 +1,5 @@
 import { AlertLevelCard } from "@/components/dashboard/alert-level-card"
+import { PersonnelGainsLossesCard } from "@/components/dashboard/personnel-gains-losses-card"
 import { PeaceAndOrderSituationCard } from "@/components/dashboard/peace-and-order-situation-card"
 import { TerrorismThreatLevelCard } from "@/components/dashboard/terrorism-threat-level-card"
 import { UperCurrentRankingCard } from "@/components/dashboard/uper-current-ranking-card"
@@ -10,6 +11,7 @@ import {
   type CrimeComparativeResult,
 } from "@/lib/crime-comparative"
 import { compareIndexCrimePeriods } from "@/lib/crime-records"
+import { getRprmdWorkbookPayload } from "@/lib/rprmd-workbook-records"
 import { getTerrorismThreatAnalytics } from "@/lib/terrorism-threat-records"
 import { getUperAnalytics } from "@/lib/uper-records"
 
@@ -35,11 +37,12 @@ async function loadPeaceAndOrderComparison(): Promise<CrimeComparativeResult | n
 }
 
 export async function Pro4aStatusPageContent() {
-  const [uperAnalytics, alertLevel, threatAnalytics, peaceAndOrder] = await Promise.all([
+  const [uperAnalytics, alertLevel, threatAnalytics, peaceAndOrder, rprmdWorkbook] = await Promise.all([
     getUperAnalytics(),
     getAlertLevelSetting(),
     getTerrorismThreatAnalytics(),
     loadPeaceAndOrderComparison(),
+    getRprmdWorkbookPayload(),
   ])
 
   return (
@@ -50,6 +53,7 @@ export async function Pro4aStatusPageContent() {
         <TerrorismThreatLevelCard analytics={threatAnalytics} compact />
       </div>
 
+      <PersonnelGainsLossesCard data={rprmdWorkbook?.personnelGainsLosses ?? null} />
       <PeaceAndOrderSituationCard result={peaceAndOrder} />
     </div>
   )

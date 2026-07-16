@@ -1,6 +1,8 @@
 import * as XLSX from "xlsx"
 
 import { parseDetailedPersonnelRows } from "@/lib/detailed-personnel-analytics"
+import { parsePersonnelGainsLossesRows } from "@/lib/personnel-gains-losses-parser"
+import type { PersonnelGainsLosses } from "@/lib/personnel-gains-losses-types"
 import { DETAILED_PERSONNEL_SHEET } from "@/lib/detailed-personnel-sheet"
 import type { DetailedPersonnelTabKey } from "@/lib/detailed-personnel-types"
 import { mapPersonnelRow } from "@/lib/personnel-aggregations"
@@ -8,7 +10,7 @@ import type { PersonnelRecord } from "@/lib/personnel-types"
 import type { ParsedRprmdWorkbook } from "@/lib/rprmd-workbook-types"
 import { parseSchoolingRows } from "@/lib/schooling-analytics"
 
-const EXCLUDED_SHEETS = new Set(["rphas", "g&l", "pro4a-command"])
+const EXCLUDED_SHEETS = new Set(["rphas", "pro4a-command"])
 
 const ALPHALIST_REQUIRED_HEADERS = ["rank", "lastname", "subunit"]
 
@@ -186,6 +188,23 @@ function resolveSchoolingKind(sheetName: string): "mandatory" | "specialized" | 
   return null
 }
 
+function findGainsLossesSheet(workbook: XLSX.WorkBook) {
+  const sheetName = workbook.SheetNames.find((name) => name.trim().toLowerCase() === "g&l")
+  if (!sheetName) return null
+
+  return workbook.Sheets[sheetName] ?? null
+}
+
+function parseGainsLossesSheet(sheet: XLSX.WorkSheet): PersonnelGainsLosses {
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
+    defval: "",
+    raw: true,
+  })
+
+  return parsePersonnelGainsLossesRows(rows.filter((row) => Array.isArray(row)))
+}
+
 export function parseRprmdWorkbookXlsx(buffer: ArrayBuffer | Buffer): ParsedRprmdWorkbook {
   const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true })
   const alphalist = findAlphalistSheet(workbook)
@@ -211,7 +230,9 @@ export function parseRprmdWorkbookXlsx(buffer: ArrayBuffer | Buffer): ParsedRprm
   }
 
   for (const sheetName of workbook.SheetNames) {
-    if (isExcludedSheet(sheetName) || sheetName === alphalist.name) continue
+    if (isExcludedSheet(sheetName) || sheetName.trim().toLowerCase() === "g&l" || sheetName === alphalist.name) {
+      continue
+    }
 
     const sheet = workbook.Sheets[sheetName]
     if (!sheet) continue
@@ -233,12 +254,16 @@ export function parseRprmdWorkbookXlsx(buffer: ArrayBuffer | Buffer): ParsedRprm
     }
   }
 
+  const gainsLossesSheet = findGainsLossesSheet(workbook)
+  const personnelGainsLosses = gainsLossesSheet ? parseGainsLossesSheet(gainsLossesSheet) : null
+
   return {
     alphalistSheetName: alphalist.name.trim(),
     personnelRecords,
     mandatorySchooling,
     specializedSchooling,
     detailed,
+    personnelGainsLosses,
   }
 }
 

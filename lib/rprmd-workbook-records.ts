@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache"
 
 import { buildRprmdWorkbookPayload } from "@/lib/rprmd-workbook-analytics"
 import type { DetailedPersonnelRecord, DetailedPersonnelTabKey } from "@/lib/detailed-personnel-types"
+import type { PersonnelGainsLosses } from "@/lib/personnel-gains-losses-types"
 import type { PersonnelRecord } from "@/lib/personnel-types"
 import type {
   ParsedRprmdWorkbook,
@@ -18,6 +19,7 @@ export type RprmdWorkbookMetaChunk = {
   mandatorySchooling: SchoolingRecord[]
   specializedSchooling: SchoolingRecord[]
   detailed: Record<DetailedPersonnelTabKey, DetailedPersonnelRecord[]>
+  personnelGainsLosses: PersonnelGainsLosses | null
 }
 
 type ReplaceRprmdWorkbookInput = {
@@ -240,6 +242,7 @@ async function loadParsedWorkbookFromParts(batchId: string): Promise<ParsedRprmd
     mandatorySchooling: meta.mandatorySchooling,
     specializedSchooling: meta.specializedSchooling,
     detailed: meta.detailed,
+    personnelGainsLosses: meta.personnelGainsLosses ?? null,
   }
 }
 
@@ -326,6 +329,7 @@ export async function replaceRprmdWorkbook({
       mandatorySchooling: workbook.mandatorySchooling,
       specializedSchooling: workbook.specializedSchooling,
       detailed: workbook.detailed,
+      personnelGainsLosses: workbook.personnelGainsLosses,
     })
 
     return await finalizeRprmdWorkbookUploadBatch(batch.id)

@@ -1382,6 +1382,7 @@ function revalidateRprmdWorkbookPaths() {
   revalidatePath("/settings")
   revalidatePath("/rprmd")
   revalidatePath("/rprmd/upload")
+  revalidatePath("/pro4a-status")
 }
 
 export async function finalizeRprmdWorkbookUploadAction(batchId: string) {
