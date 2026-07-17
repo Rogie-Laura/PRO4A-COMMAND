@@ -23,6 +23,14 @@ export type HealthAnalyticsSummary = {
   categories: BmiCategoryCount[]
 }
 
+/** One stored month's BMI category distribution, for the month-selectable pie chart. */
+export type BmiMonthlySnapshot = {
+  monthKey: string | null
+  monthLabel: string
+  totalAssessed: number
+  categories: BmiCategoryCount[]
+}
+
 /** One person's row inside a weight/category movement drilldown list. */
 export type BmiMovementPerson = {
   id: string

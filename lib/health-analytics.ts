@@ -8,14 +8,24 @@ import {
   isBmiDrilldownCategory,
   type BmiCategoryId,
 } from "@/lib/bmi-config"
-import { fetchBmiPersonnelByCategory, fetchStoredBmiAnalytics } from "@/lib/bmi-records"
+import { formatMonthKeyLabel } from "@/lib/bmi-month"
+import {
+  fetchBmiMonthlyAnalytics,
+  fetchBmiPersonnelByCategory,
+  fetchStoredBmiAnalytics,
+} from "@/lib/bmi-records"
 import { fetchRictmdBmiSheetCsv, parseCsv } from "@/lib/google-sheets"
 import {
   isRictmdBmiSheet,
   isRictmdPersonnelRow,
   RICTMD_BMI_SHEET,
 } from "@/lib/rictmd-bmi-sheet"
-import type { BmiCategoryCount, BmiPersonnelDetail, HealthAnalyticsSummary } from "@/lib/health-types"
+import type {
+  BmiCategoryCount,
+  BmiMonthlySnapshot,
+  BmiPersonnelDetail,
+  HealthAnalyticsSummary,
+} from "@/lib/health-types"
 
 export { BMI_SUPABASE_SOURCE_LABEL }
 
@@ -228,4 +238,29 @@ const getCachedHealthAnalytics = unstable_cache(
 
 export async function getHealthAnalytics(): Promise<HealthAnalyticsSummary> {
   return getCachedHealthAnalytics()
+}
+
+async function loadBmiMonthlySnapshots(): Promise<BmiMonthlySnapshot[]> {
+  try {
+    const stored = await fetchBmiMonthlyAnalytics()
+    return stored.map(({ periodMonth, analytics }) => ({
+      monthKey: periodMonth,
+      monthLabel: periodMonth ? formatMonthKeyLabel(periodMonth) : "Hindi na-date",
+      totalAssessed: analytics.totalAssessed,
+      categories: analytics.categories,
+    }))
+  } catch {
+    return []
+  }
+}
+
+/** Per-month category distributions for the month-selectable pie chart. */
+const getCachedBmiMonthlySnapshots = unstable_cache(
+  loadBmiMonthlySnapshots,
+  ["bmi-monthly-snapshots-v1"],
+  { revalidate: false, tags: [HEALTH_ANALYTICS_CACHE_TAG] },
+)
+
+export async function getBmiMonthlySnapshots(): Promise<BmiMonthlySnapshot[]> {
+  return getCachedBmiMonthlySnapshots()
 }

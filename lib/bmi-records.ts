@@ -627,6 +627,39 @@ async function pruneOldBmiMonths(supabase: ReturnType<typeof createAdminClient>)
   await supabase.from("bmi_upload_batches").delete().in("period_month", monthsToDrop)
 }
 
+/**
+ * Category analytics for every stored monthly snapshot, newest month first.
+ * Rebuilds a batch's analytics from its rows when the cached copy is missing.
+ */
+export async function fetchBmiMonthlyAnalytics(): Promise<
+  { periodMonth: string | null; analytics: HealthAnalyticsSummary }[]
+> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from("bmi_upload_batches")
+    .select("id, filename, uploaded_by_label, record_count, created_at, period_month, analytics")
+    .order("period_month", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  const snapshots: { periodMonth: string | null; analytics: HealthAnalyticsSummary }[] = []
+
+  for (const batch of (data ?? []) as StoredBmiBatchRow[]) {
+    const analytics = isHealthAnalyticsSummary(batch.analytics)
+      ? normalizeStoredSummary(batch.analytics, batch)
+      : await rebuildBmiAnalyticsSummary(batch)
+
+    if (analytics && analytics.totalAssessed > 0) {
+      snapshots.push({ periodMonth: batch.period_month ?? null, analytics })
+    }
+  }
+
+  return snapshots
+}
+
 /** All stored monthly snapshots, newest month first. */
 export async function listBmiStoredMonths(): Promise<BmiUploadBatchInfo[]> {
   const supabase = createAdminClient()

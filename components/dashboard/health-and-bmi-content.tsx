@@ -4,7 +4,7 @@ import { BmiTrackingCards } from "@/components/dashboard/bmi-tracking-cards"
 import { HealthAndBmiRefreshButton } from "@/components/dashboard/health-and-bmi-refresh-button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getHealthAnalytics } from "@/lib/health-analytics"
+import { getBmiMonthlySnapshots, getHealthAnalytics } from "@/lib/health-analytics"
 import { getBmiTracking } from "@/lib/bmi-tracking"
 
 export function HealthAndBmiLoading() {
@@ -21,7 +21,26 @@ export function HealthAndBmiLoading() {
 }
 
 export async function HealthAndBmiContent() {
-  const [data, tracking] = await Promise.all([getHealthAnalytics(), getBmiTracking()])
+  const [data, tracking, monthlySnapshots] = await Promise.all([
+    getHealthAnalytics(),
+    getBmiTracking(),
+    getBmiMonthlySnapshots(),
+  ])
+
+  // Google Sheet fallback has no stored monthly batches; still show the latest pie.
+  const pieMonths =
+    monthlySnapshots.length > 0
+      ? monthlySnapshots
+      : data.dataReady
+        ? [
+            {
+              monthKey: null,
+              monthLabel: tracking.available ? tracking.currentMonthLabel : "Pinakabago",
+              totalAssessed: data.totalAssessed,
+              categories: data.categories,
+            },
+          ]
+        : []
 
   return (
     <div className="relative space-y-6">
@@ -46,18 +65,18 @@ export async function HealthAndBmiContent() {
         </Card>
       )}
 
-      <BmiPercentagePieChart
-        categories={data.categories}
-        totalAssessed={data.totalAssessed}
-      />
-
       <BmiCategoryCards
         categories={data.categories}
         totalAssessed={data.totalAssessed}
         assessmentMonthLabel={tracking.available ? tracking.currentMonthLabel : null}
       />
 
-      {data.dataReady ? <BmiTrackingCards tracking={tracking} /> : null}
+      {data.dataReady ? (
+        <>
+          <BmiPercentagePieChart months={pieMonths} />
+          <BmiTrackingCards tracking={tracking} />
+        </>
+      ) : null}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { Cell, Label, Pie, PieChart } from "recharts"
 
 import {
@@ -15,11 +15,17 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import type { BmiCategoryCount } from "@/lib/health-types"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import type { BmiCategoryCount, BmiMonthlySnapshot } from "@/lib/health-types"
 
 type BmiPercentagePieChartProps = {
-  categories: BmiCategoryCount[]
-  totalAssessed: number
+  months: BmiMonthlySnapshot[]
 }
 
 const BMI_COLORS: Record<BmiCategoryCount["id"], string> = {
@@ -32,14 +38,32 @@ const BMI_COLORS: Record<BmiCategoryCount["id"], string> = {
   "obese-3": "#dc2626",
 }
 
-export function BmiPercentagePieChart({
-  categories,
-  totalAssessed,
-}: BmiPercentagePieChartProps) {
+function monthValue(month: BmiMonthlySnapshot, index: number) {
+  return month.monthKey ?? `undated-${index}`
+}
+
+export function BmiPercentagePieChart({ months }: BmiPercentagePieChartProps) {
+  const [selectedValue, setSelectedValue] = useState<string | null>(
+    months.length > 0 ? monthValue(months[0], 0) : null,
+  )
+
+  const selected = useMemo(() => {
+    const found = months.find((month, index) => monthValue(month, index) === selectedValue)
+    return found ?? months[0] ?? null
+  }, [months, selectedValue])
+
+  const monthItems = useMemo(
+    () =>
+      Object.fromEntries(
+        months.map((month, index) => [monthValue(month, index), month.monthLabel]),
+      ),
+    [months],
+  )
+
   const chartConfig = useMemo(
     () =>
       Object.fromEntries(
-        categories.map((category) => [
+        (selected?.categories ?? []).map((category) => [
           category.id,
           {
             label: category.label,
@@ -47,19 +71,44 @@ export function BmiPercentagePieChart({
           },
         ]),
       ),
-    [categories],
+    [selected],
   )
+
+  if (!selected) {
+    return null
+  }
 
   return (
     <Card className="overflow-hidden border-border/70 bg-card/80 shadow-sm backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle>BMI Classification Percentage</CardTitle>
-        <CardDescription>
-          Percentage distribution of all personnel with recorded BMI classification
-        </CardDescription>
+      <CardHeader className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1.5">
+          <CardTitle>BMI Classification Percentage</CardTitle>
+          <CardDescription>
+            Percentage distribution of personnel with recorded BMI classification ·{" "}
+            {selected.monthLabel}
+          </CardDescription>
+        </div>
+        {months.length > 1 ? (
+          <Select
+            items={monthItems}
+            value={selectedValue}
+            onValueChange={(value) => setSelectedValue(value as string)}
+          >
+            <SelectTrigger size="sm" aria-label="Piliin ang buwan">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              {months.map((month, index) => (
+                <SelectItem key={monthValue(month, index)} value={monthValue(month, index)}>
+                  {month.monthLabel}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
       </CardHeader>
       <CardContent>
-        {totalAssessed === 0 ? (
+        {selected.totalAssessed === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             No BMI data yet.
           </p>
@@ -90,7 +139,7 @@ export function BmiPercentagePieChart({
                   }
                 />
                 <Pie
-                  data={categories}
+                  data={selected.categories}
                   dataKey="count"
                   nameKey="id"
                   innerRadius={72}
@@ -100,7 +149,7 @@ export function BmiPercentagePieChart({
                   stroke="var(--background)"
                   strokeWidth={2}
                 >
-                  {categories.map((category) => (
+                  {selected.categories.map((category) => (
                     <Cell key={category.id} fill={BMI_COLORS[category.id]} />
                   ))}
                   <Label
@@ -127,7 +176,7 @@ export function BmiPercentagePieChart({
                             fontSize={24}
                             fontWeight={700}
                           >
-                            {totalAssessed.toLocaleString()}
+                            {selected.totalAssessed.toLocaleString()}
                           </tspan>
                         </text>
                       )
@@ -138,7 +187,7 @@ export function BmiPercentagePieChart({
             </ChartContainer>
 
             <div className="grid gap-2">
-              {categories.map((category) => (
+              {selected.categories.map((category) => (
                 <div
                   key={category.id}
                   className="flex items-center justify-between gap-4 rounded-lg border bg-background/50 px-3 py-2.5 text-sm"
