@@ -102,7 +102,9 @@ export const MAIN_NAV: NavLink[] = [
     href: "/rhsu",
     icon: Stethoscope,
     logoSrc: DIVISION_NAV_LOGOS.rhsu,
-    description: "Regional Health Service Unit",
+    description: DIVISION_CONFIG.rhsu.fullName,
+    activePaths: ["/rhsu", "/rhsu/upload"],
+    divisionId: "rhsu",
   },
   {
     title: RMDU_NAV.title,
@@ -175,6 +177,14 @@ export const MAIN_NAV: NavLink[] = [
     icon: Upload,
     activePaths: ["/ict-equipment-inventory/upload"],
     divisionId: "rictmd",
+    uploadOnly: true,
+  },
+  {
+    title: "Upload File",
+    href: "/rhsu/upload",
+    icon: Upload,
+    activePaths: ["/rhsu/upload"],
+    divisionId: "rhsu",
     uploadOnly: true,
   },
   {

@@ -151,6 +151,8 @@ import {
   replaceIctEquipmentWorkbook,
 } from "@/lib/ict-equipment-records"
 import { parseIctEquipmentXlsx } from "@/lib/ict-equipment-xlsx-parser"
+import { RHSU_ANALYTICS_CACHE_TAG, replaceRhsuWorkbook } from "@/lib/rhsu-records"
+import { parseRhsuXlsx } from "@/lib/rhsu-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_BMI_RECORDS_CHUNK = 800
@@ -165,6 +167,7 @@ const MAX_ADMIN_HOLDING_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_RPRMD_WORKBOOK_UPLOAD_BYTES = 25 * 1024 * 1024
 const MAX_RPRMD_PERSONNEL_CHUNK = 500
 const MAX_ICT_EQUIPMENT_UPLOAD_BYTES = 15 * 1024 * 1024
+const MAX_RHSU_UPLOAD_BYTES = 5 * 1024 * 1024
 
 export async function getAccessTokensAction() {
   await requireSuperAdminSession()
@@ -1523,6 +1526,50 @@ export async function uploadIctEquipmentWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang ICT inventory upload. Subukan ulit.")
+  }
+}
+
+export async function uploadRhsuWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rhsu")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx o .xlsm).")
+    }
+
+    const lowerName = file.name.toLowerCase()
+    if (!lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xlsm")) {
+      throw new Error("Excel (.xlsx o .xlsm) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_RHSU_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 5 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseRhsuXlsx(buffer)
+    const result = await replaceRhsuWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(RHSU_ANALYTICS_CACHE_TAG)
+    revalidatePath("/rhsu")
+    revalidatePath("/rhsu/upload")
+
+    return { batch: result.batch }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang RHSU workbook upload. Subukan ulit.")
   }
 }
 

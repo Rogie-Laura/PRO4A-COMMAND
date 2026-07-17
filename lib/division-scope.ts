@@ -9,6 +9,7 @@ export const DIVISION_IDS = [
   "retd",
   "rpsmd",
   "rictmd",
+  "rhsu",
 ] as const
 
 export type DivisionId = (typeof DIVISION_IDS)[number]
@@ -18,7 +19,7 @@ export type DivisionConfig = {
   label: string
   /** Full division name shown in the app header and nav tooltips. */
   fullName: string
-  rNumber: number
+  rNumber?: number
   defaultHref: string
   allowedPaths: string[]
   uploadPath?: string
@@ -135,6 +136,14 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     ],
     uploadPath: "/ict-equipment-inventory/upload",
   },
+  rhsu: {
+    id: "rhsu",
+    label: "RHSU",
+    fullName: "Regional Health Service Unit",
+    defaultHref: "/rhsu",
+    allowedPaths: ["/rhsu", "/rhsu/upload", "/pro4a-status", "/settings"],
+    uploadPath: "/rhsu/upload",
+  },
 }
 
 /** RMDU lives under the RICTMD focal scope but has its own nav label. */
@@ -163,5 +172,7 @@ export function canDivisionAccessPath(divisionId: DivisionId, pathname: string) 
 
 export const DIVISION_UPLOAD_OPTIONS = DIVISION_IDS.map((id) => ({
   id,
-  label: `R${DIVISION_CONFIG[id].rNumber} — ${DIVISION_CONFIG[id].label}`,
+  label: DIVISION_CONFIG[id].rNumber
+    ? `R${DIVISION_CONFIG[id].rNumber} — ${DIVISION_CONFIG[id].label}`
+    : DIVISION_CONFIG[id].label,
 }))
