@@ -1,4 +1,5 @@
 import { BmiCategoryCards } from "@/components/dashboard/bmi-category-cards"
+import { BmiPercentagePieChart } from "@/components/dashboard/bmi-percentage-pie-chart"
 import { BmiTrackingCards } from "@/components/dashboard/bmi-tracking-cards"
 import { HealthAndBmiRefreshButton } from "@/components/dashboard/health-and-bmi-refresh-button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -44,6 +45,11 @@ export async function HealthAndBmiContent() {
           </CardContent>
         </Card>
       )}
+
+      <BmiPercentagePieChart
+        categories={data.categories}
+        totalAssessed={data.totalAssessed}
+      />
 
       <BmiCategoryCards
         categories={data.categories}
