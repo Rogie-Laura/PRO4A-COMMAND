@@ -51,7 +51,6 @@ function StatisticCard({
 
 export async function RhsuContent() {
   const data = await getRhsuAnalytics()
-  const maxMonthly = Math.max(1, ...data.decalsByMonth.map((item) => item.total))
 
   return (
     <div className="space-y-6">
@@ -113,33 +112,47 @@ export async function RhsuContent() {
                   Four-wheeled passcards and two-wheeled stickers
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {data.decalsByMonth.map((item) => (
-                  <div key={item.month} className="space-y-2">
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="font-medium">{item.month}</span>
-                      <span className="tabular-nums text-muted-foreground">
-                        {item.total.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-primary"
-                        style={{ width: `${Math.max(2, (item.total / maxMonthly) * 100)}%` }}
-                      />
-                    </div>
-                    <div className="flex gap-4 text-xs text-muted-foreground">
-                      <span>
-                        <CarFront className="mr-1 inline size-3" aria-hidden />
-                        {item.passcards.toLocaleString()} passcards
-                      </span>
-                      <span>
-                        <CircleParking className="mr-1 inline size-3" aria-hidden />
-                        {item.stickers.toLocaleString()} stickers
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <CardContent>
+                <div className="overflow-hidden rounded-lg border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/60 text-left">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">Month</th>
+                        <th className="px-4 py-3 text-right font-medium">Passcards</th>
+                        <th className="px-4 py-3 text-right font-medium">Stickers</th>
+                        <th className="px-4 py-3 text-right font-medium">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.decalsByMonth.map((item) => (
+                        <tr key={item.month} className="border-t">
+                          <td className="px-4 py-3">{item.month}</td>
+                          <td className="px-4 py-3 text-right tabular-nums">
+                            {item.passcards.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right tabular-nums">
+                            {item.stickers.toLocaleString()}
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold tabular-nums">
+                            {item.total.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="border-t bg-muted/30 font-semibold">
+                        <td className="px-4 py-3">Total</td>
+                        <td className="px-4 py-3 text-right tabular-nums">
+                          {data.decalsTotals.passcards.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums">
+                          {data.decalsTotals.stickers.toLocaleString()}
+                        </td>
+                        <td className="px-4 py-3 text-right tabular-nums">
+                          {data.decalsTotals.total.toLocaleString()}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
 
