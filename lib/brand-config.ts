@@ -34,6 +34,7 @@ export const DIVISION_NAV_LOGOS = {
   rpsmd: "/logos/RPSMD.png",
   rictmd: "/logos/RICTMD4A.png",
   rmdu: "/logos/RMDU.png",
+  rhsu: "/logos/RHSU.png",
 } as const
 
 export const PRO4A_APP_TITLE = "PRO4A COMMAND"
@@ -41,4 +42,4 @@ export const PRO4A_APP_TAGLINE = "Operational Dashboard"
 
 export const COMMAND_BRAND_BG = "#05070f"
 
-export const COMMAND_ICON_VERSION = "10"
+export const COMMAND_ICON_VERSION = "11"

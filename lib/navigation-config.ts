@@ -12,6 +12,7 @@ import {
   Search,
   Settings,
   Shield,
+  Stethoscope,
   Upload,
   UserCog,
   Users,
@@ -95,6 +96,13 @@ export const MAIN_NAV: NavLink[] = [
     description: DIVISION_CONFIG.rictmd.fullName,
     activePaths: ["/ict-equipment-inventory", "/ict-equipment-inventory/upload"],
     divisionId: "rictmd",
+  },
+  {
+    title: "RHSU",
+    href: "/rhsu",
+    icon: Stethoscope,
+    logoSrc: DIVISION_NAV_LOGOS.rhsu,
+    description: "Regional Health Service Unit",
   },
   {
     title: RMDU_NAV.title,

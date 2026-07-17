@@ -70,6 +70,10 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
     title: RMDU_NAV.title,
     description: RMDU_NAV.fullName,
   },
+  "/rhsu": {
+    title: "RHSU",
+    description: "Regional Health Service Unit",
+  },
   "/station-profiles": { title: "Station Profiles" },
   "/rlrdd/upload": {
     title: "Upload File",
