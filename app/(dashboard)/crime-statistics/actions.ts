@@ -1,6 +1,6 @@
 "use server"
 
-import { updateTag } from "next/cache"
+import { updateTag } from "@/lib/dashboard-cache"
 
 import { CRIME_ANALYTICS_CACHE_TAG } from "@/lib/crime-analytics"
 

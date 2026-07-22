@@ -1,6 +1,6 @@
 "use server"
 
-import { updateTag } from "next/cache"
+import { updateTag } from "@/lib/dashboard-cache"
 
 import { ADMIN_HOLDING_ANALYTICS_CACHE_TAG, getAdminHoldingAnalytics } from "@/lib/admin-holding-analytics"
 import type { AdminHoldingRecord } from "@/lib/admin-holding-types"

@@ -1,6 +1,6 @@
 "use server"
 
-import { updateTag } from "next/cache"
+import { updateTag } from "@/lib/dashboard-cache"
 
 import { isBmiDrilldownCategory, type BmiCategoryId } from "@/lib/bmi-config"
 import { getBmiMovementBucket, getBmiPersonTrend } from "@/lib/bmi-tracking"

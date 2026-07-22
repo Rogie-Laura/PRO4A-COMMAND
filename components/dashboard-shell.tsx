@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 
+import { DashboardAutoRefresh } from "@/components/dashboard/dashboard-auto-refresh"
 import { DashboardLayoutClient } from "@/components/dashboard-layout-client"
 import { getDashboardRouteMeta } from "@/lib/dashboard-routes"
 import { getActiveNavLink } from "@/lib/navigation-config"
@@ -22,6 +23,7 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
 
   return (
     <DashboardLayoutClient title={title} description={description} session={session}>
+      <DashboardAutoRefresh />
       {children}
     </DashboardLayoutClient>
   )

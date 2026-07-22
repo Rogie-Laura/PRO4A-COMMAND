@@ -1,6 +1,6 @@
 "use server"
 
-import { revalidatePath, updateTag } from "next/cache"
+import { revalidatePath, updateTag } from "@/lib/dashboard-cache"
 
 import {
   createAccessToken,
