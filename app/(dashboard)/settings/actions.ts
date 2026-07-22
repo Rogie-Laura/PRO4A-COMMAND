@@ -153,6 +153,8 @@ import {
 import { parseIctEquipmentXlsx } from "@/lib/ict-equipment-xlsx-parser"
 import { RHSU_ANALYTICS_CACHE_TAG, replaceRhsuWorkbook } from "@/lib/rhsu-records"
 import { parseRhsuXlsx } from "@/lib/rhsu-xlsx-parser"
+import { RCD_ANALYTICS_CACHE_TAG, replaceRcdWorkbook } from "@/lib/rcd-records"
+import { parseRcdXlsx } from "@/lib/rcd-xlsx-parser"
 
 const MAX_BMI_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_BMI_RECORDS_CHUNK = 800
@@ -168,6 +170,7 @@ const MAX_RPRMD_WORKBOOK_UPLOAD_BYTES = 25 * 1024 * 1024
 const MAX_RPRMD_PERSONNEL_CHUNK = 500
 const MAX_ICT_EQUIPMENT_UPLOAD_BYTES = 15 * 1024 * 1024
 const MAX_RHSU_UPLOAD_BYTES = 5 * 1024 * 1024
+const MAX_RCD_UPLOAD_BYTES = 5 * 1024 * 1024
 
 export async function getAccessTokensAction() {
   await requireSuperAdminSession()
@@ -1570,6 +1573,53 @@ export async function uploadRhsuWorkbookAction(formData: FormData) {
     }
 
     throw new Error("Hindi natapos ang RHSU workbook upload. Subukan ulit.")
+  }
+}
+
+export async function uploadRcdWorkbookAction(formData: FormData) {
+  try {
+    const session = await requireDivisionUploadSession("rcd")
+    const file = formData.get("file")
+
+    if (!(file instanceof File)) {
+      throw new Error("Pumili ng Excel file (.xlsx o .xlsm).")
+    }
+
+    const lowerName = file.name.toLowerCase()
+    if (!lowerName.endsWith(".xlsx") && !lowerName.endsWith(".xlsm")) {
+      throw new Error("Excel (.xlsx o .xlsm) lang ang tinatanggap.")
+    }
+
+    if (file.size === 0) {
+      throw new Error("Walang laman ang file.")
+    }
+
+    if (file.size > MAX_RCD_UPLOAD_BYTES) {
+      throw new Error("Mas malaki sa 5 MB ang file.")
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const workbook = parseRcdXlsx(buffer)
+    const result = await replaceRcdWorkbook({
+      filename: file.name,
+      uploadedByLabel: session.label,
+      workbook,
+    })
+
+    updateTag(RCD_ANALYTICS_CACHE_TAG)
+    revalidatePath("/rcd")
+    revalidatePath("/rcd/upload")
+
+    return {
+      batch: result.batch,
+      totalRetirees: result.analytics.totalRetirees,
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+
+    throw new Error("Hindi natapos ang RCD workbook upload. Subukan ulit.")
   }
 }
 

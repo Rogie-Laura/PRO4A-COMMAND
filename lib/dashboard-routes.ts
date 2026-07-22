@@ -32,6 +32,10 @@ export const DASHBOARD_ROUTE_META: Record<string, DashboardRouteMeta> = {
     description: "RCADD accomplishment workbook upload",
   },
   "/rcd": divisionMeta("rcd"),
+  "/rcd/upload": {
+    title: "Upload File",
+    description: "RCD compulsory retirees workbook upload",
+  },
   "/rpsmd": divisionMeta("rpsmd"),
   "/rlrdd": divisionMeta("rlrdd"),
   "/ridmd": divisionMeta("ridmd"),

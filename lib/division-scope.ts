@@ -85,7 +85,8 @@ export const DIVISION_CONFIG: Record<DivisionId, DivisionConfig> = {
     fullName: "Regional Comptrollership Division",
     rNumber: 6,
     defaultHref: "/rcd",
-    allowedPaths: ["/rcd", "/pro4a-status", "/settings"],
+    allowedPaths: ["/rcd", "/rcd/upload", "/pro4a-status", "/settings"],
+    uploadPath: "/rcd/upload",
   },
   ridmd: {
     id: "ridmd",

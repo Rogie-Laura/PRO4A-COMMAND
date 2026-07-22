@@ -69,7 +69,7 @@ export const MAIN_NAV: NavLink[] = [
     divisionId: "rlrdd",
   },
   { title: "RCADD", href: "/rcadd", icon: Users, logoSrc: DIVISION_NAV_LOGOS.rcadd, description: DIVISION_CONFIG.rcadd.fullName, divisionId: "rcadd" },
-  { title: "RCD", href: "/rcd", icon: FileText, description: DIVISION_CONFIG.rcd.fullName, divisionId: "rcd" },
+  { title: "RCD", href: "/rcd", icon: FileText, logoSrc: DIVISION_NAV_LOGOS.rcd, description: DIVISION_CONFIG.rcd.fullName, activePaths: ["/rcd", "/rcd/upload"], divisionId: "rcd" },
   {
     title: "RIDMD",
     href: "/ridmd",
@@ -154,6 +154,14 @@ export const MAIN_NAV: NavLink[] = [
     icon: Upload,
     activePaths: ["/rpsmd/upload"],
     divisionId: "rpsmd",
+    uploadOnly: true,
+  },
+  {
+    title: "Upload File",
+    href: "/rcd/upload",
+    icon: Upload,
+    activePaths: ["/rcd/upload"],
+    divisionId: "rcd",
     uploadOnly: true,
   },
   {
