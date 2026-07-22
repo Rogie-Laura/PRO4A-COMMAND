@@ -74,6 +74,7 @@ export const MAIN_NAV: NavLink[] = [
     title: "RIDMD",
     href: "/ridmd",
     icon: Shield,
+    logoSrc: DIVISION_NAV_LOGOS.ridmd,
     description: DIVISION_CONFIG.ridmd.fullName,
     activePaths: ["/ridmd", "/ridmd/upload", "/crime-statistics", "/comparative-crime-stats"],
     divisionId: "ridmd",
